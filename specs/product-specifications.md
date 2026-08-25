@@ -81,7 +81,7 @@ Four choices worth naming:
 - **Removing someone from a project** does nothing else — assignments stay, visibility stays, only write access goes. The removal is recorded in that project's activity.
 - **Losing write access mid-session** removes no rows; controls become disabled on the next render.
 - Any action a user can't take **renders disabled with an inline reason.** Never a dead button, never tooltip-only.
-- The **last active admin** cannot be demoted or deactivated.
+- The **last active admin** cannot be demoted or deactivated — `setUserRole` and `deactivateUser` count active admins under a row lock in the same transaction as the change, so two concurrent requests can't both succeed and leave zero.
 - Content authored by removed or deactivated users **survives** — names still render.
 
 ### Write rules per mutator
@@ -131,7 +131,7 @@ Full-screen card on the page background, outside the shell. Email + password, an
 | Form | Email, password, "Sign in", and a "Forgot password?" link. Nothing else. |
 | Rejected | One message for both a wrong password and an unknown email: "That email and password don't match." Never reveal whether an account exists. |
 | Deactivated | Its own message — the credentials were right, the account is closed. Names an admin to contact. |
-| Throttled | After five failures for one address, sign-in refuses for fifteen minutes and says so with the remaining time. |
+| Throttled | After five failures for one address, or twenty for one IP address across any addresses, sign-in refuses for fifteen minutes and says so with the remaining time. |
 | Accept invite | `/invite/accept?token=…` — first name, last name, and a password the user chooses, with the invited address shown and immutable. Submitting creates the `user` row and signs them straight in. Expired, used and unknown tokens each get their own explanatory state. |
 | Forgot password | `/reset` — an email field and "Send reset link", nothing else. Submitting always reports "If that address has an account, a link is on the way", whether or not one exists, and is throttled the same as sign-in (§6). |
 | Reset password | This is the **Change password** screen (§3, screen 13): `/reset?token=…`, a full-page screen outside the shell, exactly like Sign in itself: no sidebar, no header. Reached either from the emailed link above or from Profile's "Change password" (§3.12) — there is no other way in; the route is never entered directly. Two required fields, **New password** and **Confirm password**; the password must meet the same policy as everywhere else (below): minimum twelve characters, no composition rules, checked against the blocklist. A mismatch between the two fields is an inline error on Confirm password. Expired, used and unknown tokens each get their own explanatory state, the same convention as Accept invite. On success the password is updated, every session for that user ends (below), and the screen redirects to `/signin` with a success message — the user signs in fresh with the new password. |
@@ -163,6 +163,8 @@ The project's main screen and the app's centre of gravity.
 
 An issue has **one order across the whole project**, not one per column. Every grouping is that single sequence, filtered. The honest consequence, which the UI should not hide: reordering under Column also changes relative position under Assignee. Ties are legal and never repaired; every ordered query sorts by `(sort_order, id)`, and since ids are UUIDv7 the tie-break is creation order.
 
+There is no locking and no live push (out of scope, §1): the last `moveIssue` to reach the server wins outright, and dragging is optimistic against whatever the client last fetched, not against the server's current state. A losing client only learns its board is stale from the periodic re-query (§4, *Board drift*), never from a rejected write.
+
 ### 3.4 Issue detail
 
 Full page. Main column + **262px meta rail**.
@@ -173,7 +175,7 @@ Full page. Main column + **262px meta rail**.
 - **The description supports basic markdown** — bold, italic, inline code, links, bullet and numbered lists, and headings. Nothing else: no tables, no images, no embeds, no HTML (it is escaped, not rendered). Stored as the markdown source in `issue.description`; rendered on read, shown raw while editing. Comments stay plain text with mention tokens.
 - **Activity** is a single reverse-chronological feed, Trello's model: comments and system records share one stream rather than sitting in separate tabs. A comment composer sits at its head; a **Comments only / All activity** toggle filters the stream and remembers the choice per user.
 
-Everything that happens around an issue lands there: created · title, description, column, priority, assignee, labels or due date changed · commented. One row per change with actor, verb, from → to, and a relative time (`Ana moved this from Todo to In Progress · 2h`). Consecutive changes by the same actor within five minutes collapse into one line, expandable.
+Everything that happens around an issue lands there: created · title, description, column, priority, assignee or due date changed · label added or removed · commented. One row per change with actor, verb, from → to, and a relative time (`Ana moved this from Todo to In Progress · 2h`). Consecutive changes by the same actor within five minutes collapse into one line, expandable.
 - **Rail** — column, priority, assignee, labels, due date, project, created-by, timestamps. Each is a quick-change control for members and a disabled control with a reason for non-members.
 - **Issues are flat.** There is no parent and no child: an issue belongs to a project and nothing else. A team that needs to break work down writes a checklist in the description or files separate issues in the same project.
 
@@ -197,7 +199,7 @@ Project is fixed by the route, not a field on the form. The write is not optimis
 
 ### 3.6 Notifications
 
-Reverse-chronological list. Unread rows carry a dot. Each row names the actor, the type (mentioned you / assigned you / commented), the issue, and a relative time; clicking it opens the issue, at the comment when there is one. "Mark all read" lives in the header. Three types only: `mention`, `assignment`, `comment` (issue or project). Status changes notify nobody. Activity records notify nobody — the feed is a log, not a channel. You are never notified about your own action.
+Reverse-chronological list. Unread rows carry a dot. Each row names the actor, the type (mentioned you / assigned you / commented), the issue or project, and a relative time; clicking it opens the issue or project, at the comment when there is one. "Mark all read" lives in the header. Three types only: `mention`, `assignment`, `comment` (issue or project). Status changes notify nobody. Activity records notify nobody — the feed is a log, not a channel. You are never notified about your own action.
 
 ### 3.7 Create project — admin
 
@@ -227,7 +229,7 @@ The project's record, at `/projects/:key/details`, reached from the tab beside B
 
 **Status — admin only.** A two-state switch, `active` or `archived`. Archiving is the only lifecycle act a project has: it is reversible, changes nothing else about the project, and is what unlocks Delete. Members see the current state, disabled, with the reason.
 
-**Columns — admin only.** The board's columns in board order: name, colour, kind, and issue count per row. Every project starts with five default columns — Backlog, Todo, In Progress, Done, and Canceled — and only an admin can add, update, remove or reorder them: add appends a column, drag reorders, rename is inline. **Delete is offered only on an empty column** — a column holding issues must be emptied first, so no issue is ever moved or destroyed by a column edit. The last column cannot be deleted. For everyone else this is a read-only list of the board's columns and their counts.
+**Columns — admin only.** The board's columns in board order: name, colour, kind, and issue count per row. Every project starts with five default columns — Backlog, Todo, In Progress, Done, and Canceled — and only an admin can add, update, remove or reorder them: add appends a column of kind `open`, drag reorders, rename is inline; `kind` itself is fixed at creation and never editable afterward, so a project's `done`- and `canceled`-kind columns stay identifiable and can't be reassigned around a delete restriction. **Delete is offered only on an empty column** — a column holding issues must be emptied first, so no issue is ever moved or destroyed by a column edit. The last column cannot be deleted, and neither can the project's last `canceled`-kind column: it's a member's only route to remove an issue (§2), so deleting the last one is refused with that reason. For everyone else this is a read-only list of the board's columns and their counts.
 
 **Members — admin only.** The roster, with add and remove. **Add member** picks from the users who already have accounts; there is no project-level invitation, no pending membership and nothing to accept — an added member has write access on their next request. If the person has no account yet, an admin invites them to the team first (**Invite people**, §3.9) and adds them once they have accepted. Removing a member revokes their write access to this project and nothing else: assignments, comments and activity all stay. Members and non-members see the roster and cannot change it.
 
@@ -278,7 +280,7 @@ The set is curated on a full page at `/settings/labels`, admin-only, reached fro
 
 **Delete — everywhere, and immediate.** Deleting a label removes it **from every issue that carries it**, in every project. It is a hard delete of the label row and its `issue_label` joins in one transaction (§4); the issues themselves are untouched. Because it is not reversible, delete confirms once and states the size of what it will affect by name and count — "Delete *blocked*? It will be removed from 14 issues. This can't be undone." A label carrying no issues confirms the same way, without the count.
 
-Label writes are recorded on the account of the admin who made them, not in any project's activity feed — the set is team-wide, so no single project's history owns it. An issue's own feed still records `labels changed` when a label is applied or removed there; a rename or a delete writes no row on the issue.
+Label writes are recorded on the account of the admin who made them, not in any project's activity feed — the set is team-wide, so no single project's history owns it. An issue's own feed still records a `label_added` or `label_removed` row when a label is applied or removed there; a rename or a delete writes no row on the issue.
 
 ### 3.11 Unauthorized (401)
 
@@ -324,7 +326,7 @@ Elsewhere in the app, a user's display name is their first and last name joined 
 Hard deletes, cascading in the database. There is no `deleted_at` — cancellation (issues) and archiving (projects) are the reversible paths, and a user is never deleted at all (`deactivated_at` instead).
 
 - **Deleting a project** requires `status = 'archived'` first, then cascades through its columns, issues, comments, activity, labels-joins, notifications and memberships.
-- **Deleting a column** is refused unless it is empty and is not the project's last, so it never cascades.
+- **Deleting a column** is refused unless it is empty, is not the project's last, and — if it is `canceled`-kind — is not the project's last `canceled`-kind column, so it never cascades and members never lose their only route to remove an issue.
 - **Deleting an issue** cascades to its comments, activity, label joins and notifications. Nothing else references it, so nothing survives it.
 - **Deleting a label** cascades to its `issue_label` joins only, so it disappears from every issue carrying it and the issues themselves are unchanged. There is no archived state for a label and no refusal: a label in heavy use deletes as readily as an unused one, after one confirmation naming the count (§3.10).
 
@@ -336,6 +338,7 @@ Both deletes run in **one server transaction** — the row and everything the ca
 | --- | --- |
 | Loading | Per-screen skeletons that match the layout they replace — board columns, issue rail, feed rows. Never a full-screen spinner, never a layout shift when data lands. |
 | Stale after navigation | A revisited screen re-queries the server; nothing renders from a client cache. |
+| Board drift | The board re-queries on window focus and every 30s while it's the active tab, so a drop made by someone else surfaces without a manual navigation; if a card the user is mid-drag on has already moved server-side, the drop target re-resolves against the fresh position rather than overwriting it silently. |
 | Empty | One quiet line per surface. No illustrations, no empty-state marketing. |
 | Slow write | The control shows in-flight state and stays interactive-blocked only for itself. Small, local writes (drag, status, assignee) apply immediately and roll back on failure; anything larger waits for the server. |
 | Rejected write | The change rolls back and a toast names what failed and why ("Only project members can edit issues in Website Redesign"). |
@@ -357,13 +360,13 @@ Conventions: UUIDv7 primary keys, server-generated · `text` + `CHECK` for enume
 **`user`** — `first_name`, `last_name`, `email` (`UNIQUE (lower(email))`), `avatar_url`, `role` (`admin|member`), `job_title`, `slack_handle`, `phone`, `bio`, `deactivated_at`. The password hash lives in a separate `credential` table and is never selected into a response; `role` is read from this row on every request rather than cached in a token.
 **`project`** — `key` (`^[A-Z][A-Z0-9]{0,7}$` — up to 8 characters, unique, **immutable**, derived from the name at creation per §3.7), `name`, `description`, `status` (`active|archived`, default `active` — there is no planned, paused or completed state), `start_date`, `target_date`, `color`, `sort_order`.
 **`project_member`** — `(project_id, user_id)` composite PK. No role column.
-**`board_column`** — `project_id`, `name`, `color`, `sort_order`, and `kind` (`open|done|canceled`) which carries the semantics status used to: `done` and `canceled` are what Home's progress figure and "cancel rather than delete" read. Seeded with five rows on project creation (Backlog `open` · Todo `open` · In Progress `open` · Done `done` · Canceled `canceled`); `UNIQUE (project_id, lower(name))`. A project always has at least one row, and `kind` need not be unique within a project.
+**`board_column`** — `project_id`, `name`, `color`, `sort_order`, and `kind` (`open|done|canceled`, set at creation and never changed by `updateColumn`) which carries the semantics status used to: `done` and `canceled` are what Home's progress figure and "cancel rather than delete" read. Seeded with five rows on project creation (Backlog `open` · Todo `open` · In Progress `open` · Done `done` · Canceled `canceled`); a column added later is always `open`. `UNIQUE (project_id, lower(name))`. A project always has at least one row and at least one `canceled`-kind row (invariant 12); `kind` need not otherwise be unique within a project.
 **`issue`** — `project_id` (required), `number`, `title`, `description`, `column_id` (required, and always a column of the issue's own project — this replaces the old `status` enum), `priority` (`none|low|medium|high|urgent`), `assignee_id`, `due_date`, `created_by`, `sort_order`.
 **`label`** — one global set, `UNIQUE (lower(name))`, colour. No `project_id`: labels are never project-scoped.
 **`comment`** — `author_id`, plain-text `body` which may carry mention tokens, and exactly one of `issue_id` / `project_id` (`CHECK` on the pair) so the same table serves both feeds. Editable and deletable by its author. Plain text only — there is no upload control, no file storage, no attachments root to configure and no orphan files to reclaim anywhere in v1. A team that needs to share a file links to it.
 
-**`activity`** — the append-only log behind both feeds. Exactly one of `issue_id` / `project_id`; `actor_id`; `type` (`created | field_changed | member_added | member_removed | archived | reopened | comment`); `field` and `from_value` / `to_value` as nullable text for `field_changed`; `comment_id` for `comment` rows; `created_at`. No `updated_at` — rows are never modified. Written by the mutators, in the same database transaction as the change they describe, so a change and its record land together or not at all.
-**`notification`** — `user_id`, `actor_id`, `type` (`mention|assignment|comment`), `issue_id` required, `comment_id` optional, `read_at`, `emailed_at`. `CHECK (user_id <> actor_id)`.
+**`activity`** — the append-only log behind both feeds. Exactly one of `issue_id` / `project_id`; `actor_id`; `type` (`created | field_changed | label_added | label_removed | member_added | member_removed | archived | reopened | comment`); `field` and `from_value` / `to_value` as nullable text — for `field_changed` a single scalar (column, priority, assignee, due date, name, description, dates, colour); for `label_added` / `label_removed`, `to_value` / `from_value` respectively hold that one label's name, so a multi-label change is one row per label rather than one row holding a set. Both are frozen display strings captured at write time, not re-resolved on read, so a later rename of the column, user or label does not rewrite history. `comment_id` for `comment` rows; `created_at`. No `updated_at` — rows are never modified. Written by the mutators, in the same database transaction as the change they describe, so a change and its record land together or not at all.
+**`notification`** — `user_id`, `actor_id`, `type` (`mention|assignment|comment`), exactly one of `issue_id` / `project_id` (a project comment's mention or comment notification has no issue to attach to), `comment_id` optional, `read_at`, `emailed_at`. `CHECK (user_id <> actor_id)`.
 
 ### Keys
 
@@ -382,8 +385,10 @@ Issues are addressed as `WEB-142` — a per-project key plus a per-project numbe
 | 7 | `project.key` is immutable | `updateProject` |
 | 8 | A project must be `archived` before deletion | `deleteProject` |
 | 9 | Issue numbers are monotonic per project, never reused | `issue_counter` |
-| 10 | A comment and an activity row each attach to exactly one issue **or** one project | `CHECK` on the pair |
+| 10 | A comment, an activity row and a notification each attach to exactly one issue **or** one project | `CHECK` on the pair |
 | 11 | Activity rows are never updated or individually deleted | no `update`/`delete` mutator exists |
+| 12 | A project always has at least one `canceled`-kind column | `deleteColumn` |
+| 13 | At least one admin is always active | `deactivateUser` / `setUserRole`, under a row lock on the admin count, in the same transaction as the change |
 
 ### Read boundary
 
@@ -409,7 +414,7 @@ Hand-written, no auth library. One credential: **email + password**.
 
 **CSRF.** `SameSite=Lax` plus an origin check on every mutating request. No cross-site form posts, no token-in-header dance.
 
-**Throttle** — five failed sign-ins for one address locks that address for fifteen minutes, counted in the database so it survives a restart. Reset requests are throttled the same way and always answer identically whether or not the address exists.
+**Throttle** — five failed sign-ins for one address locks that address for fifteen minutes; independently, twenty failed sign-ins from one IP address, across any addresses it targets, locks that IP for fifteen minutes — so a party who doesn't hold the address can't sustain a lockout against it by cycling attempts from one source. Both counted in the database so they survive a restart. Reset requests are throttled the same way and always answer identically whether or not the address exists.
 
 **Break-glass and user administration** — `npm run admin:grant -- --email=… --name=…` over SSH creates or promotes an admin, sets a password, and clears `deactivated_at`; `admin:deactivate` closes an account. With no team-settings screen, **role changes remain CLI-only in v1** (see open items); deactivation and invitations, which are needed routinely, have their own UI instead (Accounts, §3.9). This is also the total-lockout recovery, separate from first-run seeding.
 
