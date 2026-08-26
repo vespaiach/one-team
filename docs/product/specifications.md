@@ -264,11 +264,11 @@ Below the button, the invitations still outstanding: address, who invited them, 
 - **Deactivate** ends every session for that user, refuses their next sign-in with the deactivated message (§3.1), and excludes them from every picker — Add member, assignee, `@mention`. It removes nothing: memberships, assignments, comments and activity all stay, and their name still renders everywhere it already did. It asks for confirmation once, naming what stays.
 - **Reactivate** restores sign-in and picker eligibility, with the memberships the account already had. No re-invitation, no new token.
 - The **last active admin** cannot be deactivated — that row's control is disabled with the reason inline (§2).
-- Deactivating or reactivating a user is not project activity; it is recorded on the account, and the projects they belong to are untouched.
+- Deactivating or reactivating a user is not project activity and creates no activity record. The account’s current state is represented by user.deactivated_at; previous state changes and their actors are not retained in v1. Projects and project memberships are untouched.
 
 ### 3.10 Labels — admin, a full page
 
-One global set, shared by every project. A label has two fields and nothing else: **name** and **colour**. It is never scoped to a project, so the same set appears everywhere and applying one is never gated by which project the issue is in. Members and non-members apply and remove labels on issues from the issue rail's label picker (§3.4); they cannot create, rename, recolour or delete one — the picker offers only what exists, and its create affordance is absent for them rather than disabled.
+One global set, shared by every project. A label has two fields and nothing else: **name** and **colour**. It is never scoped to a project, so the same set appears everywhere and applying one is never gated by which project the issue is in. Members apply and remove labels on issues from the issue rail's label picker (§3.4); they cannot create, rename, recolour or delete one — the picker offers only what exists, and its create affordance is absent for them rather than disabled.
 
 The set is curated on a full page at `/settings/labels`, admin-only, reached from the "Manage labels" link at the foot of any issue's label picker (shown to admins only). A non-admin who lands on the route gets Unauthorized (§3.11).
 
@@ -280,7 +280,7 @@ The set is curated on a full page at `/settings/labels`, admin-only, reached fro
 
 **Delete — everywhere, and immediate.** Deleting a label removes it **from every issue that carries it**, in every project. It is a hard delete of the label row and its `issue_label` joins in one transaction (§4); the issues themselves are untouched. Because it is not reversible, delete confirms once and states the size of what it will affect by name and count — "Delete *blocked*? It will be removed from 14 issues. This can't be undone." A label carrying no issues confirms the same way, without the count.
 
-Label writes are recorded on the account of the admin who made them, not in any project's activity feed — the set is team-wide, so no single project's history owns it. An issue's own feed still records a `label_added` or `label_removed` row when a label is applied or removed there; a rename or a delete writes no row on the issue.
+Creating, renaming, recolouring, or deleting a team-wide label creates no activity record in v1. Applying or removing a label from an issue still creates label_added or label_removed activity on that issue.
 
 ### 3.11 Unauthorized (401)
 
@@ -400,7 +400,7 @@ Every response is shaped by the query behind it, not by a replication rule. Two 
 
 Hand-written, no auth library. One credential: **email + password**.
 
-**No public sign-up.** `POST /api/auth/signin` is the only endpoint a stranger can reach. An account comes into being one way: an **admin invites an address**, which mails a 7-day single-use link; accepting it sets a first name, last name and password and creates the `user` row. Members cannot invite. There is no self-service route in and no open registration form to attack.
+**No public sign-up.** `POST /api/auth/signin` is the endpoint a stranger can reach. An account comes into being one way: an **admin invites an address**, which mails a 7-day single-use link; accepting it sets a first name, last name and password and creates the `user` row. Members cannot invite. There is no self-service route in and no open registration form to attack.
 
 **An invitation is a login, not access.** It creates a user who can sign in and read; it never carries project membership. Adding someone to a project is a separate, direct act by an admin with no acceptance step — so the two concerns stay apart, and a pending invitation can never leave a half-joined project behind.
 
