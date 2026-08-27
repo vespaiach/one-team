@@ -1,0 +1,118 @@
+services:
+  traefik:
+    image: traefik:latest
+    container_name: traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/acme.json:/acme.json
+    networks:
+      - proxy
+
+  postgres:
+    image: postgres:18-alpine
+    container_name: one-space-db
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    networks:
+      - internal
+
+  avatar-init:
+    image: "${APP_IMAGE:?Set APP_IMAGE in .env}"
+    user: "0:0"
+    command: ["sh", "-c", "mkdir -p /var/lib/one-space/avatars && chown -R 1001:1001 /var/lib/one-space/avatars"]
+    volumes:
+      - avatar_data:/var/lib/one-space/avatars
+    restart: "no"
+
+  app:
+    image: "${APP_IMAGE:?Set APP_IMAGE in .env}"
+    container_name: one-space
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - AVATAR_STORAGE_PATH=/var/lib/one-space/avatars
+    volumes:
+      - avatar_data:/var/lib/one-space/avatars
+    depends_on:
+      postgres:
+        condition: service_started
+      avatar-init:
+        condition: service_completed_successfully
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.app.rule=Host(`${APP_DOMAIN:?Set APP_DOMAIN in .env}`)"
+      - "traefik.http.routers.app.entrypoints=websecure"
+      - "traefik.http.routers.app.tls.certresolver=letsencrypt"
+      - "traefik.http.services.app.loadbalancer.server.port=3000"
+      - "traefik.http.routers.app-http.rule=Host(`${APP_DOMAIN:?Set APP_DOMAIN in .env}`)"
+      - "traefik.http.routers.app-http.entrypoints=web"
+      - "traefik.http.routers.app-http.middlewares=https-redirect"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
+    networks:
+      - proxy
+      - internal
+
+  backup:
+    profiles: ["operations"]
+    image: "${APP_IMAGE:?Set APP_IMAGE in .env}"
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      AVATAR_STORAGE_PATH: /var/lib/one-space/avatars
+      BACKUP_DIR: /var/lib/one-space/backups
+      BACKUP_ENCRYPTION_KEY_FILE: /run/secrets/one-space-backup-key
+    command: ["/app/ops/backup.sh"]
+    volumes:
+      - avatar_data:/var/lib/one-space/avatars:ro
+      - ${BACKUP_DIR_HOST:-./backups}:/var/lib/one-space/backups
+      - ${BACKUP_ENCRYPTION_KEY_FILE_HOST:-./secrets/backup.key}:/run/secrets/one-space-backup-key:ro
+    depends_on:
+      postgres:
+        condition: service_started
+    networks:
+      - internal
+    restart: "no"
+
+  restore:
+    profiles: ["operations"]
+    image: "${APP_IMAGE:?Set APP_IMAGE in .env}"
+    env_file: .env
+    environment:
+      RESTORE_DATABASE_URL: ${RESTORE_DATABASE_URL:-}
+      RESTORE_AVATAR_STORAGE_PATH: /var/lib/one-space/restore-avatars
+      SNAPSHOT_FILE: /var/lib/one-space/backups/${RESTORE_SNAPSHOT_FILE:-snapshot-not-selected}
+      BACKUP_ENCRYPTION_KEY_FILE: /run/secrets/one-space-backup-key
+      ALLOW_ISOLATED_RESTORE: ${ALLOW_ISOLATED_RESTORE:-no}
+    command: ["/app/ops/restore.sh"]
+    volumes:
+      - ${BACKUP_DIR_HOST:-./backups}:/var/lib/one-space/backups:ro
+      - ${RESTORE_AVATAR_STORAGE_PATH_HOST:-./restore-avatars}:/var/lib/one-space/restore-avatars
+      - ${BACKUP_ENCRYPTION_KEY_FILE_HOST:-./secrets/backup.key}:/run/secrets/one-space-backup-key:ro
+    networks:
+      - internal
+    restart: "no"
+
+volumes:
+  postgres_data:
+  avatar_data:
+
+networks:
+  proxy:
+    name: proxy
+  internal:
+    name: one-space-internal
