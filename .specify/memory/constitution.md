@@ -1,5 +1,27 @@
 <!--
 SYNC IMPACT REPORT
+Version change: 1.1.0 → 1.2.0
+Rationale: MINOR. The approved dependency table gains a member. That table is normative —
+Development Workflow gate 4 is checked against it — so recording a further approval materially
+expands what Technology Constraints permits. No principle is added, removed, redefined or
+weakened, so no migration plan is required.
+
+Amendment 1.2.0 — React Compiler approval:
+- babel-plugin-react-compiler added to the approved dependency set. It entered the tree with the
+  create-next-app scaffold that seeded the repository, before this constitution existed, and is
+  enabled by reactCompiler: true in next.config.ts. The table declares itself the complete set, so
+  the record and the working tree disagreed about a dependency already running (roadmap RD-006).
+- Approved rather than removed. The React Compiler is a first-party React capability reached
+  through a Next.js configuration flag, and the package is Next's own optional peer dependency,
+  not a library chosen in place of a built-in. As a devDependency it runs at build time and adds
+  nothing to the production bundle, so of the liabilities Principle IV's rationale names it
+  carries only the upgrade obligation React and Next already own.
+- Modified principles: none. Added sections: none. Removed sections: none.
+- Templates: no change required. No template layer references the dependency table.
+- Deferred items: none.
+
+Prior versions below.
+
 Version change: 1.0.0 → 1.1.0
 Rationale: MINOR. Technology Constraints is materially expanded — the deferred
 TEST_RUNNER decision is resolved and the project's approved dependency set is recorded.
@@ -18,8 +40,6 @@ Amendment 1.1.0 — Testing stack and dependency approvals:
   approval. As devDependencies these carry no production bundle weight.
 - Approved dependency set recorded, closing the gap where libraries the product
   specification mandates were installed or pending without a recorded approval.
-
-Prior version below.
 
 Version change: (unfilled template) → 1.0.0
 Rationale: Initial ratification. The prior file was the unpopulated scaffold with no
@@ -160,6 +180,7 @@ approval, recorded here by amendment before it is installed.
 | `fractional-indexing` | Board ordering index | runtime |
 | `@next/env`, `server-only` | Environment loading, server-boundary enforcement | runtime |
 | `vitest`, `jsdom`, `@testing-library/react`, `@vitejs/plugin-react` | Test runner and component testing | development |
+| `babel-plugin-react-compiler` | React Compiler transform, enabled by `reactCompiler` in `next.config.ts` | development |
 
 Tailwind supplies the visual layer only; interaction behaviour comes from React Aria
 Components. A component is custom-built only where React Aria ships no equivalent, and it
@@ -225,4 +246,4 @@ Compliance is reviewed on every pull request against the gates in Development Wo
 and contributors MUST read this constitution before beginning work and MUST treat `AGENTS.md`
 as the source of runtime, framework-specific guidance.
 
-**Version**: 1.1.0 | **Ratified**: 2026-08-27 | **Last Amended**: 2026-08-27
+**Version**: 1.2.0 | **Ratified**: 2026-08-27 | **Last Amended**: 2026-08-27

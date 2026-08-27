@@ -69,6 +69,9 @@ No behaviour below is invented. Every row restates something the source states; 
 | OT-SEC-014 | First-run seeding MUST be skipped if any `user` row exists; that check MUST be the whole marker, so the path can neither run twice nor mint a second admin later. | §6 | Bootstrap |
 | OT-SEC-015 | An unauthenticated request to an authenticated route MUST redirect to `/signin` and MUST NOT reach the Forbidden screen. | §3.11 | Routing |
 | OT-SEC-016 | Expired, used and unknown tokens MUST each get their own explanatory state, on both Accept invite and Change password. | §3.1 | Auth |
+| OT-SEC-017 | Sign-in and reset attempts MUST be counted in separate `auth_attempt` buckets, discriminated by `flow` (`signin \| reset`) alongside `kind`, under the same limits and window. Reset traffic MUST NOT lock an address out of sign-in, and a failed sign-in MUST NOT block a reset request. A reset request MUST record a row every time, never only for an unknown address. A successful sign-in MUST clear that address's `signin` rows only — not its `reset` rows, and not the IP's. | §3.1, §5, §6 | Auth |
+| OT-SEC-018 | A route reachable by an unauthenticated caller MUST NOT disclose any `user` record. Where the deactivated sign-in message names a contact, it MUST be the operator-configured address, and MUST name none when the operator has configured none. | §3.1, §5, §6 | Auth, Routing |
+| OT-SEC-019 | Every credential-setting entry point outside invite acceptance — first-run seeding and `admin:grant` — MUST validate the password against the policy (`OT-SEC-004`) and MUST refuse a non-compliant value, writing nothing. `admin:grant` MUST read the password from the terminal, never from a command argument. | §3.1, §6 | Auth, Bootstrap |
 
 ### 2.4 Data — `OT-DATA`
 
@@ -168,7 +171,7 @@ Rules that must hold at all times. `OT-INV-001`–`OT-INV-014` mirror the specif
 | Capability | Source sections | Applicable requirement IDs |
 |---|---|---|
 | **Shell and navigation** | §3 (The shell), §3.11 | OT-SCOPE-004, OT-SCOPE-007, OT-UX-001, OT-UX-003, OT-UX-004, OT-UX-020, OT-SEC-015 |
-| **Authentication and sessions** | §3.1, §6 | OT-SEC-001…016, OT-AUTHZ-011, OT-DATA-006, OT-INV-013, OT-INV-017 |
+| **Authentication and sessions** | §3.1, §6 | OT-SEC-001…019, OT-AUTHZ-011, OT-DATA-006, OT-INV-013, OT-INV-017 |
 | **Accounts and invitations** | §3.9, §6 | OT-AUTHZ-006, OT-AUTHZ-011, OT-AUTHZ-014, OT-SEC-003, OT-SEC-013, OT-SEC-016, OT-DATA-005, OT-UX-011, OT-INV-013 |
 | **Profile** | §3.12 | OT-AUTHZ-001, OT-DATA-005, OT-DATA-016, OT-UX-009, OT-UX-010, OT-UX-019, OT-SEC-004, OT-SEC-012 |
 | **Projects (record, status, members, delete)** | §3.7, §3.8, §4 | OT-SCOPE-002, OT-AUTHZ-001, OT-AUTHZ-006, OT-AUTHZ-013, OT-DATA-013, OT-DATA-015, OT-UX-009…012, OT-OPS-010, OT-OPS-011, OT-INV-007, OT-INV-008, OT-INV-016 |
@@ -179,14 +182,14 @@ Rules that must hold at all times. `OT-INV-001`–`OT-INV-014` mirror the specif
 | **Comments and activity** | §3.4, §3.8, §2, §5 | OT-AUTHZ-008, OT-AUTHZ-009, OT-AUTHZ-014, OT-DATA-009…011, OT-DATA-014, OT-DATA-016, OT-UX-013…015, OT-INV-010, OT-INV-011 |
 | **Notifications and email** | §3.6, §5, §7 | OT-AUTHZ-003, OT-DATA-009, OT-DATA-011, OT-OPS-001…007, OT-INV-010 |
 | **Home roll-up** | §3.2 | OT-AUTHZ-002, OT-DATA-004, OT-UX-001, OT-UX-005…007, OT-INV-014 |
-| **Data model and read boundary** | §5 | OT-SCOPE-006, OT-AUTHZ-002, OT-AUTHZ-003, OT-DATA-001…017, all OT-INV |
+| **Data model and read boundary** | §5 | OT-SCOPE-006, OT-AUTHZ-002, OT-AUTHZ-003, OT-DATA-001…018, all OT-INV |
 | **Deletes and cascades** | §4 | OT-DATA-007, OT-DATA-008, OT-OPS-010, OT-INV-005, OT-INV-006, OT-INV-008, OT-INV-017 |
 
 ---
 
 ## 5. Blocking decisions
 
-Contradictions, ambiguities and missing decisions found in the source. **None are resolved here.** Each names the passages that disagree; the decision belongs to the specification's owner.
+Contradictions, ambiguities and missing decisions found in the source. **None are resolved here** — the decision belongs to the specification's owner, and a row is struck and marked resolved only once the source itself has been amended. Each open row names the passages that disagree.
 
 | ID | Conflict or gap | Source | Impact if unresolved |
 |---|---|---|---|
@@ -195,10 +198,10 @@ Contradictions, ambiguities and missing decisions found in the source. **None ar
 | OT-DEC-003 | **"New issue" visibility for a non-member is unspecified.** §2 makes hide-instead-of-disable an exception for navigation to **admin-only** screens; Create issue is member-only, not admin-only. §3.5 says a non-member landing on the route gets Forbidden, implying the control is reachable — which conflicts with the general rule that an unavailable action renders disabled with a reason. Same question for the board's inline "Add a card" composer and the card chevron. | §2 (line 84), §3.5 (line 187), §3.3 (line 157) | Three viable renderings (hidden / disabled-with-reason / enabled-then-403). Affects header, board and Forbidden behaviour. |
 | OT-DEC-004 | **Whether a project-comment notification reaches every admin.** §3.6 says a project `comment` goes to "that project's members". §2 states membership *lists* exclude admins and names exactly two admin-inclusive lists — the assignee pool and the `@mention` priority group — neither of which is this one. The recipient set is not classified either way. | §3.6 (line 209) vs §2 (line 41) | Determines whether every admin is mailed on every project comment. Materially changes notification volume. |
 | OT-DEC-005 | **Whether editing a comment fires notifications for newly added mentions.** §3.6 defines recipients per comment and delivery "in the same transaction as the change that caused it", but describes only creation. `updateComment` exists in §2 and can add mention tokens. | §3.6 (lines 209–211), §2 (line 92) | Blocks `updateComment`: fire for new mentions, fire for none, or re-diff the mention set. |
-| OT-DEC-006 | **Whether reset requests share the sign-in throttle counter.** §6 says reset requests are "throttled the same way" and both are counted in `auth_attempt`, where "a successful sign-in clears that subject's rows". If the counter is shared, requesting resets can lock a user out of sign-in, and signing in clears the reset throttle. | §6 (line 428), §3.1 (line 137) | Blocks `auth_attempt` schema use — `kind` is `email \| ip` with no discriminator for which flow recorded the row. |
+| OT-DEC-006 | ~~**Whether reset requests share the sign-in throttle counter.**~~ **Resolved** 2026-08-27 by amendment to specification §5 (`auth_attempt`) and §6 (*Throttle*), indexed as `OT-SEC-017`: the flows count in separate buckets under the same limits, discriminated by a new `flow` column. A shared counter was rejected because it lets a stranger lock any known address out of sign-in with five unauthenticated reset requests, and because it blocks the reset for the one user who most needs it — whoever has just failed sign-in five times. `failed_at` becomes `attempted_at`, a reset request recording a row whether or not the address exists; counting only the unknown ones was rejected as an account-existence oracle against `OT-SEC-011`. | §6 (line 428), §3.1 (line 137) | None — closed. |
 | OT-DEC-007 | **"Mark all read" has no mutator.** §3.6 puts "Mark all read" in the header; §2's per-mutator inventory lists only `markNotificationRead` under "requires only self". | §3.6 (line 207) vs §2 (line 93) | Unspecified whether this is N calls or an unlisted `markAllNotificationsRead`. Affects the mutator surface and its authorization row. |
-| OT-DEC-008 | **The deactivated sign-in message "names an admin to contact"** without saying which admin, or where the address comes from. It also discloses an admin's identity on an unauthenticated route. | §3.1 (line 134) | Blocks the deactivated sign-in state; needs a selection rule (seeded admin, first active admin, configured address) and a disclosure decision. |
-| OT-DEC-009 | **Whether the first-run seeded `ADMIN_PASSWORD` is subject to the password policy.** §3.1 sets a global policy (≥12 characters, blocklist); §6 describes seeding from the environment without saying whether the value is validated or what happens when it fails. | §6 (line 418) vs §3.1 (line 140) | Blocks bootstrap: validate and refuse to start, validate and warn, or accept unchecked. |
+| OT-DEC-008 | ~~**The deactivated sign-in message "names an admin to contact"**~~ **Resolved** 2026-08-27 by amendment to specification §3.1 (*Deactivated*), indexed as `OT-SEC-018`: it names the operator-configured `SUPPORT_EMAIL` and reads no `user` row, naming no address at all where the operator has set none. Selecting an admin from the database was rejected — it hands a real admin's name and address to any unauthenticated caller, and it needs a third reader of the contact fields `OT-DATA-005` confines to Accounts and to Profile reading its own row. | §3.1 (line 134) | None — closed. |
+| OT-DEC-009 | ~~**Whether the first-run seeded `ADMIN_PASSWORD` is subject to the password policy.**~~ **Resolved** 2026-08-27 by amendment to specification §6 (*First-run bootstrap*), indexed as `OT-SEC-019`: it is validated, and a non-compliant value refuses the seed and reports the rule it broke. Validating and seeding anyway was rejected — the seeded admin is the root of the whole trust chain, and its only guard would be the banner §6 itself calls advisory. The amendment makes `OT-SEC-004`'s "same policy at every entry point" true rather than forcing it to be narrowed, and carries the same rule to `admin:grant`. | §6 (line 418) vs §3.1 (line 140) | None — closed. |
 
 ---
 
