@@ -164,6 +164,8 @@ The project's main screen and the app's centre of gravity.
 
 An issue has **one order across the whole project**, not one per column. Every grouping is that single sequence, filtered. The honest consequence, which the UI should not hide: reordering under Column also changes relative position under Assignee. Ties are legal and never repaired; every ordered query sorts by `(sort_order, id)`, and since ids are UUIDv7 the tie-break is creation order.
 
+**Creation.** `createIssue` writes an index after every existing issue in the project, so a new issue is last in that single sequence — and therefore last in whatever column, assignee or priority lane it lands in, which for the board's inline composer puts the new card directly above the composer that made it. It is the only `sort_order` write that does not originate from a drop; both creation paths use it, the inline "Add a card" composer and the Create issue page (§3.5). No existing row is touched.
+
 There is no locking and no live push (out of scope, §1): the last `moveIssue` to reach the server wins outright, and dragging is optimistic against whatever the client last fetched. A losing client only learns its board is stale from the periodic re-query (§4, *Board drift*), never from a rejected write. A re-query landing mid-drag updates the board underneath the drag and the drop then resolves against the fresh neighbours; it never cancels the drag, and the write still wins outright.
 
 ### 3.4 Issue detail
@@ -195,6 +197,8 @@ A full page at `/projects/:projectKey/issues/new`, not a modal — title, descri
 | **Due date** | Optional. |
 
 Project is fixed by the route, not a field on the form. The write is not optimistic: like an issue's key elsewhere on the page, its number is server-assigned under a row lock (§5, *Keys*) and can't be known until the server responds, so the form waits and shows in-flight state on the button.
+
+**Ordering.** Creation places the issue at the foot of the project's single order (§3.3, *Creation*), exactly as the board's inline composer does.
 
 **Activity.** Creation writes one `created` row to the new issue's own activity feed (§3.4) — so an issue's history opens with its own creation rather than starting blank.
 
