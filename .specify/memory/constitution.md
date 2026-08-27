@@ -1,5 +1,26 @@
 <!--
 SYNC IMPACT REPORT
+Version change: 1.0.0 → 1.1.0
+Rationale: MINOR. Technology Constraints is materially expanded — the deferred
+TEST_RUNNER decision is resolved and the project's approved dependency set is recorded.
+No principle is removed, redefined or weakened, so no migration plan is required.
+
+Amendment 1.1.0 — Testing stack and dependency approvals:
+- TODO(TEST_RUNNER) resolved. Vitest adopted as the single test runner, with jsdom,
+  @testing-library/react and @vitejs/plugin-react, all devDependencies.
+- Rationale for departing from the Principle IV-preferred `node:test`: Node strips
+  TypeScript types but does not transform JSX, so `node:test` cannot execute a `.tsx`
+  test at all (verified: ERR_UNKNOWN_FILE_EXTENSION). React Aria keyboard, focus and
+  ARIA behaviour is a stated product requirement, so component behaviour is testable
+  surface the team is accountable for. Adopting `node:test` would have required a second
+  runner for that half, leaving two runners, two assertion APIs and two configs
+  permanently. Vitest covers server logic and component behaviour with one tool and one
+  approval. As devDependencies these carry no production bundle weight.
+- Approved dependency set recorded, closing the gap where libraries the product
+  specification mandates were installed or pending without a recorded approval.
+
+Prior version below.
+
 Version change: (unfilled template) → 1.0.0
 Rationale: Initial ratification. The prior file was the unpopulated scaffold with no
 adopted principles, so this is the first governing version rather than an amendment.
@@ -20,12 +41,7 @@ Added sections:
 
 Removed sections: none
 
-Deferred items:
-- TODO(TEST_RUNNER): Principle VII mandates Red-Green-Refactor, but no test runner is
-  configured in package.json and no `test` script exists. Principle IV requires that the
-  built-in option be preferred and that any new dependency get explicit team approval.
-  The team MUST select a runner (Node's built-in `node:test` is the Principle IV-preferred
-  candidate) and add the `test` script before Principle VII can be enforced in CI.
+Deferred items: none. TODO(TEST_RUNNER) is resolved in 1.1.0.
 -->
 
 # One Team Constitution
@@ -130,6 +146,25 @@ The stack is Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, and
 formatting and linting. Additions to this stack are dependency decisions governed by
 Principle IV and require explicit team approval.
 
+The following dependencies are approved under Principle IV. This list is the record that
+principle requires, and it is the complete set: anything absent from it needs its own
+approval, recorded here by amendment before it is installed.
+
+| Dependency | Purpose | Scope |
+| --- | --- | --- |
+| `drizzle-orm`, `drizzle-kit`, `postgres` | PostgreSQL access, schema and migrations | runtime, tooling |
+| `react-aria-components` | Interaction behaviour, focus management, keyboard support and ARIA semantics | runtime |
+| `@node-rs/argon2` | Argon2id password hashing | runtime |
+| `nodemailer` | Notification mail over operator-supplied SMTP | runtime |
+| `uuidv7` | Time-ordered primary keys | runtime |
+| `fractional-indexing` | Board ordering index | runtime |
+| `@next/env`, `server-only` | Environment loading, server-boundary enforcement | runtime |
+| `vitest`, `jsdom`, `@testing-library/react`, `@vitejs/plugin-react` | Test runner and component testing | development |
+
+Tailwind supplies the visual layer only; interaction behaviour comes from React Aria
+Components. A component is custom-built only where React Aria ships no equivalent, and it
+MUST reproduce the same keyboard, focus and ARIA behaviour.
+
 This Next.js major version carries breaking changes against widely known conventions. Before
 writing framework-level code, contributors and agents MUST consult the version-specific guides
 resolved from `node_modules/next/dist/docs/` rather than relying on recalled API knowledge,
@@ -138,9 +173,18 @@ as directed by `AGENTS.md`.
 The application is server-authoritative: the database is the single copy of the data and every
 read is a query against it. Principle II is enforced at the server boundary on this basis.
 
-TODO(TEST_RUNNER): No test runner is configured. Principle VII cannot be enforced in CI until
-the team selects one and adds a `test` script to `package.json`. Under Principle IV, Node's
-built-in `node:test` is the preferred candidate; anything else requires explicit approval.
+Testing runs on Vitest, invoked by `npm test`. It is the single runner for both server-side
+logic and component behaviour, so the project carries one assertion API and one configuration.
+Component tests run against jsdom with `@testing-library/react`.
+
+Vitest was adopted over the Principle IV-preferred `node:test` because Node strips TypeScript
+types but does not transform JSX, so `node:test` cannot execute a `.tsx` test. Splitting the
+suite across two runners to cover component behaviour was judged a larger and permanent cost
+than one approved devDependency tree that carries no production bundle weight.
+
+Tests that exercise persistence MUST run against a real PostgreSQL instance, not a mocked
+database: invariants are enforced by database constraints and row locks, which a mock cannot
+verify. `docker-compose.yml` provides a suitable instance.
 
 ## Development Workflow
 
@@ -154,6 +198,7 @@ Every change MUST satisfy the following gates before it is committed:
 5. `npm run lint` passes with no findings.
 6. The diff contains no comments, no commented-out code, and no dead code (V, VI).
 7. Every changed line traces to the stated requirement; adjacent code is left untouched.
+8. `npm test` passes with no failing or skipped tests.
 
 Code review MUST verify each gate explicitly. A reviewer who cannot determine from the diff
 that a test was written first MUST request that evidence before approving. Changes that
@@ -180,4 +225,4 @@ Compliance is reviewed on every pull request against the gates in Development Wo
 and contributors MUST read this constitution before beginning work and MUST treat `AGENTS.md`
 as the source of runtime, framework-specific guidance.
 
-**Version**: 1.0.0 | **Ratified**: 2026-08-27 | **Last Amended**: 2026-08-27
+**Version**: 1.1.0 | **Ratified**: 2026-08-27 | **Last Amended**: 2026-08-27
