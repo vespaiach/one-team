@@ -8,9 +8,20 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# Instruction Conflict Guide
+# Authority and precedence
 
-When instructions conflict, follow the user's current request first, then the most specific repository guidance. Do not silently reinterpret product or architecture decisions.
+This file is the primary source for how code is written in this repository. Its **Core principles** section is normative: it supersedes all other development practices, conventions, preferences, and agent defaults. Read it before beginning work.
+
+| Document | Owns | Relationship to this file |
+| --- | --- | --- |
+| `AGENTS.md` (this file) | The seven core principles; runtime, framework and structure guidance; commands | **Primary.** Where anything conflicts with a principle here, this file wins. |
+| [`.specify/memory/constitution.md`](.specify/memory/constitution.md) | Technology Constraints and the approved-dependency table; the eight Development Workflow gates; Governance and the amendment procedure | Cites the principles hosted here; still governs how they are amended, and remains their version record. |
+| [`docs/product/specifications.md`](docs/product/specifications.md) | **What** is built — the product source of truth | Silent on how. |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Decomposition into `R1`…`R12` and their order | Silent on how. |
+
+When instructions conflict, follow the user's current request first, then this file, then the most specific remaining repository guidance. Do not silently reinterpret product or architecture decisions.
+
+Principles are cited by numeral across the repository — `Principle IV`, `(V, VI)`, `(VII)`. The numerals and names below are stable; never renumber them.
 
 # Project overview
 
@@ -21,6 +32,60 @@ When instructions conflict, follow the user's current request first, then the mo
 - ORM and migrations: Drizzle ORM and Drizzle Kit
 - Formatting and linting: Biome
 - Package manager: npm
+
+# Core principles
+
+## I. Component-Driven Architecture
+
+Every user-facing surface MUST be composed from focused components, each owning a single concern; one that takes on unrelated responsibilities MUST be split along them. Shared abstractions MUST NOT be created speculatively — a pattern MUST appear at two call sites before it is extracted into a shared component, hook, or module. Large files MUST be split when size or mixed concerns obscure intent, but splitting MUST stop short of many trivial files. *An abstraction extracted at the first call site guesses a shape the second has not confirmed, and navigation cost is as real as god-file cost.*
+
+## II. Validated Input Boundaries
+
+All user-supplied input MUST be strictly validated and sanitized before it is processed or persisted, at every entry point without exception: form submissions, request bodies, query and route parameters, headers, and any value originating outside the running process. Validation MUST run on the server for every request that reads or writes data, whatever the client also checks. Input that fails validation MUST be rejected with an explicit error; it MUST NOT be silently coerced, truncated, or partially accepted. *The database is the only copy of the data; client-side validation is a UX affordance, trivially bypassed, and never a security control.*
+
+## III. Straightforward Over Clever
+
+Implementations MUST prefer straightforward, readable solutions over clever abstractions. Where two satisfy the same requirement, the one a reader understands without tracing indirection MUST be chosen. Indirection, metaprogramming, dynamic dispatch, and generic machinery MUST be justified by a requirement present in the codebase today, never an anticipated one. *Cleverness trades a small authoring convenience for a comprehension cost paid by every later reader.*
+
+## IV. Built-In Features Over Third-Party Libraries
+
+Built-in language, runtime, and framework features MUST be preferred over third-party libraries; before proposing a dependency, contributors MUST establish that no built-in capability of TypeScript, the Node.js runtime, the Web platform, React, or Next.js covers the need. Installing a new third-party dependency MUST NOT occur without explicit team approval recorded beforehand in the approved-dependency table under Technology constraints below, and this applies to transitive-weight additions and developer tooling alike. *Every dependency is a permanent liability: supply-chain exposure, version drift, bundle weight, and an upgrade obligation the team did not choose.*
+
+## V. Intention-Revealing Code Without Comments
+
+Code MUST communicate intent entirely through structure and intention-revealing naming. Inline comments, block comments, and in-body explanations are prohibited; where code is unclear the remedy is renaming, extraction, or restructuring, never annotation. Machine-readable directives the toolchain requires in order to function, such as type checker or linter suppression pragmas, are not explanatory comments and fall outside this prohibition, but each MUST be the minimum scope that resolves the issue. *A comment is an unverified claim that drifts from the code it describes; naming and structure are checked by the compiler, the linter, and every reader.*
+
+## VI. No Dead Code
+
+Dead code is prohibited: unused imports, variables, functions, types, exports, and unreachable code paths MUST be removed before any commit. Code retained for possible future use MUST be deleted — version control is the mechanism for recovering it. Commented-out code is prohibited under V and is likewise removed rather than preserved. *Dead code is indistinguishable from live code during review and search, so it inflates the apparent surface area of every change and is maintained at real cost.*
+
+## VII. Test-First Development (NON-NEGOTIABLE)
+
+All production code MUST be written using Red-Green-Refactor: a failing test first, then the minimal code that makes it pass, then refactoring while the test stays green. No production code may be written without a corresponding failing test written beforehand, and that test MUST be observed failing for the intended reason before any implementation is written. A test that passes on its first run is not a valid Red step and MUST be corrected before proceeding. *A test written afterwards confirms what the code does, not what it was required to do, and has never been demonstrated to fail.*
+
+# Technology constraints
+
+The stack is Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, and Biome for formatting and linting. Additions to it are dependency decisions governed by Principle IV and require explicit team approval.
+
+The following dependencies are approved under Principle IV. This list is the record that principle requires, and it is the complete set: anything absent from it needs its own approval, recorded here by amendment before it is installed.
+
+| Dependency | Purpose | Scope |
+| --- | --- | --- |
+| `drizzle-orm`, `drizzle-kit`, `postgres` | PostgreSQL access, schema and migrations | runtime, tooling |
+| `react-aria-components` | Interaction behaviour, focus management, keyboard support and ARIA semantics | runtime |
+| `@node-rs/argon2` | Argon2id password hashing | runtime |
+| `nodemailer` | Notification mail over operator-supplied SMTP | runtime |
+| `uuidv7` | Time-ordered primary keys | runtime |
+| `fractional-indexing` | Board ordering index | runtime |
+| `@next/env`, `server-only` | Environment loading, server-boundary enforcement | runtime |
+| `vitest`, `jsdom`, `@testing-library/react`, `@vitejs/plugin-react` | Test runner and component testing | development |
+| `babel-plugin-react-compiler@latest` | React Compiler transform, enabled by `reactCompiler` in `next.config.ts` | development |
+
+`@node-rs/argon2`, `nodemailer`, `uuidv7` and `fractional-indexing` are approved but not yet installed; installing them needs no further approval round.
+
+Tailwind supplies the visual layer only; interaction behaviour comes from React Aria Components. A component is custom-built only where React Aria ships no equivalent, and it MUST reproduce the same keyboard, focus and ARIA behaviour.
+
+The application is server-authoritative: the database is the single copy of the data and every read is a query against it. Principle II is enforced at the server boundary on this basis.
 
 # Architecture notes
 
@@ -33,16 +98,15 @@ These are not discoverable from a single file, and each one causes wrong code if
 - **Locale is resolved on the server and handed to the client.** `src/app/layout.tsx` reads `accept-language` via `await headers()` and sets `lang` and `dir`; `src/app/provider.tsx` passes the same locale to React Aria's `I18nProvider`. Change both together or the server and client will disagree.
 - Only `src/app` and `src/db` exist today. The structure below is the intended shape, not current fact.
 
-# Working principles (follow strictly)
+# Working practices
+
+Operational rules that sit under the core principles above. The former entries for smallest-cohesive-change, reuse-before-abstracting, dependency approval and untrusted input are now Principles III, I, IV and II respectively.
 
 1. Read the relevant route, feature, tests, schema, and configuration before editing.
-2. Make the smallest cohesive change that fully solves the request.
-3. Preserve unrelated work. Never rewrite, remove, or reformat unrelated files.
-4. Reuse established patterns before adding a new abstraction.
-5. Do not install a package or introduce an external service without approval.
-6. Do not claim a check passed unless you ran it and saw it pass.
-7. Treat all client input, Server Action arguments, route parameters, headers, cookies, and external responses as untrusted.
-8. Keep secrets, database access, and authorization logic on the server.
+2. Preserve unrelated work. Never rewrite, remove, or reformat unrelated files; every changed line must trace to the stated requirement.
+3. Do not claim a check passed unless you ran it and saw it pass.
+4. Keep secrets, database access, and authorization logic on the server. `server-only` enforces that boundary — keep the import on new server modules.
+5. Approval under Principle IV means an amendment to the approved-dependency table under Technology constraints, recorded before the package is installed.
 
 # Recommended project structure
 
@@ -168,7 +232,7 @@ These are not discoverable from a single file, and each one causes wrong code if
 - Associate descriptions and validation errors with their controls. Do not convey state or errors through color alone.
 - Test keyboard, pointer, touch-relevant, focus, dismissal, and screen-reader semantics for interactive patterns.
 - Query UI tests by role, label, and visible text before using `data-testid`.
-- Use explicit keyboard events when verifying exact focus order or key behavior. `@react-aria/test-utils` is not installed; adding it needs approval under working principle 5.
+- Use explicit keyboard events when verifying exact focus order or key behavior. `@react-aria/test-utils` is not installed; adding it needs approval under Principle IV.
 - Set the document `lang` and `dir` on the server. When locale is configurable, pass the same locale to a client-side `I18nProvider` to avoid server/client mismatch.
 
 # Security and server boundaries
@@ -183,6 +247,10 @@ These are not discoverable from a single file, and each one causes wrong code if
 
 Use the test tools already present in the repository. Do not introduce a new test framework for a single change.
 
+Testing runs on Vitest, invoked by `npm test`. It is the single runner for both server-side logic and component behaviour, so the project carries one assertion API and one configuration. Component tests run against jsdom with `@testing-library/react`.
+
+Tests that exercise persistence MUST run against a real PostgreSQL instance, not a mocked database: invariants are enforced by database constraints and row locks, which a mock cannot verify.
+
 For each behavior change, cover the lowest useful level:
 
 - Pure domain rules: unit tests
@@ -194,6 +262,23 @@ For each behavior change, cover the lowest useful level:
 Tests should assert user-visible behavior, domain outcomes, database state, and accessibility semantics. Avoid snapshots as the only proof of interactive behavior.
 
 Include failure cases, empty states, pending states, unauthorized access, invalid input, duplicate/concurrent writes, and relevant database constraint failures.
+
+# Change gates
+
+Every change MUST satisfy the following gates before it is committed. They are cited by number; do not renumber them.
+
+1. A test exists that was written before the implementation and was observed failing (VII).
+2. The implementation is the minimal code that makes that test pass, followed by refactoring with the test green (VII).
+3. Every input boundary the change touches validates and sanitizes on the server (II).
+4. No new third-party dependency was added without recorded team approval (IV).
+5. `npm run style-check:ci` passes with no findings.
+6. The diff contains no comments, no commented-out code, and no dead code (V, VI).
+7. Every changed line traces to the stated requirement; adjacent code is left untouched.
+8. `npm test` passes with no failing or skipped tests.
+
+`npm run verify` runs gates 5 and 8 together with the type check and the build, and is what CI runs; it is the practical way to clear both.
+
+Code review MUST verify each gate explicitly. A reviewer who cannot determine from the diff that a test was written first MUST request that evidence before approving. Changes that violate a principle MUST be corrected or accompanied by an approved amendment; they MUST NOT be merged on the strength of an informal exception.
 
 # Commands and validation
 
@@ -214,4 +299,4 @@ Include failure cases, empty states, pending states, unauthorized access, invali
 | Apply migrations | `npm run db:migrate` |
 | Browse the database | `npm run db:studio` |
 
-`npm run build` does not run Biome; only `verify` does. Under working principle 6, do not report a check as passing unless you ran it and saw it pass.
+`npm run build` does not run Biome; only `verify` does. Do not report a check as passing unless you ran it and saw it pass.
