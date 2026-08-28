@@ -4,8 +4,8 @@ const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
   logging: {
-    browserToTerminal: true
-  }
+    browserToTerminal: true,
+  },
 };
 
 export default nextConfig;

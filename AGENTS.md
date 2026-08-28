@@ -15,12 +15,23 @@ When instructions conflict, follow the user's current request first, then the mo
 # Project overview
 
 - Framework: Next.js 16.x using the App Router
-- Language: TypeScript 7 in strict mode
+- Language: TypeScript 5.9 in strict mode
 - UI: React, React Aria library, TailwindCss
 - Database: PostgreSQL 18
 - ORM and migrations: Drizzle ORM and Drizzle Kit
 - Formatting and linting: Biome
 - Package manager: npm
+
+# Architecture notes
+
+These are not discoverable from a single file, and each one causes wrong code if assumed otherwise.
+
+- **React Compiler is enabled** (`next.config.ts`). Do not hand-write `useMemo`, `useCallback`, or `memo`; the compiler inserts memoization. In exchange the Rules of React are load-bearing: no mutating props or state during render, no conditional hooks.
+- **Tailwind CSS v4, configured in CSS.** The theme lives in `@theme inline` inside `src/app/globals.css`, wired through `@tailwindcss/postcss`. There is no `tailwind.config.js`; do not create one.
+- **`server-only` enforces the server boundary.** `src/db/index.ts` imports it, so a Client Component that reaches the database fails the build instead of leaking at runtime. Keep that import on new server modules.
+- **The schema is a single file**, `src/db/schema.ts`, referenced directly by `drizzle.config.ts`. Splitting it means updating that config in the same change.
+- **Locale is resolved on the server and handed to the client.** `src/app/layout.tsx` reads `accept-language` via `await headers()` and sets `lang` and `dir`; `src/app/provider.tsx` passes the same locale to React Aria's `I18nProvider`. Change both together or the server and client will disagree.
+- Only `src/app` and `src/db` exist today. The structure below is the intended shape, not current fact.
 
 # Working principles (follow strictly)
 
@@ -59,9 +70,8 @@ When instructions conflict, follow the user's current request first, then the mo
 │   │       ├── model.ts         # Domain rules and pure transformations
 │   │       └── types.ts         # Feature-owned public types
 │   ├── db/
-│   │   ├── client.ts            # Drizzle client construction
-│   │   └── schema/              # Tables, constraints, relations, and indexes
-│   │       └── index.ts
+│   │   ├── index.ts             # Drizzle client construction; imports "server-only"
+│   │   └── schema.ts            # Tables, constraints, relations, and indexes
 │   ├── lib/                     # Small cross-cutting utilities and infrastructure
 │   │   ├── env.ts
 │   │   └── errors.ts
@@ -158,7 +168,7 @@ When instructions conflict, follow the user's current request first, then the mo
 - Associate descriptions and validation errors with their controls. Do not convey state or errors through color alone.
 - Test keyboard, pointer, touch-relevant, focus, dismissal, and screen-reader semantics for interactive patterns.
 - Query UI tests by role, label, and visible text before using `data-testid`.
-- Use `@react-aria/test-utils` for supported ARIA patterns. Use explicit keyboard events when verifying exact focus order or key behavior.
+- Use explicit keyboard events when verifying exact focus order or key behavior. `@react-aria/test-utils` is not installed; adding it needs approval under working principle 5.
 - Set the document `lang` and `dir` on the server. When locale is configurable, pass the same locale to a client-side `I18nProvider` to avoid server/client mismatch.
 
 # Security and server boundaries
@@ -187,4 +197,21 @@ Include failure cases, empty states, pending states, unauthorized access, invali
 
 # Commands and validation
 
-Use the scripts in `package.json` as the canonical interface. The following names are recommended; update this section if the project uses different names.
+`npm run verify` is the gate: `style-check:ci`, then `type-check`, then `test`, then `build`. CI runs exactly this and nothing else, so green locally means green in CI.
+
+| Task | Command |
+| --- | --- |
+| Dev server | `npm run dev` |
+| Full gate — run before claiming done | `npm run verify` |
+| Auto-fix formatting and lint | `npm run fix` |
+| Style check only | `npm run style-check:local` |
+| Types only | `npm run type-check` |
+| All tests once | `npm test` |
+| Watch mode | `npm run test:watch` |
+| One test file | `npx vitest run src/path/to/thing.test.ts` |
+| One test by name | `npx vitest run -t "rejects an unauthenticated caller"` |
+| Generate a migration after editing `src/db/schema.ts` | `npm run db:generate` |
+| Apply migrations | `npm run db:migrate` |
+| Browse the database | `npm run db:studio` |
+
+`npm run build` does not run Biome; only `verify` does. Under working principle 6, do not report a check as passing unless you ran it and saw it pass.
