@@ -20,14 +20,5 @@ jobs:
 
       - run: npm ci
 
-      - name: Style check
-        run: npm run style-check:ci
-
-      - name: Type check
-        run: npm run type-check
-
-      - name: Test
-        run: npm test
-
-      - name: Build
-        run: npm run build
+      - name: verify
+        run: npm run verify

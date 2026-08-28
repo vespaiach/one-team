@@ -67,46 +67,6 @@ services:
       - proxy
       - internal
 
-  backup:
-    profiles: ["operations"]
-    image: "${APP_IMAGE:?Set APP_IMAGE in .env}"
-    env_file: .env
-    environment:
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      AVATAR_STORAGE_PATH: /var/lib/one-space/avatars
-      BACKUP_DIR: /var/lib/one-space/backups
-      BACKUP_ENCRYPTION_KEY_FILE: /run/secrets/one-space-backup-key
-    command: ["/app/ops/backup.sh"]
-    volumes:
-      - avatar_data:/var/lib/one-space/avatars:ro
-      - ${BACKUP_DIR_HOST:-./backups}:/var/lib/one-space/backups
-      - ${BACKUP_ENCRYPTION_KEY_FILE_HOST:-./secrets/backup.key}:/run/secrets/one-space-backup-key:ro
-    depends_on:
-      postgres:
-        condition: service_started
-    networks:
-      - internal
-    restart: "no"
-
-  restore:
-    profiles: ["operations"]
-    image: "${APP_IMAGE:?Set APP_IMAGE in .env}"
-    env_file: .env
-    environment:
-      RESTORE_DATABASE_URL: ${RESTORE_DATABASE_URL:-}
-      RESTORE_AVATAR_STORAGE_PATH: /var/lib/one-space/restore-avatars
-      SNAPSHOT_FILE: /var/lib/one-space/backups/${RESTORE_SNAPSHOT_FILE:-snapshot-not-selected}
-      BACKUP_ENCRYPTION_KEY_FILE: /run/secrets/one-space-backup-key
-      ALLOW_ISOLATED_RESTORE: ${ALLOW_ISOLATED_RESTORE:-no}
-    command: ["/app/ops/restore.sh"]
-    volumes:
-      - ${BACKUP_DIR_HOST:-./backups}:/var/lib/one-space/backups:ro
-      - ${RESTORE_AVATAR_STORAGE_PATH_HOST:-./restore-avatars}:/var/lib/one-space/restore-avatars
-      - ${BACKUP_ENCRYPTION_KEY_FILE_HOST:-./secrets/backup.key}:/run/secrets/one-space-backup-key:ro
-    networks:
-      - internal
-    restart: "no"
-
 volumes:
   postgres_data:
   avatar_data:

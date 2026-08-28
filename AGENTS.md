@@ -113,7 +113,6 @@ When instructions conflict, follow the user's current request first, then the mo
 
 ## Schema and migrations
 
-- The TypeScript schema under `src/db/schema` is the code-first source of truth.
 - Generate migrations with Drizzle Kit, inspect the generated SQL, and commit the migration plus its metadata.
 - Never edit a migration that may already have run in a shared environment. Add a new migration instead.
 - Do not use `drizzle-kit push` against production. Production changes must use reviewed, versioned migrations.
@@ -162,15 +161,6 @@ When instructions conflict, follow the user's current request first, then the mo
 - Use `@react-aria/test-utils` for supported ARIA patterns. Use explicit keyboard events when verifying exact focus order or key behavior.
 - Set the document `lang` and `dir` on the server. When locale is configurable, pass the same locale to a client-side `I18nProvider` to avoid server/client mismatch.
 
-# Biome
-
-- Biome is the only formatter and linter. Do not add ESLint or Prettier unless the project explicitly changes this decision.
-- Keep `biome.json` as the formatting and linting source of truth. Do not hand-format code against it.
-- Run write-mode formatting only on files in scope so unrelated files are not rewritten.
-- Use `npm run check:local` for local analysis and `npm run check:ci` for the full non-writing CI gate.
-- Next.js 16 does not run linting as part of `next build`; lint and build are separate required checks.
-- Do not suppress a rule globally to resolve one local violation. Fix the code or use the narrowest justified suppression.
-
 # Security and server boundaries
 
 - Validate content type, shape, size, range, and identifiers at every external boundary.
@@ -198,27 +188,3 @@ Include failure cases, empty states, pending states, unauthorized access, invali
 # Commands and validation
 
 Use the scripts in `package.json` as the canonical interface. The following names are recommended; update this section if the project uses different names.
-
-Before finishing a change:
-
-1. Run Biome on the changed files.
-2. Run TypeScript type checking.
-3. Run the smallest relevant test set, then the broader suite when risk warrants it.
-4. Run a production build for changes to routes, configuration, rendering, or the
-   server/client boundary.
-5. For schema changes, inspect the generated SQL and test the migration against an
-   isolated PostgreSQL 18 database.
-6. Report exactly which checks ran and any checks that remain unrun.
-
-# Prohibited shortcuts
-
-- Do not move database access into a Client Component.
-- Do not use `"use client"` on an entire route merely to support one interaction.
-- Do not trust TypeScript types as runtime validation.
-- Do not bypass authorization because the UI hides an action.
-- Do not use a read-then-write sequence as the sole concurrency control.
-- Do not edit deployed migration history.
-- Do not use production data for tests.
-- Do not disable strict TypeScript or Biome rules to hide errors.
-- Do not add ARIA roles to compensate for non-semantic or incorrectly composed UI.
-- Do not report tests, builds, migrations, or accessibility checks that were not run.
