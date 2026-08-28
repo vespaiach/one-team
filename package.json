@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "style-check": "biome check",
-    "type-check": "tsc --noEmit",
+    "type-check": "next typegen && tsc --noEmit",
     "verify": "npm run style-check && npm run type-check && npm run test && npm run build",
     "fix": "biome check --write",
     "db:generate": "drizzle-kit generate",
