@@ -20,8 +20,11 @@ jobs:
 
       - run: npm ci
 
-      - name: Check
-        run: npm run check
+      - name: Style check
+        run: npm run style-check:ci
+
+      - name: Type check
+        run: npm run type-check
 
       - name: Test
         run: npm test
