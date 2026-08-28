@@ -15,7 +15,7 @@ When instructions conflict, follow the user's current request first, then the mo
 # Project overview
 
 - Framework: Next.js 16.x using the App Router
-- Language: TypeScript 5.9 in strict mode
+- Language: TypeScript 7.0 in strict mode
 - UI: React, React Aria library, TailwindCss
 - Database: PostgreSQL 18
 - ORM and migrations: Drizzle ORM and Drizzle Kit
