@@ -62,8 +62,6 @@ The stack is Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, and
 | `vitest`, `jsdom`, `@testing-library/react`, `@vitejs/plugin-react` | Test runner and component testing | development |
 | `babel-plugin-react-compiler@latest` | React Compiler transform, enabled by `reactCompiler` in `next.config.ts` | development |
 
-`@node-rs/argon2`, `nodemailer`, `uuidv7` and `fractional-indexing` are approved but not yet installed; installing them needs no further approval round.
-
 # Architecture notes
 
 These are not discoverable from a single file, and each one causes wrong code if assumed otherwise.
