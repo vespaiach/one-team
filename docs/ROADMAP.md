@@ -124,22 +124,6 @@ The roadmap is accepted, so child specs may be created; none exists yet. `.speci
 
 Not resolved here. An open entry belongs to the specification's owner — or, in §6.2, to whoever owns the document it contradicts — and names the slice it blocks.
 
-### 6.1 Inherited from the requirements index
-
-Full statements in [`docs/product/requirements-index.md` §5](product/requirements-index.md).
-
-| ID | Conflict or gap, in brief | Blocks |
-|---|---|---|
-| `OT-DEC-001` | ~~Column lifecycle activity has no representation in the `activity` schema.~~ **Resolved** 2026-08-29 — the `type` enum widens by five `column_` values and `field` carries the board column's frozen name, leaving the value pair for the transition where the change has one. Indexed as `OT-DATA-019`. | None — closed. |
-| `OT-DEC-002` | ~~`member_added` / `member_removed` value encoding is undefined.~~ **Resolved** 2026-08-29 — the value pair holds that member's display name as a frozen string, exactly as the label types hold a label's, with `field` unused. Indexed as `OT-DATA-020`. | None — closed. |
-| `OT-DEC-003` | ~~"New issue" visibility for a non-member — hidden, disabled-with-reason, or enabled-then-403.~~ **Resolved** 2026-08-29 — every entry point renders disabled with an inline reason naming the project, and the route still answers Forbidden to a caller who reaches it directly; the two are independent. Indexed as `OT-UX-021`. | None — closed. |
-| `OT-DEC-004` | ~~Whether a project-comment notification reaches every admin.~~ **Resolved** 2026-08-29 — it reads `project_member` rows only, a membership list rather than the predicate, so an admin receives one only where they were added explicitly. Indexed as `OT-OPS-014`. | None — closed. |
-| `OT-DEC-005` | ~~Whether editing a comment notifies newly added mentions.~~ **Resolved** 2026-08-29 — an edit writes a `mention` row for each user the saved body names and the replaced body did not, and withdraws nothing. Indexed as `OT-OPS-013`. | None — closed. |
-| `OT-DEC-006` | ~~Whether reset requests share the sign-in throttle counter.~~ **Resolved** 2026-08-27 — sign-in and reset count in separate `auth_attempt` buckets under the same limits, discriminated by a new `flow` column. Indexed as `OT-SEC-017`. | None — closed. |
-| `OT-DEC-007` | ~~"Mark all read" has no mutator in the §2 inventory.~~ **Resolved** 2026-08-29 — `markAllNotificationsRead` joins the requires-only-self row and clears the caller's unread rows in one statement. Indexed as `OT-AUTHZ-016`. | None — closed. |
-| `OT-DEC-008` | ~~The deactivated sign-in message "names an admin" — which admin, and may it be disclosed unauthenticated.~~ **Resolved** 2026-08-27 — it names the operator-configured `SUPPORT_EMAIL` and reads no `user` row, naming none where the operator has set none. Indexed as `OT-SEC-018`. | None — closed. |
-| `OT-DEC-009` | ~~Whether the seeded `ADMIN_PASSWORD` is subject to the password policy.~~ **Resolved** 2026-08-27 — it is; a non-compliant value refuses the seed and names the rule it broke. Indexed as `OT-SEC-019`. | None — closed. |
-
 ### 6.2 Surfaced by this decomposition
 
 RD IDs are append-only: a resolved entry keeps its row and its ID.
