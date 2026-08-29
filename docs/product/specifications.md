@@ -441,7 +441,7 @@ Hand-written, no auth library. One credential: **email + password**.
 
 ## 7. Stack
 
-Next.js 16.x App Router (server components and server actions for reads and writes) · React Aria Components · Tailwind · React Aria Drag and Drop for board · Drizzle ORM + PostgreSQL 18 · `@node-rs/argon2` + `nodemailer` for hand-written auth — no JWT library, sessions are database rows behind a cookie · `uuidv7`, `fractional-indexing`. No sync engine, no client database, no service worker. One in-process interval timer covers the notification-mail retry sweep (§3.6) and the `auth_attempt` sweep (§6) — no queue, no external scheduler. Self-hosted on a single box; SMTP is whatever the operator already runs.
+Next.js 16.x App Router (server components and server actions for reads and writes, sign-in excepted — it is a route handler, §6) · React Aria Components · Tailwind · React Aria Drag and Drop for board · Drizzle ORM + PostgreSQL 18 · `@node-rs/argon2` + `nodemailer` for hand-written auth — no JWT library, sessions are database rows behind a cookie · `uuidv7`, `fractional-indexing`. No sync engine, no client database, no service worker. One in-process interval timer covers the notification-mail retry sweep (§3.6) and the `auth_attempt` sweep (§6) — no queue, no external scheduler. Self-hosted on a single box; SMTP is whatever the operator already runs.
 
 ### Palette
 
