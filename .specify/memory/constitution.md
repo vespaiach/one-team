@@ -53,13 +53,15 @@ and contributors MUST read `AGENTS.md` before beginning work — it carries the 
 this project's runtime and framework guidance — and MUST read this constitution for the decision
 records, the version history, and the amendment procedure.
 
-Amendment **v1.4.1** condensed the runtime and framework guidance `AGENTS.md` hosts, removing
-the restatements of Principles II, IV and VII and the general-practice material an agent applies
-without instruction, and recording two facts the prior text omitted: Biome fails `style-check`
-on unused imports and variables, so gate 5 enforces most of VI mechanically, and `npm test` runs
-with `--passWithNoTests`, so gate 8 is green on an empty suite and is not on its own evidence of
-VII. No principle, technology constraint or change gate changed its obligation, numeral or number,
-which is why this is a PATCH; the team may record it as MINOR instead, since the versioning scheme
-above has no category for a reduction in guidance.
+## Decision records
 
-**Version**: 1.4.1 | **Ratified**: 2026-08-27 | **Last Amended**: 2026-08-28
+*No entries.*
+
+## Version history
+
+| Version | Date | Change |
+| --- | --- | --- |
+
+*No entries.*
+
+**Version**: 1.0.0 | **Ratified**: 2026-08-29 | **Last Amended**: 2026-08-29
