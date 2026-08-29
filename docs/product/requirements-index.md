@@ -144,6 +144,7 @@ No behaviour below is invented. Every row restates something the source states.
 | OT-OPS-013 | `updateComment` MUST notify only the users the saved body names and the replaced body did not, writing one `mention` row each under the rules that apply to a new comment. It MUST NOT write `comment`-type rows, MUST NOT re-notify anyone already holding a row for that comment, and MUST NOT delete or alter a row for a mention the edit removed. | §3.6, §2 | Comments, Notifications |
 | OT-OPS-014 | A project `comment` notification MUST go to that project's `project_member` rows only — a membership list, not the predicate — so an admin receives one only where they were added explicitly. | §3.6, §2 | Notifications |
 | OT-OPS-015 | Deactivated users MUST be excluded from every notification recipient set, so a closed account is neither written a notification row nor mailed. | §3.6, §3.9 | Notifications |
+| OT-OPS-016 | Every write that sets `issue.assignee_id` to a user other than the actor MUST write one `assignment` notification — `createIssue`, `updateIssue` and `moveIssue` alike. A write that leaves the field unchanged, and one that clears it, MUST notify nobody. | §3.6, §3.3, §3.4, §3.5 | Notifications, Issues, Board |
 
 ---
 
@@ -183,11 +184,11 @@ Rules that must hold at all times. `OT-INV-001`–`OT-INV-014` mirror the specif
 | **Profile** | §3.12 | OT-AUTHZ-001, OT-DATA-005, OT-DATA-016, OT-UX-009, OT-UX-010, OT-UX-019, OT-SEC-004, OT-SEC-012 |
 | **Projects (record, status, members, delete)** | §3.7, §3.8, §4 | OT-SCOPE-002, OT-AUTHZ-001, OT-AUTHZ-006, OT-AUTHZ-013, OT-DATA-013, OT-DATA-015, OT-DATA-020, OT-UX-009…012, OT-OPS-010, OT-OPS-011, OT-INV-007, OT-INV-008, OT-INV-016 |
 | **Board columns** | §3.3, §3.8, §4 | OT-AUTHZ-001, OT-DATA-013, OT-DATA-019, OT-UX-012, OT-OPS-010, OT-INV-005, OT-INV-006, OT-INV-012, OT-INV-014, OT-INV-015, OT-INV-016 |
-| **Board (grouping, drag, ordering)** | §3.3, §4 | OT-SCOPE-004, OT-AUTHZ-007, OT-AUTHZ-015, OT-DATA-017, OT-DATA-018, OT-UX-008, OT-UX-021, OT-OPS-008, OT-OPS-009, OT-OPS-011, OT-INV-004 |
-| **Issues (detail, create, edit)** | §3.4, §3.5, §4 | OT-SCOPE-003, OT-AUTHZ-007, OT-AUTHZ-015, OT-DATA-004, OT-DATA-012, OT-DATA-015, OT-DATA-017, OT-DATA-018, OT-UX-008…011, OT-UX-021, OT-INV-001…004, OT-INV-009 |
+| **Board (grouping, drag, ordering)** | §3.3, §4 | OT-SCOPE-004, OT-AUTHZ-007, OT-AUTHZ-015, OT-DATA-017, OT-DATA-018, OT-UX-008, OT-UX-021, OT-OPS-008, OT-OPS-009, OT-OPS-011, OT-OPS-016, OT-INV-004 |
+| **Issues (detail, create, edit)** | §3.4, §3.5, §4 | OT-SCOPE-003, OT-AUTHZ-007, OT-AUTHZ-015, OT-DATA-004, OT-DATA-012, OT-DATA-015, OT-DATA-017, OT-DATA-018, OT-UX-008…011, OT-UX-021, OT-OPS-016, OT-INV-001…004, OT-INV-009 |
 | **Labels** | §3.10, §4 | OT-AUTHZ-010, OT-DATA-013, OT-UX-003, OT-UX-011, OT-UX-012, OT-DATA-007, OT-DATA-008, OT-INV-016 |
 | **Comments and activity** | §3.4, §3.8, §2, §5 | OT-AUTHZ-008, OT-AUTHZ-009, OT-AUTHZ-014, OT-DATA-009…011, OT-DATA-014, OT-DATA-016, OT-DATA-019, OT-DATA-020, OT-UX-013…015, OT-OPS-013, OT-INV-010, OT-INV-011 |
-| **Notifications and email** | §3.6, §5, §7 | OT-AUTHZ-003, OT-AUTHZ-016, OT-DATA-009, OT-DATA-011, OT-OPS-001…007, OT-OPS-013…015, OT-INV-010 |
+| **Notifications and email** | §3.6, §5, §7 | OT-AUTHZ-003, OT-AUTHZ-016, OT-DATA-009, OT-DATA-011, OT-OPS-001…007, OT-OPS-013…016, OT-INV-010 |
 | **Home roll-up** | §3.2 | OT-AUTHZ-002, OT-DATA-004, OT-UX-001, OT-UX-005…007, OT-INV-014 |
 | **Data model and read boundary** | §5 | OT-SCOPE-006, OT-AUTHZ-002, OT-AUTHZ-003, OT-DATA-001…020, all OT-INV |
 | **Deletes and cascades** | §4 | OT-DATA-007, OT-DATA-008, OT-OPS-010, OT-INV-005, OT-INV-006, OT-INV-008, OT-INV-017 |
