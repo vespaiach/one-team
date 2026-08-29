@@ -35,7 +35,7 @@ No behaviour below is invented. Every row restates something the source states.
 |---|---|---|---|
 | OT-AUTHZ-001 | Authorization MUST reduce to two predicates: `isAdmin(user) = user.role === 'admin'` and `isMember(user, project) = isAdmin(user) \|\| hasProjectMemberRow(project.id, user.id)`. Admins MUST be implicit members of every project, so no downstream rule carries an `\|\| isAdmin` branch. | §2 | All mutators |
 | OT-AUTHZ-002 | Every signed-in user MUST be able to read every project, issue, comment and activity row. Membership MUST NOT be used as a visibility boundary. | §2, §3.11, §5 | All reads |
-| OT-AUTHZ-003 | Notifications MUST be readable only by their own `user_id`. This MUST be the only row-level read rule in the system. | §3.6, §5 | Notifications |
+| OT-AUTHZ-003 | Notifications MUST be readable only by their own `user_id`. This MUST be the only row-level read rule in the system. | §3.2, §3.6, §5 | Notifications, Home |
 | OT-AUTHZ-004 | Every mutator MUST enforce its predicate server-side, and the project used for an `isMember` check MUST be derived from the stored row — never from a client-supplied `project_id`. | §2 | All mutators |
 | OT-AUTHZ-005 | The client MAY run the same predicates to disable controls, but the server check MUST be the enforcement and the client check MUST NOT be. | §2 | All screens |
 | OT-AUTHZ-006 | Membership **lists** — the project-details roster, the Accounts project count, the Create-project member chips — MUST read `project_member` rows only, so an admin appears only if explicitly added. | §2, §3.7, §3.8, §3.9 | Projects, Accounts |
@@ -189,7 +189,7 @@ Rules that must hold at all times. `OT-INV-001`–`OT-INV-014` mirror the specif
 | **Labels** | §3.10, §4 | OT-AUTHZ-010, OT-DATA-013, OT-UX-003, OT-UX-011, OT-UX-012, OT-DATA-007, OT-DATA-008, OT-INV-016 |
 | **Comments and activity** | §3.4, §3.8, §2, §5 | OT-AUTHZ-008, OT-AUTHZ-009, OT-AUTHZ-014, OT-DATA-009…011, OT-DATA-014, OT-DATA-016, OT-DATA-019, OT-DATA-020, OT-UX-013…015, OT-OPS-013, OT-INV-010, OT-INV-011 |
 | **Notifications and email** | §3.6, §5, §7 | OT-AUTHZ-003, OT-AUTHZ-016, OT-DATA-009, OT-DATA-011, OT-OPS-001…007, OT-OPS-013…016, OT-INV-010 |
-| **Home roll-up** | §3.2 | OT-AUTHZ-002, OT-DATA-004, OT-UX-001, OT-UX-005…007, OT-INV-014 |
+| **Home roll-up** | §3.2 | OT-AUTHZ-002, OT-AUTHZ-003, OT-DATA-004, OT-UX-001, OT-UX-005…007 |
 | **Data model and read boundary** | §5 | OT-SCOPE-006, OT-AUTHZ-002, OT-AUTHZ-003, OT-DATA-001…020, all OT-INV |
 | **Deletes and cascades** | §4 | OT-DATA-007, OT-DATA-008, OT-OPS-010, OT-INV-005, OT-INV-006, OT-INV-008, OT-INV-017 |
 
