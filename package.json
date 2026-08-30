@@ -13,24 +13,30 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
+    "admin:grant": "node scripts/admin-grant.ts",
+    "admin:deactivate": "node scripts/admin-deactivate.ts",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest"
   },
   "dependencies": {
     "@next/env": "^16.3.3",
+    "@node-rs/argon2": "^2.2.0",
     "drizzle-orm": "^0.45.2",
     "next": "16.3.2",
+    "nodemailer": "^9.0.6",
     "postgres": "^3.4.9",
     "react": "19.2.8",
     "react-aria-components": "^1.20.0",
     "react-dom": "19.2.8",
-    "server-only": "^0.0.1"
+    "server-only": "^0.0.1",
+    "uuidv7": "^1.2.1"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.2",
     "@tailwindcss/postcss": "^4",
     "@testing-library/react": "^16.3.3",
     "@types/node": "^20",
+    "@types/nodemailer": "^8.0.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.1.0",

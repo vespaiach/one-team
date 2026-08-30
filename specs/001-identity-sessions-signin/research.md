@@ -467,10 +467,40 @@ short enough to bound the row. **Assumption, flagged for `/speckit-clarify`.**
 direct connection, so reading it unconditionally would let a caller present a fresh address on every
 attempt and the twenty-per-IP limit would refuse nothing. Defaulting the other way costs an
 installation actually behind a proxy nothing worse than every caller sharing one counter, which is
-visible rather than silent. **Verify before implementing** that Next.js 16 exposes the peer address
-to a Route Handler; `NextRequest.ip` existed in earlier versions and was removed, and this worktree
-has no `node_modules` to check against. If it does not, the value has to come from the runtime
-adapter, and that is a `/speckit-tasks` concern rather than a change to the rule.
+visible rather than silent.
+
+**T007 verification, against the installed `next@16.3.2` package.** A Route Handler has no direct
+API for the connection's peer address. `node_modules/next/dist/docs/01-app/03-api-reference/04-functions/next-request.md`
+records `ip` and `geo` as removed in `v15.0.0`, and the shipped `NextRequest` type
+(`next/dist/server/web/spec-extension/request.d.ts`) declares no replacement — `cookies`, `nextUrl`,
+the deprecated `page` and `ua`, and nothing that reaches a socket.
+
+The only signal a handler can read is the `X-Forwarded-For` request header, and Next's own server
+populates it even with no reverse proxy in front. `next/dist/server/base-server.js` runs, on every
+request, before Proxy and before any route:
+
+```js
+req.headers['x-forwarded-for'] ??= originalRequest?.socket?.remoteAddress;
+```
+
+`??=` only assigns when the header arrives unset. So on a direct connection with no proxy, Next's own
+fallback *is* "the connection's own peer address" — but only because nothing upstream already wrote
+the header. A caller connecting straight to the box can set `X-Forwarded-For` on its own request like
+any other header, and this line will not touch a value that is already present. Reading the header
+unconditionally therefore is exactly as spoofable with `TRUST_PROXY` unset as research already assumed
+it would be — this is not a new hole opened by the mechanism, it is the one `TRUST_PROXY` already
+exists to close.
+
+**Consequence for T049 (Phase 3, out of this worktree's scope).** There is no way to read a
+guaranteed-unspoofable peer address from a Route Handler in Next.js 16 self-hosted with no separate
+adapter; the runtime adapter research.md's Unknowns section anticipated does not exist for the plain
+Node.js standalone server this Dockerfile builds. The rule `FR-016` states is still exactly
+implementable: read `X-Forwarded-For`, taking its **first** hop when `TRUST_PROXY` is unset (Next's
+own fallback is the sole entry in that case) and its **last** hop when `TRUST_PROXY` is set (the
+value the operator's own reverse proxy appended). The unset default is honest about its own limit
+under a direct-exposure deployment with no reverse proxy at all — a scenario the specification does
+not otherwise defend against — and matches Traefik already sitting in front of the box in
+`docker-compose.yml`, where `TRUST_PROXY` is the correct configuration in the first place.
 
 ### C-4. `user.avatar_url` is bounded at 2000
 
