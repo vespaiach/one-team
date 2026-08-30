@@ -10,6 +10,22 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: one_team
+          POSTGRES_PASSWORD: one_team
+          POSTGRES_DB: one_team_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      TEST_DATABASE_URL: postgres://one_team:one_team@localhost:5432/one_team_test
     steps:
       - uses: actions/checkout@v4
 
