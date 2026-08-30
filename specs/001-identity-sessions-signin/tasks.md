@@ -162,21 +162,21 @@ exits non-zero.
 
 ### Tests for User Story 2
 
-- [ ] T055 [P] [US2] Failing test in `src/features/auth/server/bootstrap.test.ts` asserting a first start on an empty database creates exactly one admin carrying `must_change_password`, and that a second start creates nothing whatever the environment says — scenarios 1 and 2 (`FR-045`, `FR-047`, `FR-048`, `SC-002`)
-- [ ] T056 [US2] Extend `src/features/auth/server/bootstrap.test.ts`: a short or blocklisted `ADMIN_PASSWORD` names the failing rule **on standard error**, writes nothing, and exits non-zero before a request is served — scenarios 3 and 4 (`FR-046`, `OT-SEC-019`)
-- [ ] T057 [US2] Extend `src/features/auth/server/bootstrap.test.ts`: an invalid `ADMIN_EMAIL` and an unreachable database each end the process the same way, and an absent `ADMIN_EMAIL` skips seeding and serves normally (`FR-072`, `FR-073`)
-- [ ] T058 [US2] Extend `src/features/auth/server/bootstrap.test.ts`: two processes seeding one empty database concurrently leave one admin, the loser reading the unique-index violation as "already seeded" and continuing to start rather than exiting (`FR-047`, `FR-059`)
-- [ ] T059 [P] [US2] Failing test in `src/instrumentation.test.ts` asserting `register()` runs under the `nodejs` runtime guard only, and that a second call in one process is a no-op (research B-4)
-- [ ] T060 [P] [US2] Failing test in `src/features/auth/components/must-change-password-banner.test.tsx` asserting the banner states the condition, offers no dismiss control, and is not an error or a modal — scenario 5 (`FR-049`, research D-4)
+- [X] T055 [P] [US2] Failing test in `src/features/auth/server/bootstrap.test.ts` asserting a first start on an empty database creates exactly one admin carrying `must_change_password`, and that a second start creates nothing whatever the environment says — scenarios 1 and 2 (`FR-045`, `FR-047`, `FR-048`, `SC-002`)
+- [X] T056 [US2] Extend `src/features/auth/server/bootstrap.test.ts`: a short or blocklisted `ADMIN_PASSWORD` names the failing rule **on standard error**, writes nothing, and exits non-zero before a request is served — scenarios 3 and 4 (`FR-046`, `OT-SEC-019`)
+- [X] T057 [US2] Extend `src/features/auth/server/bootstrap.test.ts`: an invalid `ADMIN_EMAIL` and an unreachable database each end the process the same way, and an absent `ADMIN_EMAIL` skips seeding and serves normally (`FR-072`, `FR-073`)
+- [X] T058 [US2] Extend `src/features/auth/server/bootstrap.test.ts`: two processes seeding one empty database concurrently leave one admin, the loser reading the unique-index violation as "already seeded" and continuing to start rather than exiting (`FR-047`, `FR-059`)
+- [X] T059 [P] [US2] Failing test in `src/instrumentation.test.ts` asserting `register()` runs under the `nodejs` runtime guard only, and that a second call in one process is a no-op (research B-4)
+- [X] T060 [P] [US2] Failing test in `src/features/auth/components/must-change-password-banner.test.tsx` asserting the banner states the condition, offers no dismiss control, and is not an error or a modal — scenario 5 (`FR-049`, research D-4)
 
 ### Implementation for User Story 2
 
-- [ ] T061 [US2] Implement environment validation in `src/features/auth/server/bootstrap.ts` — `APP_URL` present and parseable or the app refuses to start, `ADMIN_EMAIL` a valid address where seeding will run, `ADMIN_PASSWORD` held to the shared policy, and the database reachable (`FR-058`)
-- [ ] T062 [US2] Implement the seed transaction in `src/features/auth/server/bootstrap.ts`: skip whenever any `user` row exists, otherwise write one admin with the address folded and `must_change_password` set, catching a unique violation as "already seeded"
-- [ ] T063 [US2] Wire the refused-first-run-seed event and the non-zero exit into `src/features/auth/server/bootstrap.ts` through `src/features/auth/server/log.ts` (`FR-064`, `FR-046`)
-- [ ] T064 [US2] Implement `src/instrumentation.ts` — `register()` guarded by `NEXT_RUNTIME === 'nodejs'`, dynamically importing bootstrap, with a module-level flag making a second call a no-op
-- [ ] T065 [P] [US2] Implement `src/features/auth/components/must-change-password-banner.tsx`, delivered here and rendered by no page in this slice — it belongs on authenticated screens and R2 builds the slot
-- [ ] T066 [US2] Assert in `src/features/auth/server/bootstrap.test.ts` that seeding is the only path setting `must_change_password`, and that every other account-creating path defaults it to false; the two clearing paths land in `src/features/auth/actions.ts` (T081) and `scripts/admin-grant.ts` (T111) (`FR-048`, `FR-050`)
+- [X] T061 [US2] Implement environment validation in `src/features/auth/server/bootstrap.ts` — `APP_URL` present and parseable or the app refuses to start, `ADMIN_EMAIL` a valid address where seeding will run, `ADMIN_PASSWORD` held to the shared policy, and the database reachable (`FR-058`)
+- [X] T062 [US2] Implement the seed transaction in `src/features/auth/server/bootstrap.ts`: skip whenever any `user` row exists, otherwise write one admin with the address folded and `must_change_password` set, catching a unique violation as "already seeded"
+- [X] T063 [US2] Wire the refused-first-run-seed event and the non-zero exit into `src/features/auth/server/bootstrap.ts` through `src/features/auth/server/log.ts` (`FR-064`, `FR-046`)
+- [X] T064 [US2] Implement `src/instrumentation.ts` — `register()` guarded by `NEXT_RUNTIME === 'nodejs'`, dynamically importing bootstrap, with a module-level flag making a second call a no-op
+- [X] T065 [P] [US2] Implement `src/features/auth/components/must-change-password-banner.tsx`, delivered here and rendered by no page in this slice — it belongs on authenticated screens and R2 builds the slot
+- [X] T066 [US2] Assert in `src/features/auth/server/bootstrap.test.ts` that seeding is the only path setting `must_change_password`, and that every other account-creating path defaults it to false; the two clearing paths land in `src/features/auth/actions.ts` (T081) and `scripts/admin-grant.ts` (T111) (`FR-048`, `FR-050`)
 
 **Checkpoint**: an empty box reaches a signed-in admin using T046…T054 and this phase alone, in under ten minutes — `SC-001`.
 
