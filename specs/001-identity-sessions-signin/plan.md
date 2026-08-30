@@ -69,11 +69,16 @@ no external scheduler (`OT-OPS-003`) · exactly three public routes opened, the 
 until R3 (`OT-SEC-002`) · no route sets a role (`OT-AUTHZ-011`) · no dependency outside AGENTS.md's
 table (IV).
 
-**Scale/Scope**: one installation, one team under twenty people. 58 functional requirements, 5 user
+**Scale/Scope**: one installation, one team under twenty people. 87 functional requirements, 5 user
 stories, 5 tables, 3 screens plus 1 unmounted component, 1 route handler, 2 Server Actions, 2 CLI
 commands.
 
-**Unknowns**: none outstanding. The design brief's six open decisions and its neutral-scale gap are
+**Unknowns**: one, carried into `tasks.md` as T007. Research C-3 flags that `NextRequest.ip` existed in
+earlier Next versions and was removed, so whether a Route Handler can read the connection's peer
+address is unverified — this worktree has no `node_modules` to check against. `FR-016` fixes the rule
+either way; only the mechanism is open, and T049 depends on the answer.
+
+Everything else is settled. The design brief's six open decisions and its neutral-scale gap are
 resolved in [`research.md`](./research.md) §A. `/speckit-clarify` settled nine more on 2026-08-30 —
 the reset-token lifetime, `APP_URL`, the throttle's window model, the seeding-refusal exit, the
 sweep's scope, the 128-character password bound, the `TRUST_PROXY` rule for deriving a caller's
@@ -84,8 +89,8 @@ requirements-quality review that followed closed the remaining 55 items: 29 beca
 Assumptions and one as Out of Scope, and the review found four defects — an unbounded
 `credential.password_hash`, a `throttled` result no screen rendered, `FR-015` forbidding a read
 sign-in cannot avoid, and an address bound stated at one boundary but not the other — each now
-fixed. Research carries one assumption forward, the seven proposed copy strings in A-10. None blocks
-implementation.
+fixed. Research carries one assumption forward, the seven proposed copy strings in A-10. Neither
+those nor T007 block implementation; T007 is settled in Setup, before the task that needs it.
 
 ## Constitution Check
 
@@ -182,11 +187,15 @@ src/
 │       ├── sessions.ts                     issue, refresh, delete-all    FR-016…FR-018, FR-038
 │       ├── reset-tokens.ts                 issue, resolve state, spend   FR-036, FR-037
 │       ├── admin-guard.ts                  the active-admin row lock     FR-056
-│       ├── bootstrap.ts                    seed + the sweep timer        FR-044…FR-048
+│       ├── bootstrap.ts                    seed + start the sweep        FR-045…FR-048
+│       ├── sweep.ts                        the three deletes             FR-044, FR-069…FR-071
+│       ├── input.ts                        address and password bounds   FR-063, FR-006
+│       ├── log.ts                          the five enumerated events    FR-064
 │       └── mail.ts                         the reset link over SMTP      FR-033, FR-058
 ├── db/
 │   ├── schema.ts                           EDIT — five tables in, setup_check out  FR-001…FR-008
 │   ├── touched.ts                          the one updated_at helper     FR-003
+│   ├── test-database.ts                    the real-PostgreSQL harness   research D-2
 │   └── index.ts                            unchanged
 ├── instrumentation.ts                      register() — validate, seed, start the timer
 └── proxy.ts                                fast unauthenticated redirect, NOT authorization (B-3)
@@ -196,7 +205,7 @@ scripts/
 └── admin-deactivate.ts                     npm run admin:deactivate      FR-054, FR-056
 
 drizzle/                                    the generated migration + metadata, committed
-vitest.config.ts                            EDIT — two projects, node and jsdom (D-1)
+vitest.config.mts                           EDIT — two projects, node and jsdom (D-1)
 package.json                                EDIT — three deps, two admin scripts
 ```
 
@@ -234,4 +243,4 @@ application's mutations". AGENTS.md names it as the single exception, and the sp
 | 0 — Outline & research | [`research.md`](./research.md) | complete — every unknown resolved, three assumptions carried forward |
 | 1 — Design & contracts | [`data-model.md`](./data-model.md), [`contracts/`](./contracts/), [`quickstart.md`](./quickstart.md) | complete |
 | Constitution re-check | this file | complete — pass, three items in Complexity Tracking |
-| 2 — Tasks | `tasks.md` | **not created by this command** — run `/speckit-tasks` |
+| 2 — Tasks | [`tasks.md`](./tasks.md) | complete — 120 tasks over eight phases, every FR and SC cited |
