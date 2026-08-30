@@ -158,7 +158,8 @@ mutator shares this exact function** — the roadmap records that reach-back exp
 
 ## Bootstrap and the interval timer
 
-`src/instrumentation.ts` and `src/features/auth/server/bootstrap.ts`. `FR-044`…`FR-048`,
+`src/instrumentation.ts`, `src/features/auth/server/bootstrap.ts` and
+`src/features/auth/server/sweep.ts`. `FR-044`…`FR-048`,
 `OT-OPS-003`, `OT-SEC-014`, `OT-SEC-019`.
 
 `register()` runs once per server instance, guarded by `NEXT_RUNTIME === 'nodejs'`, and does three
@@ -177,8 +178,12 @@ things in order:
    on starting rather than exiting (`FR-047`, `FR-059`).
    Otherwise write one admin carrying `must_change_password` (`FR-045`, `FR-048`), with the address
    validated and folded to lower case (spec assumption).
-3. **Start the sweep.** One `setInterval` running three deletes, each matching only rows that are
-   already dead (`FR-044`):
+3. **Start the sweep.** One `setInterval` calling `sweep.ts`, which runs three deletes, each matching
+   only rows that are already dead (`FR-044`). The three statements live in their own module rather
+   than inside `bootstrap.ts`: the sweep is a distinct concern from validating an environment and
+   seeding an admin, it is the one part of startup with an invariant worth testing on its own, and
+   R11 adds the notification-mail retry beside it. Principle I's two-call-site rule governs shared
+   abstractions; this is a split along a concern, which the same principle requires:
 
    ```sql
    DELETE FROM auth_attempt WHERE attempted_at < now() - interval '15 minutes';

@@ -40,7 +40,7 @@ the plan was written on. Neither changes a requirement.
    are the decision; T008 brings the two documents to them.
 2. **The declared font is never loaded.** `globals.css` sets `--font-sans: Archivo` while
    `src/app/layout.tsx` loads Geist through `next/font`. Geist is downloaded and unused and Archivo
-   resolves to the fallback stack — research A-9's bug in a new form. T031 closes it.
+   resolves to the fallback stack — research A-9's bug in a new form. T033 closes it.
 
 `vitest.config.ts` in the plan's structure diagram is `vitest.config.mts` on disk; tasks name the
 real file.
@@ -86,7 +86,7 @@ real file.
 - [ ] T017 [P] Failing test in `src/features/auth/server/crypto.test.ts` asserting `hashPassword` sets `memoryCost: 19456`, `timeCost: 2`, `parallelism: 1` explicitly, that `issueToken()` draws 32 bytes from the CSPRNG and returns a 64-character SHA-256 hex digest, and that a stored hash round-trips through `verifyPassword` (`FR-028`, `FR-029`, research B-10)
 - [ ] T018 Implement `src/features/auth/server/crypto.ts` with `hashPassword`, `verifyPassword`, `issueToken` and `digestToken`
 - [ ] T019 [P] Failing test in `src/features/auth/server/password-policy.test.ts` asserting eleven characters fails `too_short`, 129 fails `too_long`, a blocklisted value fails `blocklisted` whatever its case, twelve compliant characters pass, and no composition rule is applied (`FR-026`, `FR-027`)
-- [ ] T020 Implement `src/features/auth/server/password-policy.ts`, loading `common-passwords.txt` once at module load into a `Set` (research B-9)
+- [ ] T020 Implement `assertPasswordPolicy()` in `src/features/auth/server/password-policy.ts` — the name [`contracts/http-and-actions.md`](./contracts/http-and-actions.md) fixes — loading `common-passwords.txt` once at module load into a `Set` (research B-9)
 - [ ] T021 [P] Failing test in `src/features/auth/server/input.test.ts` asserting an address over 200 characters, a malformed address and a password over 128 characters are each refused before any database lookup, any hash and any attempt row, and that a valid address is folded with the runtime's Unicode-aware lower-casing (`FR-063`, `FR-006`)
 - [ ] T022 Implement `src/features/auth/server/input.ts` — the address and password boundary parser the five entry points share
 - [ ] T023 [P] Failing test in `src/features/auth/server/projections.test.ts` asserting `publicUser` carries exactly its seven columns, `accountUser` adds exactly the four contact fields, and neither selects a password (`FR-004`, `OT-DATA-005`)
@@ -96,11 +96,14 @@ real file.
 - [ ] T027 [P] Failing test in `src/features/auth/server/log.test.ts` asserting the module writes exactly the five events `FR-064` enumerates, each carrying the event, the instant and the address or IP it concerned, and that no line can carry a password, a hash, a session token or a reset token (`FR-064`, `SC-010`)
 - [ ] T028 Implement `src/features/auth/server/log.ts` with one writer per enumerated event
 
+- [ ] T029 [P] Failing test in `src/features/auth/server/sessions.test.ts` asserting a sign-in writes one row with `expires_at = now + 30 days`, stores only the digest — a row behind an opaque cookie, never a claim inside a signed token — and that any use slides `last_seen_at` and `expires_at` forward, so a holder who uses the product once in any thirty days is never asked again — and that `deleteAllSessionsForUser()` removes every row for one user and none for any other — US1 scenarios 1 and 7, US3 scenario 10 (`FR-010`, `FR-016`, `FR-017`, `FR-038`, `FR-054`, `SC-004`, `SC-008`)
+- [ ] T030 Implement `src/features/auth/server/sessions.ts` — issue, resolve by digest, the sliding refresh, and `deleteAllSessionsForUser()`. Foundational rather than US1 because three stories call it: US1 issues and resolves, US3 deletes every session on a completed reset, and US5 deletes them on deactivation — Principle I's two-call-site rule met by fact
+
 ### The common layout
 
-- [ ] T029 [P] Failing test in `src/app/(auth)/layout.test.tsx` asserting the layout renders a `<main>` landmark carrying the page background, the app mark and the card, and that it is a Server Component holding no state and importing nothing from `react-aria-components` (research A-1, A-2, `OT-UX-001`)
-- [ ] T030 Implement `src/app/(auth)/layout.tsx` per [`contracts/auth-layout.md`](./contracts/auth-layout.md)'s structural contract, using the committed tokens — `--color-page`, `--color-surface`, `--color-border`, `--size-card` — and `py-16` on the centring container so a tall state scrolls rather than centring off-screen
-- [ ] T031 Close the font gap in `src/app/layout.tsx` and `src/app/globals.css`: load Archivo through `next/font/google` and remove the unused Geist wiring, so the `--font-sans` the committed tokens declare is the font that actually loads (research A-9, restated by reconciliation 2 above)
+- [ ] T031 [P] Failing test in `src/app/(auth)/layout.test.tsx` asserting the layout renders a `<main>` landmark carrying the page background, the app mark and the card, and that it is a Server Component holding no state and importing nothing from `react-aria-components` (research A-1, A-2, `OT-UX-001`)
+- [ ] T032 Implement `src/app/(auth)/layout.tsx` per [`contracts/auth-layout.md`](./contracts/auth-layout.md)'s structural contract, using the committed tokens — `--color-page`, `--color-surface`, `--color-border`, `--size-card` — and `py-16` on the centring container so a tall state scrolls rather than centring off-screen
+- [ ] T033 Close the font gap in `src/app/layout.tsx` and `src/app/globals.css`: load Archivo through `next/font/google` and remove the unused Geist wiring, so the `--font-sans` the committed tokens declare is the font that actually loads (research A-9, restated by reconciliation 2 above)
 
 **Checkpoint**: the schema, the shared modules and the layout exist; user stories can begin.
 
@@ -114,27 +117,25 @@ for thirty days of use.
 **Independent Test**: seed one account and its credential directly in the test database, then drive
 `/signin` — correct credentials produce a session and land on `/home`; a wrong password and an
 unknown address produce one identical message; a request to an authenticated route without a cookie
-redirects to `/signin`. No other story needs to exist.
+redirects to `/signin`. No other story needs to exist; `sessions.ts` is Foundational (T029, T030).
 
 ### Tests for User Story 1
 
-- [ ] T032 [P] [US1] Failing test in `src/features/auth/server/sessions.test.ts` asserting a sign-in writes one row with `expires_at = now + 30 days`, stores only the digest — a row behind an opaque cookie, never a claim inside a signed token — and that any use slides `last_seen_at` and `expires_at` forward, so a holder who uses the product once in any thirty days is never asked again — scenarios 1 and 7 (`FR-010`, `FR-016`, `FR-017`, `SC-004`)
-- [ ] T033 [P] [US1] Failing test in `src/features/auth/server/actor.test.ts` asserting `loadActor()` reads the session row and the user's `role` and `deactivated_at` in one query, holds no client-side copy of any of it, and resolves to no actor for a cookie naming no row, a row past `expires_at` and a user whose `deactivated_at` is set — scenarios 6 and 8 (`FR-009`, `FR-020`, `FR-021`)
-- [ ] T034 [US1] Extend `src/features/auth/server/actor.test.ts`: `requireActor()` redirects to `/signin` and never reaches the Forbidden screen, and two calls in one render pass share one query while two requests do not — scenario 9 (`FR-022`, `SC-011`, research B-2)
-- [ ] T035 [P] [US1] Failing test in `src/app/api/auth/signin/route.test.ts` asserting `ok` writes one session row, sets `one_team_session` with `HttpOnly`, `SameSite=Lax`, `Path=/`, `Max-Age=2592000` and `Secure` only in production, and that the caller lands on `/home` — scenario 1 (`FR-016`, `FR-017`, `FR-019`, research B-7)
-- [ ] T036 [US1] Extend `src/app/api/auth/signin/route.test.ts`: a wrong password, an unknown address and an account with no credential row return byte-identical `rejected` bodies, and each performs one Argon2id verification so the three cost the same — scenarios 2 and 3 (`FR-013`, `FR-062`, `SC-003`)
-- [ ] T037 [US1] Extend `src/app/api/auth/signin/route.test.ts`: correct credentials for a deactivated account return `deactivated` carrying `SUPPORT_EMAIL`, and `null` where the operator configured none — scenarios 4 and 5 (`FR-014`); and a deactivated account with a *wrong* password returns `rejected`, per the spec's edge case
-- [ ] T038 [US1] Extend `src/app/api/auth/signin/route.test.ts`: a foreign or absent `Origin` is `403 forbidden`, a malformed body is `400 invalid_request`, and an over-long address or password is refused before any lookup — scenario 10 (`FR-023`, `FR-063`)
-- [ ] T039 [US1] Extend `src/app/api/auth/signin/route.test.ts`: a caller who already holds a valid session gets a second session rather than a reused, extended or deleted one, and no limit is placed on how many a user holds (`FR-060`, `FR-061`)
-- [ ] T040 [P] [US1] Failing test in `src/features/auth/components/sign-in-form.test.tsx` covering the form, rejected, deactivated with and without a contact, and in-flight states, and asserting the rejected and deactivated states are carried by the same element in the same position — a visual difference is as much an oracle as a wording one (`FR-012`, `SC-003`)
-- [ ] T041 [US1] Extend `src/features/auth/components/sign-in-form.test.tsx` for the interaction contract: per-field validation on blur with the submit control never disabled, validation also running on submit for a field never blurred, focus moving to the first invalid field with no error summary (`FR-081`), the outcome announced when it appears (`FR-082`), keyboard-only completion (`FR-083`), a long address wrapping rather than overflowing (`FR-084`), submit-time validation of a never-blurred field (`FR-085`), and no animation (`FR-086`) — `FR-027`
-- [ ] T042 [P] [US1] Failing test in `src/app/(auth)/signin/page.test.tsx` asserting the page sets its own document title, carries exactly one `<h1>`, renders no sign-up link and no "remember me" control, renders the form to a caller who already holds a session, and honours `?reset=done` and no other query parameter (`FR-012`, `FR-060`, `FR-079`)
-- [ ] T043 [P] [US1] Failing test in `src/proxy.test.ts` asserting an absent session cookie on a protected path redirects to `/signin`, that exactly `/signin`, `/reset`, `/api/auth/signin`, `/_next/*` and static assets are exempt — the three public routes this feature opens and no fourth, invitation acceptance staying closed until R3 — and that proxy reads no database (`FR-011`, research B-3)
-- [ ] T044 [P] [US1] Failing test in `src/app/page.test.tsx` asserting `/` redirects to `/home` (research B-6)
+- [ ] T034 [P] [US1] Failing test in `src/features/auth/server/actor.test.ts` asserting `loadActor()` reads the session row and the user's `role` and `deactivated_at` in one query, holds no client-side copy of any of it, and resolves to no actor for a cookie naming no row, a row past `expires_at` and a user whose `deactivated_at` is set — scenarios 6 and 8 (`FR-009`, `FR-020`, `FR-021`)
+- [ ] T035 [US1] Extend `src/features/auth/server/actor.test.ts`: `requireActor()` redirects to `/signin` and never reaches the Forbidden screen, and two calls in one render pass share one query while two requests do not — scenario 9 (`FR-022`, `SC-011`, research B-2)
+- [ ] T036 [P] [US1] Failing test in `src/app/api/auth/signin/route.test.ts` asserting `ok` writes one session row, sets `one_team_session` with `HttpOnly`, `SameSite=Lax`, `Path=/`, `Max-Age=2592000` and `Secure` only in production, and that the caller lands on `/home` — scenario 1 (`FR-016`, `FR-017`, `FR-019`, research B-7)
+- [ ] T037 [US1] Extend `src/app/api/auth/signin/route.test.ts`: a wrong password, an unknown address and an account with no credential row return byte-identical `rejected` bodies, and each performs one Argon2id verification so the three cost the same — scenarios 2 and 3 (`FR-013`, `FR-062`, `SC-003`)
+- [ ] T038 [US1] Extend `src/app/api/auth/signin/route.test.ts`: correct credentials for a deactivated account return `deactivated` carrying `SUPPORT_EMAIL`, and `null` where the operator configured none — scenarios 4 and 5 (`FR-014`); and a deactivated account with a *wrong* password returns `rejected`, per the spec's edge case
+- [ ] T039 [US1] Extend `src/app/api/auth/signin/route.test.ts`: a foreign or absent `Origin` is `403 forbidden`, a malformed body is `400 invalid_request`, and an over-long address or password is refused before any lookup — scenario 10 (`FR-023`, `FR-063`)
+- [ ] T040 [US1] Extend `src/app/api/auth/signin/route.test.ts`: a caller who already holds a valid session gets a second session rather than a reused, extended or deleted one, and no limit is placed on how many a user holds (`FR-060`, `FR-061`)
+- [ ] T041 [P] [US1] Failing test in `src/features/auth/components/sign-in-form.test.tsx` covering the form, rejected, deactivated with and without a contact, and in-flight states, and asserting the rejected and deactivated states are carried by the same element in the same position — a visual difference is as much an oracle as a wording one (`FR-012`, `SC-003`)
+- [ ] T042 [US1] Extend `src/features/auth/components/sign-in-form.test.tsx` for the interaction contract: per-field validation on blur with the submit control never disabled, validation also running on submit for a field never blurred, focus moving to the first invalid field with no error summary (`FR-081`), the outcome announced when it appears (`FR-082`), keyboard-only completion (`FR-083`), a long address wrapping rather than overflowing (`FR-084`), submit-time validation of a never-blurred field (`FR-085`), and no animation (`FR-086`) — `FR-027`
+- [ ] T043 [P] [US1] Failing test in `src/app/(auth)/signin/page.test.tsx` asserting the page sets its own document title, carries exactly one `<h1>`, renders no sign-up link and no "remember me" control, renders the form to a caller who already holds a session, and honours `?reset=done` and no other query parameter (`FR-012`, `FR-060`, `FR-079`)
+- [ ] T044 [P] [US1] Failing test in `src/proxy.test.ts` asserting an absent session cookie on a protected path redirects to `/signin`, that exactly `/signin`, `/reset`, `/api/auth/signin`, `/_next/*` and static assets are exempt — the three public routes this feature opens and no fourth, invitation acceptance staying closed until R3 — and that proxy reads no database (`FR-011`, research B-3)
+- [ ] T045 [P] [US1] Failing test in `src/app/page.test.tsx` asserting `/` redirects to `/home` (research B-6)
 
 ### Implementation for User Story 1
 
-- [ ] T045 [US1] Implement `src/features/auth/server/sessions.ts` — issue, resolve by digest, and the sliding refresh
 - [ ] T046 [US1] Implement `src/features/auth/server/actor.ts` — `loadActor()` wrapped in React's `cache()` for per-render memoization only, and `requireActor()`; never called from a layout (research B-2)
 - [ ] T047 [US1] Implement `POST /api/auth/signin` in `src/app/api/auth/signin/route.ts`, validating in the fixed order origin → shape → address form → credentials, and returning the `SignInResult` union whose `rejected` variant has no shape in which a wrong password could be distinguished from an unknown address
 - [ ] T048 [US1] Add the fixed-dummy-hash verification to the unknown-address and no-credential-row paths in `src/app/api/auth/signin/route.ts`, so all three rejections cost one Argon2id verification (`FR-013`, `FR-062`)
@@ -175,9 +176,9 @@ exits non-zero.
 - [ ] T063 [US2] Wire the refused-first-run-seed event and the non-zero exit into `src/features/auth/server/bootstrap.ts` through `src/features/auth/server/log.ts` (`FR-064`, `FR-046`)
 - [ ] T064 [US2] Implement `src/instrumentation.ts` — `register()` guarded by `NEXT_RUNTIME === 'nodejs'`, dynamically importing bootstrap, with a module-level flag making a second call a no-op
 - [ ] T065 [P] [US2] Implement `src/features/auth/components/must-change-password-banner.tsx`, delivered here and rendered by no page in this slice — it belongs on authenticated screens and R2 builds the slot
-- [ ] T066 [US2] Assert in `src/features/auth/server/bootstrap.test.ts` that seeding is the only path setting `must_change_password`, and that every other account-creating path defaults it to false; the two clearing paths land in `src/features/auth/actions.ts` (T082) and `scripts/admin-grant.ts` (T112) (`FR-048`, `FR-050`)
+- [ ] T066 [US2] Assert in `src/features/auth/server/bootstrap.test.ts` that seeding is the only path setting `must_change_password`, and that every other account-creating path defaults it to false; the two clearing paths land in `src/features/auth/actions.ts` (T081) and `scripts/admin-grant.ts` (T111) (`FR-048`, `FR-050`)
 
-**Checkpoint**: an empty box reaches a signed-in admin using T045…T054 and this phase alone — `SC-001`.
+**Checkpoint**: an empty box reaches a signed-in admin using T046…T054 and this phase alone, in under ten minutes — `SC-001`.
 
 ---
 
@@ -192,7 +193,7 @@ session is dead and the new password signs in.
 ### Tests for User Story 3
 
 - [ ] T067 [P] [US3] Failing test in `src/features/auth/server/reset-tokens.test.ts` asserting a token is 32 CSPRNG bytes stored as a digest, expires one hour after issue, and resolves to `valid`, `used`, `expired` or `unknown` — with used checked before expired, so a token that is both reports used (`FR-033`, `FR-036`, research C-8)
-- [ ] T068 [US3] Extend `src/features/auth/server/reset-tokens.test.ts`: spending is the conditional `UPDATE … WHERE used_at IS NULL`, zero rows affected rolls the whole transaction back, and two concurrent spends of one token leave exactly one winner — scenario 7 (`FR-037`)
+- [ ] T068 [US3] Extend `src/features/auth/server/reset-tokens.test.ts`: spending is the conditional `UPDATE … WHERE used_at IS NULL`, zero rows affected rolls the whole transaction back, that two concurrent spends of one token leave exactly one winner, and that spending one of **two outstanding tokens for the same address leaves the other usable** until it expires or is used — the specification withdraws no sibling — scenario 7 (`FR-037`, spec Assumptions)
 - [ ] T069 [P] [US3] Failing test in `src/features/auth/actions.test.ts` asserting `requestPasswordReset` returns the same `sent` answer for a known and an unknown address, mails only where the address belongs to an account that may sign in, and never changes its answer because mail failed — scenarios 1 and 2 (`FR-031`, `FR-033`, `SC-003`)
 - [ ] T070 [US3] Extend `src/features/auth/actions.test.ts`: `completePasswordReset` returns `mismatch` on differing fields and `policy` naming the one rule that failed, writing nothing in either case — scenarios 4 and 5 (`FR-035`, `FR-027`)
 - [ ] T071 [US3] Extend `src/features/auth/actions.test.ts`: a completed reset writes the hash, clears `must_change_password`, deletes **every** session for that user including the requesting one, and redirects to `/signin?reset=done`, all in one transaction — scenarios 6 and 10 (`FR-038`, `FR-050`, `SC-008`)
@@ -206,13 +207,12 @@ session is dead and the new password signs in.
 ### Implementation for User Story 3
 
 - [ ] T078 [US3] Implement `src/features/auth/server/reset-tokens.ts` — issue, resolve state, and the atomic spend
-- [ ] T079 [US3] Add `deleteAllSessionsForUser()` to `src/features/auth/server/sessions.ts`, shared with `admin:deactivate` in US5 (`FR-038`, `FR-054`)
-- [ ] T080 [US3] Implement `src/features/auth/server/mail.ts` — one `nodemailer` transport from operator-supplied SMTP, sending the reset link and nothing else in this feature
-- [ ] T081 [US3] Implement `requestPasswordReset` in `src/features/auth/actions.ts`, the module carrying top-level `"use server"`
-- [ ] T082 [US3] Implement `completePasswordReset` in `src/features/auth/actions.ts` — one transaction spending the token, writing the hash, clearing the flag and deleting every session
-- [ ] T083 [P] [US3] Implement `src/features/auth/components/reset-request-form.tsx`
-- [ ] T084 [P] [US3] Implement `src/features/auth/components/change-password-form.tsx` with the copy research A-10 proposes for the three token states
-- [ ] T085 [US3] Implement `src/app/(auth)/reset/page.tsx`, discriminating on `searchParams.token` and resolving the state server-side
+- [ ] T079 [US3] Implement `src/features/auth/server/mail.ts` — one `nodemailer` transport from operator-supplied SMTP, sending the reset link and nothing else in this feature
+- [ ] T080 [US3] Implement `requestPasswordReset` in `src/features/auth/actions.ts`, the module carrying top-level `"use server"`
+- [ ] T081 [US3] Implement `completePasswordReset` in `src/features/auth/actions.ts` — one transaction spending the token, writing the hash, clearing the flag and deleting every session
+- [ ] T082 [P] [US3] Implement `src/features/auth/components/reset-request-form.tsx`
+- [ ] T083 [P] [US3] Implement `src/features/auth/components/change-password-form.tsx` with the copy research A-10 proposes for the three token states
+- [ ] T084 [US3] Implement `src/app/(auth)/reset/page.tsx`, discriminating on `searchParams.token` and resolving the state server-side
 
 **Checkpoint**: the forgotten-password loop runs end to end — `SC-008`, `SC-009`.
 
@@ -232,28 +232,28 @@ sign-in handler and the reset action those stories delivered.
 
 ### Tests for User Story 4
 
-- [ ] T086 [P] [US4] Failing test in `src/features/auth/server/throttle.test.ts` asserting refusal at five for `kind = 'email'` and twenty for `kind = 'ip'`, counted over fifteen minutes for one `(flow, kind, subject)` taken together, each refusal stating the remaining time — scenarios 1 and 2 (`FR-039`, `FR-042`, `SC-005`)
-- [ ] T087 [US4] Extend `src/features/auth/server/throttle.test.ts`: `retryAfterSeconds` derives from the **oldest** attempt still inside the window, and where both limits hold the **later** of the two clearing instants is reported (`FR-039`, `FR-068`)
-- [ ] T088 [US4] Extend `src/features/auth/server/throttle.test.ts`: the `signin` and `reset` flows never share a counter, in both directions — scenarios 3 and 4 (`FR-040`, `SC-007`)
-- [ ] T089 [US4] Extend `src/features/auth/server/throttle.test.ts`: a refused attempt records **no** row, so a refusal cannot extend the window that produced it (`FR-041`)
-- [ ] T090 [US4] Extend `src/features/auth/server/throttle.test.ts`: a successful sign-in clears that address's `('signin','email')` rows only, leaving its reset rows and the originating IP's rows — scenario 5 (`FR-018`)
-- [ ] T091 [US4] Extend `src/features/auth/server/throttle.test.ts`: two transactions racing the fifth failure serialize on `pg_advisory_xact_lock` and cannot both pass — the spec's edge case, run against real PostgreSQL (research C-5)
-- [ ] T092 [US4] Extend `src/features/auth/server/throttle.test.ts`: counters survive a restart, since they are rows — scenario 6 (`FR-043`, `SC-006`)
-- [ ] T093 [P] [US4] Failing test in `src/features/auth/server/sweep.test.ts` asserting the three deletes match only rows already dead, that the sweep and a live sign-in touching `auth_attempt` at once cannot remove a row inside the live window, and that no live behaviour changes when it runs — scenario 7 (`FR-044`, research C-6)
-- [ ] T094 [US4] Extend `src/features/auth/server/sweep.test.ts`: the interval is five minutes and not configurable, a sweep that throws is logged and does **not** stop the timer, and `SIGTERM` clears the timer while letting a running sweep finish (`FR-069`, `FR-070`, `FR-071`)
-- [ ] T095 [US4] Extend `src/app/api/auth/signin/route.test.ts`: a refused attempt returns `throttled` with `retryAfterSeconds` and performs **no** credential check, and a reset request for an address that never had an account still records a row — scenario 8 (`FR-032`, `FR-039`)
-- [ ] T096 [P] [US4] Failing test asserting the sign-in screen renders `retryAfterSeconds` as whole minutes **rounded up**, so a refusal in force never reads as no wait at all, in `src/features/auth/components/sign-in-form.test.tsx` (`FR-039`, research A-10)
-- [ ] T097 [P] [US4] Failing test asserting the reset-request screen renders its own throttled state, in `src/features/auth/components/reset-request-form.test.tsx` (`FR-087`)
+- [ ] T085 [P] [US4] Failing test in `src/features/auth/server/throttle.test.ts` asserting refusal at five for `kind = 'email'` and twenty for `kind = 'ip'`, counted over fifteen minutes for one `(flow, kind, subject)` taken together, each refusal stating the remaining time — scenarios 1 and 2 (`FR-039`, `FR-042`, `SC-005`)
+- [ ] T086 [US4] Extend `src/features/auth/server/throttle.test.ts`: `retryAfterSeconds` derives from the **oldest** attempt still inside the window, and where both limits hold the **later** of the two clearing instants is reported (`FR-039`, `FR-068`)
+- [ ] T087 [US4] Extend `src/features/auth/server/throttle.test.ts`: the `signin` and `reset` flows never share a counter, in both directions — scenarios 3 and 4 (`FR-040`, `SC-007`)
+- [ ] T088 [US4] Extend `src/features/auth/server/throttle.test.ts`: a refused attempt records **no** row, so a refusal cannot extend the window that produced it (`FR-041`)
+- [ ] T089 [US4] Extend `src/features/auth/server/throttle.test.ts`: a successful sign-in clears that address's `('signin','email')` rows only, leaving its reset rows and the originating IP's rows — scenario 5 (`FR-018`)
+- [ ] T090 [US4] Extend `src/features/auth/server/throttle.test.ts`: two transactions racing the fifth failure serialize on `pg_advisory_xact_lock` and cannot both pass — the spec's edge case, run against real PostgreSQL (research C-5)
+- [ ] T091 [US4] Extend `src/features/auth/server/throttle.test.ts`: counters survive a restart, since they are rows — scenario 6 (`FR-043`, `SC-006`)
+- [ ] T092 [P] [US4] Failing test in `src/features/auth/server/sweep.test.ts` asserting the three deletes match only rows already dead, that the sweep and a live sign-in touching `auth_attempt` at once cannot remove a row inside the live window, and that no live behaviour changes when it runs — scenario 7 (`FR-044`, research C-6)
+- [ ] T093 [US4] Extend `src/features/auth/server/sweep.test.ts`: the interval is five minutes and not configurable, a sweep that throws is logged and does **not** stop the timer, and `SIGTERM` clears the timer while letting a running sweep finish (`FR-069`, `FR-070`, `FR-071`)
+- [ ] T094 [US4] Extend `src/app/api/auth/signin/route.test.ts`: a refused attempt returns `throttled` with `retryAfterSeconds` and performs **no** credential check, and a reset request for an address that never had an account still records a row — scenario 8 (`FR-032`, `FR-039`)
+- [ ] T095 [P] [US4] Failing test asserting the sign-in screen renders `retryAfterSeconds` as whole minutes **rounded up**, so a refusal in force never reads as no wait at all, in `src/features/auth/components/sign-in-form.test.tsx` (`FR-039`, research A-10)
+- [ ] T096 [P] [US4] Failing test asserting the reset-request screen renders its own throttled state, in `src/features/auth/components/reset-request-form.test.tsx` (`FR-087`)
 
 ### Implementation for User Story 4
 
-- [ ] T098 [US4] Implement `src/features/auth/server/throttle.ts` — `assertNotThrottled`, `recordFailure` and `clearSignInAttempts`, with count, decision and insert in one transaction under the advisory lock
-- [ ] T099 [US4] Wire the throttle into `src/app/api/auth/signin/route.ts` between address validation and the credential check, recording one `('signin','email')` and one `('signin','ip')` row on rejection and clearing on success
-- [ ] T100 [US4] Wire the throttle into `requestPasswordReset` in `src/features/auth/actions.ts`, recording one `('reset','email')` and one `('reset','ip')` row on **every** request without exception (`FR-032`)
-- [ ] T101 [US4] Wire the throttle-refusal event from `src/features/auth/server/throttle.ts` into `src/features/auth/server/log.ts` (`FR-064`)
-- [ ] T102 [US4] Implement `src/features/auth/server/sweep.ts` — the three deletes — and start it from bootstrap as the installation's **only** `setInterval`, `unref()`d and cleared on `SIGTERM`
-- [ ] T103 [P] [US4] Render the rounded-up minutes in `src/features/auth/components/sign-in-form.tsx`
-- [ ] T104 [P] [US4] Render the throttled state in `src/features/auth/components/reset-request-form.tsx`
+- [ ] T097 [US4] Implement `src/features/auth/server/throttle.ts` — `assertNotThrottled`, `recordFailure` and `clearSignInAttempts`, with count, decision and insert in one transaction under the advisory lock
+- [ ] T098 [US4] Wire the throttle into `src/app/api/auth/signin/route.ts` between address validation and the credential check, recording one `('signin','email')` and one `('signin','ip')` row on rejection and clearing on success
+- [ ] T099 [US4] Wire the throttle into `requestPasswordReset` in `src/features/auth/actions.ts`, recording one `('reset','email')` and one `('reset','ip')` row on **every** request without exception (`FR-032`)
+- [ ] T100 [US4] Wire the throttle-refusal event from `src/features/auth/server/throttle.ts` into `src/features/auth/server/log.ts` (`FR-064`)
+- [ ] T101 [US4] Implement `src/features/auth/server/sweep.ts` — the three deletes — and start it from bootstrap as the installation's **only** `setInterval`, `unref()`d and cleared on `SIGTERM`
+- [ ] T102 [P] [US4] Render the rounded-up minutes in `src/features/auth/components/sign-in-form.tsx`
+- [ ] T103 [P] [US4] Render the throttled state in `src/features/auth/components/reset-request-form.tsx`
 
 **Checkpoint**: both limits hold in both flows, survive a restart, and the tables stay bounded.
 
@@ -266,23 +266,23 @@ sign-in handler and the reset action those stories delivered.
 **Independent Test**: run the grant command against a fresh address and confirm an admin exists with
 the password typed at the prompt; run it against an existing member and confirm promotion, a cleared
 deactivation and a cleared flag; run the deactivate command against the only active admin and
-confirm refusal.
+confirm refusal. Nothing here needs US3 — the session deletion it calls is Foundational (T030).
 
 ### Tests for User Story 5
 
-- [ ] T105 [P] [US5] Failing test in `src/features/auth/server/admin-guard.test.ts` asserting `withLastAdminGuard` locks the active-admin set with `SELECT … FOR UPDATE` inside the caller's transaction and refuses a change that would empty it, and that two concurrent attempts to close the last admin leave at least one active — scenarios 6 and 7 (`FR-056`, `SC-012`)
-- [ ] T106 [P] [US5] Failing test in `scripts/admin-grant.test.ts` asserting a fresh address creates an admin, a member is promoted with its password replaced and `deactivated_at` and `must_change_password` cleared, a deactivated account is reopened, and an address that is already an active admin has its password replaced without error — scenarios 1, 2 and 8 (`FR-051`, `FR-077`)
-- [ ] T107 [US5] Extend `scripts/admin-grant.test.ts`: the password is read from the terminal and never accepted as an argument, `--password=…` is an unrecognised flag that writes nothing and exits `2`, and a terminal that cannot suppress echo makes the command refuse to prompt — scenario 4 (`FR-052`, `FR-075`, `FR-076`)
-- [ ] T108 [US5] Extend `scripts/admin-grant.test.ts`: a short or blocklisted password is refused naming the one rule that failed, with nothing written — no partial user row, no credential — scenario 3 (`FR-053`)
-- [ ] T109 [P] [US5] Failing test in `scripts/admin-deactivate.test.ts` asserting the command sets `deactivated_at`, deletes every session for that user, never deletes the `user` row, and refuses an address with no account while naming it — scenario 5 (`FR-007`, `FR-054`, `FR-057`, `FR-078`, `SC-013`)
-- [ ] T110 [US5] Extend `scripts/admin-grant.test.ts` and `scripts/admin-deactivate.test.ts`: exit `0` with one line on stdout on success, `1` with one line on stderr on an actionable refusal, `2` on a usage error, and nothing written to the database on `1` or `2` (`FR-074`)
+- [ ] T104 [P] [US5] Failing test in `src/features/auth/server/admin-guard.test.ts` asserting `withLastAdminGuard` locks the active-admin set with `SELECT … FOR UPDATE` inside the caller's transaction and refuses a change that would empty it, and that two concurrent attempts to close the last admin leave at least one active — scenarios 6 and 7 (`FR-056`, `SC-012`)
+- [ ] T105 [P] [US5] Failing test in `scripts/admin-grant.test.ts` asserting a fresh address creates an admin, a member is promoted with its password replaced and `deactivated_at` and `must_change_password` cleared, a deactivated account is reopened, and an address that is already an active admin has its password replaced without error — scenarios 1, 2 and 8 (`FR-051`, `FR-077`)
+- [ ] T106 [US5] Extend `scripts/admin-grant.test.ts`: the password is read from the terminal and never accepted as an argument, `--password=…` is an unrecognised flag that writes nothing and exits `2`, and a terminal that cannot suppress echo makes the command refuse to prompt — scenario 4 (`FR-052`, `FR-075`, `FR-076`)
+- [ ] T107 [US5] Extend `scripts/admin-grant.test.ts`: a short or blocklisted password is refused naming the one rule that failed, with nothing written — no partial user row, no credential — scenario 3 (`FR-053`)
+- [ ] T108 [P] [US5] Failing test in `scripts/admin-deactivate.test.ts` asserting the command sets `deactivated_at`, deletes every session for that user, never deletes the `user` row, and refuses an address with no account while naming it — scenario 5 (`FR-007`, `FR-054`, `FR-057`, `FR-078`, `SC-013`)
+- [ ] T109 [US5] Extend `scripts/admin-grant.test.ts` and `scripts/admin-deactivate.test.ts`: exit `0` with one line on stdout on success, `1` with one line on stderr on an actionable refusal, `2` on a usage error, and nothing written to the database on `1` or `2` (`FR-074`)
 
 ### Implementation for User Story 5
 
-- [ ] T111 [US5] Implement `src/features/auth/server/admin-guard.ts` — `withLastAdminGuard`, shared with R3's `deactivateUser`
-- [ ] T112 [US5] Implement `scripts/admin-grant.ts` using `node:util`'s `parseArgs` in strict mode and `node:readline`'s hidden input, with the app's environment loaded through `@next/env`
-- [ ] T113 [US5] Implement `scripts/admin-deactivate.ts`, reusing `deleteAllSessionsForUser()` from T079 and `withLastAdminGuard`
-- [ ] T114 [US5] Failing test in `src/features/auth/role-surface.test.ts` asserting no route, page or Server Action in the feature writes `user.role` — the whole role-change surface is `scripts/admin-grant.ts` (`FR-055`, `OT-AUTHZ-011`)
+- [ ] T110 [US5] Implement `src/features/auth/server/admin-guard.ts` — `withLastAdminGuard`, shared with R3's `deactivateUser`
+- [ ] T111 [US5] Implement `scripts/admin-grant.ts` using `node:util`'s `parseArgs` in strict mode and `node:readline`'s hidden input, with the app's environment loaded through `@next/env`
+- [ ] T112 [US5] Implement `scripts/admin-deactivate.ts`, reusing `deleteAllSessionsForUser()` from T030 and `withLastAdminGuard`
+- [ ] T113 [US5] Failing test in `src/features/auth/role-surface.test.ts` asserting no route, page or Server Action in the feature writes `user.role` — the whole role-change surface is `scripts/admin-grant.ts` (`FR-055`, `OT-AUTHZ-011`)
 
 **Checkpoint**: all five stories are independently functional.
 
@@ -290,13 +290,13 @@ confirm refusal.
 
 ## Phase 8: Polish & cross-cutting concerns
 
-- [ ] T115 Failing test in `src/features/auth/read-boundary.test.ts` asserting no query outside `src/features/auth/server/` names `credential`, `session`, `reset_token` or `auth_attempt`, and that no unauthenticated route selects `publicUser` or `accountUser` — the read boundary `FR-005` and `FR-015` establish, asserted rather than reviewed
-- [ ] T116 Failing test in `src/features/auth/no-secret-leaks.test.ts` asserting no response body, cookie value or log line carries a password, a hash, a session token or a reset token — greppable because `FR-064` bounds the log to five events (`SC-010`)
-- [ ] T117 [P] Add the unhandled-server-error path to `src/features/auth/server/log.ts` and confirm responses to callers stay generic while SQL, stack traces and configuration stay server-side (`FR-025`, `FR-064`)
-- [ ] T118 [P] Confirm the screens under `src/app/(auth)/` meet WCAG 2.2 Level AA against the tokens in `src/app/globals.css` — the contrast pairs T008 re-measured, the 1024px floor (`FR-080`), the 24×24 target-size minimum, and focus visibility on every control — `FR-012`, `FR-082`, `FR-083`, `FR-086`
-- [ ] T119 Run the ten walkthroughs in [`quickstart.md`](./quickstart.md) end to end against a real box and record any that do not hold
-- [ ] T120 Run `npm run verify` — `style-check`, `type-check`, `test`, `build` — and confirm gates 5 and 8 pass with nothing failing or skipped
-- [ ] T121 Confirm gate 6 by reading the whole diff with `git diff main...HEAD`: no comments, no commented-out code, no dead code, and the plan's three declared Complexity Tracking exceptions — the unmounted banner, the caller-less `accountUser`, and `user`'s six unread columns — are the only ones present
+- [ ] T114 Failing test in `src/features/auth/read-boundary.test.ts` asserting no query outside `src/features/auth/server/` names `credential`, `session`, `reset_token` or `auth_attempt`, and that no unauthenticated route selects `publicUser` or `accountUser` — the read boundary `FR-005` and `FR-015` establish, asserted rather than reviewed
+- [ ] T115 Failing test in `src/features/auth/no-secret-leaks.test.ts` asserting no response body, cookie value or log line carries a password, a hash, a session token or a reset token — greppable because `FR-064` bounds the log to five events (`SC-010`)
+- [ ] T116 [P] Add the unhandled-server-error path to `src/features/auth/server/log.ts` and confirm responses to callers stay generic while SQL, stack traces and configuration stay server-side (`FR-025`, `FR-064`)
+- [ ] T117 [P] Confirm the screens under `src/app/(auth)/` meet WCAG 2.2 Level AA against the tokens in `src/app/globals.css` — the contrast pairs T008 re-measured, the 1024px floor (`FR-080`), the 24×24 target-size minimum, and focus visibility on every control — `FR-012`, `FR-082`, `FR-083`, `FR-086`
+- [ ] T118 Run the ten walkthroughs in [`quickstart.md`](./quickstart.md) end to end against a real box, timing walkthrough 1 against the ten-minute bound (`SC-001`) and walkthrough 5 against the three-minute bound (`SC-009`), and record any that do not hold
+- [ ] T119 Run `npm run verify` — `style-check`, `type-check`, `test`, `build` — and confirm gates 5 and 8 pass with nothing failing or skipped
+- [ ] T120 Confirm gate 6 by reading the whole diff with `git diff main...HEAD`: no comments, no commented-out code, no dead code, and the plan's three declared Complexity Tracking exceptions — the unmounted banner, the caller-less `accountUser`, and `user`'s six unread columns — are the only ones present
 
 ---
 
@@ -308,9 +308,9 @@ confirm refusal.
 - **Foundational (Phase 2)**: depends on Setup — **blocks every user story**
 - **US1 (Phase 3)**: depends on Foundational only
 - **US2 (Phase 4)**: depends on Foundational only. Demonstrating scenario 5 end to end also wants US1
-- **US3 (Phase 5)**: depends on Foundational, and on T079 extending US1's `sessions.ts`
+- **US3 (Phase 5)**: depends on Foundational only
 - **US4 (Phase 6)**: depends on Foundational, and integrates into US1's route handler and US3's action
-- **US5 (Phase 7)**: depends on Foundational, and reuses T079
+- **US5 (Phase 7)**: depends on Foundational only, reusing `deleteAllSessionsForUser()` from T030
 - **Polish (Phase 8)**: depends on every story that is being shipped
 
 ### Within each story
@@ -323,8 +323,9 @@ before entry points, entry points before screens.
 - T002, T005, T006 in Setup
 - T009–T012, the four schema tests, then every `[P]` module test pair in Foundational
 - Within a story, the `[P]` test tasks touching different files
-- Once Foundational lands, US1, US2 and US5 can proceed in parallel by different people; US3 needs
-  T079 and US4 needs US1 and US3's entry points to wire into
+- Once Foundational lands, US1, US2, US3 and US5 can all proceed in parallel by different people —
+  `deleteAllSessionsForUser()` is Foundational precisely so US3 and US5 do not queue behind each
+  other. US4 alone is not parallel: it wires into the entry points US1 and US3 build
 
 ---
 
@@ -342,6 +343,7 @@ Task: "Crypto test in src/features/auth/server/crypto.test.ts"
 Task: "Password policy test in src/features/auth/server/password-policy.test.ts"
 Task: "Origin test in src/features/auth/server/origin.test.ts"
 Task: "Projections test in src/features/auth/server/projections.test.ts"
+Task: "Sessions test in src/features/auth/server/sessions.test.ts"
 ```
 
 ---
@@ -371,15 +373,16 @@ Each step adds capability without breaking the one before it.
 ### Parallel team strategy
 
 Setup and Foundational are done together — they are the shared ground. Afterwards US1, US2 and US5
-are independent; US3 waits only on T079, and US4 goes last because it wires into what US1 and US3
-built.
+are all independent of one another. US4 goes last because it wires into what US1 and US3 built.
 
 ---
 
 ## Notes
 
 - `[P]` means different files and no dependency on an incomplete task
-- Every task names its file and its requirement, which is what gate 7 asks a reviewer to check
+- Every task names its file. Requirements are cited on the **test** task of each test/implementation
+  pair; the implementation task inherits them from the test it makes pass, which is the same pairing
+  gate 1 asks a reviewer to read the commit order for
 - The commit order is the evidence gate 1 reads: a reviewer who cannot tell from the diff that the
   test came first must ask for that evidence before approving
 - `npm test` runs with `--passWithNoTests`, so a green run is not by itself evidence of Principle VII
