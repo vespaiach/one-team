@@ -21,6 +21,10 @@ Nothing below is invented. Every statement restates or narrows something [`docs/
 - Q: When should a throttle refusal lift — when the oldest counted attempt ages out of the fifteen-minute window, or fifteen minutes after the failure that triggered the refusal? → A: When the oldest counted attempt ages out (rolling window)
 - Q: When first-run seeding is refused because `ADMIN_PASSWORD` fails the policy, what should the installation do next? → A: Exit non-zero before serving any request
 - Q: Should expired session rows and spent or expired reset tokens be removed, and if so how? → A: Swept by the same in-process interval timer
+- Q: What maximum password length should every credential entry point accept, so an unbounded value cannot reach the hash function? → A: 128 characters
+- Q: How should the per-IP throttle derive the caller's address when the installation sits behind a reverse proxy? → A: The connection's own peer address, unless the operator declares a proxy through `TRUST_PROXY`
+- Q: In what units should a throttle refusal state its remaining time? → A: Seconds on the wire, whole minutes rounded up in what the caller reads
+- Q: What accessibility conformance target should the screens this feature renders be held to? → A: WCAG 2.2 Level AA
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -144,7 +148,7 @@ With no team-settings screen and role changes deliberately kept off the web, an 
 - **Mail cannot be sent** (SMTP unconfigured or unreachable): the reset request answers with the same sentence, and the failure is recorded in the server log only.
 - **The seeded admin never changes the password**: the banner renders forever and blocks nothing; the account works normally.
 - **The environment names a seed admin whose address already has an account**: seeding is skipped by the "any user row exists" check before the address is ever considered.
-- **A blocklisted password that meets the length rule** is refused for being blocklisted, and the message says which rule failed rather than restating both.
+- **A blocklisted password that meets the length rule** is refused for being blocklisted, and the message says which rule failed rather than restating the others.
 - **A request arriving with no origin header** on a mutating route is refused like a foreign one.
 - **The sweep and a live sign-in touching the attempt table at once** must not let the sweep remove a row inside the live window.
 
@@ -172,11 +176,11 @@ No user journey observes these directly — they are conventions every later ent
 
 - **FR-010**: Authentication MUST rest on exactly one credential — an email address and a password — with sessions held as database rows behind an opaque cookie rather than as claims inside a signed token. (`OT-SEC-001`)
 - **FR-011**: Exactly four routes MUST be reachable by an unauthenticated caller: sign-in, the reset request, the reset submission and invitation acceptance. This feature MUST deliver the first three and MUST open no other; invitation acceptance arrives with entry R3. (`OT-SEC-002`)
-- **FR-012**: `/signin` MUST render outside the shell as a full-screen card carrying an email field, a password field, a "Sign in" control and a "Forgot password?" link, and nothing else. There MUST be no sign-up link and no "remember me" control. (§3.1, `OT-UX-001`, `OT-SEC-007`)
+- **FR-012**: `/signin` MUST render outside the shell as a full-screen card carrying an email field, a password field, a "Sign in" control and a "Forgot password?" link, and nothing else. There MUST be no sign-up link and no "remember me" control. Every screen this feature renders MUST meet WCAG 2.2 Level AA. (§3.1, `OT-UX-001`, `OT-SEC-007`)
 - **FR-013**: A wrong password and an unknown address MUST produce one identical message — "That email and password don't match." — with no other difference an unauthenticated caller can observe between the two responses. (`OT-SEC-011`)
 - **FR-014**: Correct credentials for a deactivated account MUST produce their own message stating the account is closed and naming the operator-configured contact address; where the operator has configured none, the message MUST name no address and MUST read "Contact your One Team administrator." (§3.1, `OT-SEC-018`)
 - **FR-015**: No route reachable by an unauthenticated caller MUST read or disclose any `user` record. (`OT-SEC-018`)
-- **FR-016**: A successful sign-in MUST write one session row recording the user, the creation instant, the last-seen instant, the expiry, the user agent and the IP address. (§6)
+- **FR-016**: A successful sign-in MUST write one session row recording the user, the creation instant, the last-seen instant, the expiry, the user agent and the IP address. Wherever this feature records or counts an IP address, that address MUST be the connection's own peer address; a forwarded header MUST be read only where the operator has declared a proxy through `TRUST_PROXY`, and then only the last hop it names. (§6)
 - **FR-017**: Sign-in MUST set exactly one opaque session identifier as a cookie marked `HttpOnly`, `Secure`, `SameSite=Lax` and `Path=/`, carrying no claims and no signature to verify. The session MUST expire thirty days after last use and MUST be refreshed on every use. (`OT-SEC-007`)
 - **FR-018**: A successful sign-in MUST clear that address's sign-in attempt rows only — not its reset attempt rows, and not the originating IP address's rows. (`OT-SEC-017`)
 - **FR-019**: A successful sign-in MUST land the caller on `/home`. (§3.2)
@@ -192,7 +196,7 @@ No user journey observes these directly — they are conventions every later ent
 
 #### Password policy and secret storage
 
-- **FR-026**: A password MUST be at least twelve characters, MUST carry no composition rules, and MUST be refused if it appears on a blocklist of common passwords. The same policy MUST hold at every entry point that sets a credential. (`OT-SEC-004`)
+- **FR-026**: A password MUST be at least twelve characters and at most 128, MUST carry no composition rules, and MUST be refused if it appears on a blocklist of common passwords. The same policy MUST hold at every entry point that sets a credential, and the 128-character bound MUST also be enforced where a password is presented for verification, so no unbounded value reaches the hash function. (`OT-SEC-004`)
 - **FR-027**: The policy MUST be enforced on the server at every such entry point whatever the client also checks, and a screen MUST report the failure per field on blur rather than as a wall of errors on submit. (`OT-UX-011`, `OT-SEC-019`)
 - **FR-028**: Passwords MUST be stored as Argon2id hashes in a credential table separate from `user`, and MUST never appear in a response, in a cookie, or in a log. (`OT-SEC-005`)
 - **FR-029**: Session tokens and reset tokens MUST each be 32 random bytes stored as a SHA-256 digest, so nothing in the system compares two secrets and a leaked database yields no working credential. (`OT-SEC-006`)
@@ -214,7 +218,7 @@ No user journey observes these directly — they are conventions every later ent
 
 #### Throttle and sweep
 
-- **FR-039**: Sign-in MUST be refused while five or more failures for one address, or independently twenty or more from one IP address across any addresses it targeted, fall inside the last fifteen minutes; the refusal MUST state the time remaining until the oldest counted attempt leaves that window. (`OT-SEC-010`)
+- **FR-039**: Sign-in MUST be refused while five or more failures for one address, or independently twenty or more from one IP address across any addresses it targeted, fall inside the last fifteen minutes; the refusal MUST state the time remaining until the oldest counted attempt leaves that window, expressed to the caller as whole minutes rounded up, so a refusal in force never reads as no wait at all. (`OT-SEC-010`)
 - **FR-040**: Reset requests MUST be throttled under the same two limits and the same window in their own counter, discriminated by flow, so reset traffic MUST NOT lock an address out of sign-in and failed sign-ins MUST NOT block the reset that would fix them. (`OT-SEC-017`)
 - **FR-041**: A sign-in MUST record an attempt row only when it fails; a refused attempt MUST NOT record one, so a refusal cannot extend the window that produced it. (`OT-SEC-017`, §5)
 - **FR-042**: Attempts MUST be counted over the last fifteen minutes for one flow, kind and subject taken together, where kind distinguishes an address from an IP address. (§5)
@@ -312,5 +316,5 @@ Reasonable defaults chosen where the source is silent, and reconciliations recor
 ### Dependencies
 
 - **Roadmap position**: R1 has no upstream entry. R2 through R12 all consume it.
-- **Operator-supplied**: a PostgreSQL instance, an SMTP host, `APP_URL`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `SUPPORT_EMAIL` (optional) and the server timezone.
+- **Operator-supplied**: a PostgreSQL instance, an SMTP host, `APP_URL`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `SUPPORT_EMAIL` (optional), `TRUST_PROXY` (optional) and the server timezone.
 - **Downstream reach-back**: entry R11 adds the notification-mail retry sweep to the interval timer this feature delivers. Entry R3's `deactivateUser` shares the active-admin lock this feature establishes.

@@ -72,7 +72,8 @@ clearSignInAttempts(email):                void
 | Flows | `signin` and `reset` count in their own buckets and never share one |
 | Durability | rows in `auth_attempt`; a restart removes nothing (`SC-006`) |
 | Concurrency | count, decision and insert run under `pg_advisory_xact_lock` keyed on the subject, so two attempts racing the fifth failure cannot both pass (research C-5) |
-| `retryAfterSeconds` | derived from the **oldest** attempt still inside the window |
+| `retryAfterSeconds` | derived from the **oldest** attempt still inside the window; the screen renders it as whole minutes **rounded up**, so a refusal in force never reads as no wait (`FR-039`) |
+| The `ip` subject | the connection's own peer address; `X-Forwarded-For` is read only where the operator set `TRUST_PROXY`, and then only its last hop (`FR-016`) |
 | Refusals | a refused attempt records **no** row, so a refusal cannot extend the window that produced it (`FR-041`) |
 
 `clearSignInAttempts()` removes that address's `('signin','email')` rows **only** — not its `reset`

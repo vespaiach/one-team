@@ -13,7 +13,7 @@
 - [x] CHK001 Is the in-flight state of the Sign in control required anywhere in the specification, or only in the design brief? No functional requirement covers it. [Gap, Spec §FR-012]
 - [x] CHK002 Is the success message shown on `/signin` after a completed reset specified as to where and how it renders? The requirement fixes the redirect and the message, and nothing describes its surface. [Gap, Spec §FR-038]
 - [x] CHK003 Are the seven proposed copy strings recorded as requiring team confirmation, or have they been absorbed as decided? [Assumption, research §A-10]
-- [ ] CHK004 Is an accessibility conformance target stated as a requirement for these screens, rather than left to the contrast note in the layout contract? [Gap, contracts/auth-layout.md]
+- [x] CHK004 Is an accessibility conformance target stated as a requirement for these screens, rather than left to the contrast note in the layout contract? [Gap, contracts/auth-layout.md]
 - [ ] CHK005 Are requirements defined for the page title, heading structure and document language of the three unauthenticated screens? [Gap, Spec §FR-012]
 - [ ] CHK006 Is a minimum supported viewport width stated, given the "desktop only, no breakpoints" constraint? [Gap, design-brief.md]
 - [x] CHK007 Are requirements defined for the banner's placement, or only for its content and its non-blocking nature? [Completeness, Spec §FR-049]

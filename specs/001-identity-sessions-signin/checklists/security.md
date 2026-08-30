@@ -16,7 +16,7 @@
 - [ ] CHK004 Are the Argon2id cost parameters stated as a requirement, or only as a research decision? `FR-028` fixes the algorithm and not its tuning. [Gap, Spec §FR-028]
 - [ ] CHK005 Is the source of randomness for the 32 bytes required to be cryptographically secure? [Gap, Spec §FR-029]
 - [ ] CHK006 Is the size and provenance of the common-password blocklist specified, or does it rest on the "order of ten thousand" assumption? [Assumption, Spec §FR-026]
-- [ ] CHK007 Are requirements defined for deriving `ip_address` when the installation sits behind a reverse proxy, and for whether a forwarded header may be trusted by the per-IP throttle? [Gap, Spec §FR-039]
+- [x] CHK007 Are requirements defined for deriving `ip_address` when the installation sits behind a reverse proxy, and for whether a forwarded header may be trusted by the per-IP throttle? [Gap, Spec §FR-039]
 - [x] CHK008 Is a retention or expiry-sweep requirement stated for `session` and `reset_token` rows? `FR-044` sweeps attempt rows only. [Gap, Spec §FR-044]
 - [ ] CHK009 Are requirements defined for a caller who already holds a valid session and posts to sign-in again? [Coverage, Gap]
 - [ ] CHK010 Is any limit on concurrent sessions per user specified? [Gap, Spec §FR-016]
@@ -26,7 +26,7 @@
 
 - [x] CHK012 Is "refreshed on every use" defined — whether every request refreshes the expiry, or only one that resolves an actor? [Clarity, Spec §FR-017]
 - [x] CHK013 Is "refuse for fifteen minutes after five failures" reconcilable with a rolling fifteen-minute window, or does it describe a fixed lockout starting at the fifth failure? The two models expire at different instants. [Ambiguity, Spec §FR-039]
-- [ ] CHK014 Are the units of the "remaining time" the refusal must state specified? Research proposes whole minutes while the transport contract returns seconds. [Conflict, Spec §FR-039]
+- [x] CHK014 Are the units of the "remaining time" the refusal must state specified? Research proposes whole minutes while the transport contract returns seconds. [Conflict, Spec §FR-039]
 - [x] CHK015 Is "the installation's own origin" defined — how it is determined, and against which configured value it is compared? [Clarity, Spec §FR-023]
 - [x] CHK016 Does "no other difference an unauthenticated caller can observe" state explicitly that response timing is included? [Clarity, Spec §FR-013]
 - [x] CHK017 Is "opaque" defined by a property a reviewer can check rather than by contrast with a signed token? [Measurability, Spec §FR-017]
@@ -58,7 +58,7 @@
 
 ## Edge Case Coverage
 
-- [ ] CHK034 Is a maximum accepted password length specified, so an unbounded value cannot reach the hash function? [Edge Case, Gap, Spec §FR-026]
+- [x] CHK034 Is a maximum accepted password length specified, so an unbounded value cannot reach the hash function? [Edge Case, Gap, Spec §FR-026]
 - [ ] CHK035 Are requirements defined for an email address exceeding the free-text bound at the sign-in and reset boundaries? [Edge Case, Gap, Spec §FR-002]
 - [ ] CHK036 Does the spec state which case-folding rule makes two addresses the same, for addresses outside ASCII? [Edge Case, Spec §FR-006]
 - [ ] CHK037 Are requirements defined for a reset link opened with an empty or malformed token parameter, as distinct from an unknown one? [Edge Case, Gap, Spec §FR-036]

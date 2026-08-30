@@ -221,7 +221,7 @@ specification fixes are unchanged and are not repeated here.
 | Surface | Text |
 | --- | --- |
 | Deactivated, contact configured | `This account is closed. Contact <SUPPORT_EMAIL>.` |
-| Throttled | `Too many attempts. Try again in <n> minutes.` |
+| Throttled | `Too many attempts. Try again in <n> minutes.` — `<n>` is the transport's `retryAfterSeconds` rounded **up** to whole minutes, so a live refusal never renders as zero (`FR-039`) |
 | Expired token | `This link has expired. Reset links are good for one hour — request a new one.` |
 | Used token | `This link has already been used. If you still need to change your password, request a new one.` |
 | Unknown token | `This link isn't valid. Request a new one to change your password.` |
@@ -424,6 +424,17 @@ stricter but would fail the insert — and so fail the sign-in — whenever a pr
 validating at the entry point is `Principle II` applied where the untrusted value arrives.
 `user_agent` is not one of §5's named buckets, so 1000 is chosen: long enough for real strings,
 short enough to bound the row. **Assumption, flagged for `/speckit-clarify`.**
+
+**Which address is recorded.** The connection's own peer address, unless the operator has set
+`TRUST_PROXY`, in which case the last hop of `X-Forwarded-For` is used instead — settled by
+`/speckit-clarify` on 2026-08-30 and fixed by `FR-016`. The header is attacker-controlled on a
+direct connection, so reading it unconditionally would let a caller present a fresh address on every
+attempt and the twenty-per-IP limit would refuse nothing. Defaulting the other way costs an
+installation actually behind a proxy nothing worse than every caller sharing one counter, which is
+visible rather than silent. **Verify before implementing** that Next.js 16 exposes the peer address
+to a Route Handler; `NextRequest.ip` existed in earlier versions and was removed, and this worktree
+has no `node_modules` to check against. If it does not, the value has to come from the runtime
+adapter, and that is a `/speckit-tasks` concern rather than a change to the rule.
 
 ### C-4. `user.avatar_url` is bounded at 2000
 
