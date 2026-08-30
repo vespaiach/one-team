@@ -234,4 +234,4 @@ application's mutations". AGENTS.md names it as the single exception, and the sp
 | 0 — Outline & research | [`research.md`](./research.md) | complete — every unknown resolved, three assumptions carried forward |
 | 1 — Design & contracts | [`data-model.md`](./data-model.md), [`contracts/`](./contracts/), [`quickstart.md`](./quickstart.md) | complete |
 | Constitution re-check | this file | complete — pass, three items in Complexity Tracking |
-| 2 — Tasks | `tasks.md` | **not created by this command** — run `/speckit-tasks` |
+| 2 — Tasks | [`tasks.md`](./tasks.md) | complete — 121 tasks over eight phases, every FR and SC cited |
