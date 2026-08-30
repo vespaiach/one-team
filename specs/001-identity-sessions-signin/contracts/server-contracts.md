@@ -46,9 +46,9 @@ client-supplied identifier (`FR-024`, `OT-AUTHZ-004`).
 
 `src/features/auth/server/origin.ts`. `FR-023`, `OT-SEC-009`.
 
-Compares `Origin` against the installation's own origin, derived from `x-forwarded-proto` and
-`x-forwarded-host` / `host`. **A missing `Origin` is treated as a foreign one.** No CSRF token
-exists anywhere in the product.
+Compares `Origin` against the origin `APP_URL` names — never against a value taken from the request
+being checked, which could never refuse anything (`FR-023`). **A missing `Origin` is treated as a
+foreign one.** No CSRF token exists anywhere in the product.
 
 Called as the first statement of the sign-in route handler and of every Server Action — including
 every Server Action R3 through R12 add.
@@ -73,6 +73,7 @@ clearSignInAttempts(email):                void
 | Durability | rows in `auth_attempt`; a restart removes nothing (`SC-006`) |
 | Concurrency | count, decision and insert run under `pg_advisory_xact_lock` keyed on the subject, so two attempts racing the fifth failure cannot both pass (research C-5) |
 | `retryAfterSeconds` | derived from the **oldest** attempt still inside the window |
+| Refusals | a refused attempt records **no** row, so a refusal cannot extend the window that produced it (`FR-041`) |
 
 `clearSignInAttempts()` removes that address's `('signin','email')` rows **only** — not its `reset`
 rows, and not the originating IP's, so holding one valid credential is not a way to reset the
@@ -157,14 +158,22 @@ mutator shares this exact function** — the roadmap records that reach-back exp
 `register()` runs once per server instance, guarded by `NEXT_RUNTIME === 'nodejs'`, and does three
 things in order:
 
-1. **Validate the environment.** `ADMIN_PASSWORD` is held to the password policy. A non-compliant
-   value stops seeding, writes nothing, and makes the app report **which rule** failed (`FR-046`).
+1. **Validate the environment.** `APP_URL` MUST be present and parseable, and `ADMIN_PASSWORD` is
+   held to the password policy. A non-compliant value stops seeding, writes nothing, makes the app
+   report **which rule** failed, and ends the process with a non-zero exit status before any request
+   is served (`FR-046`, `FR-058`).
 2. **Seed, or skip.** Inside one transaction: if any `user` row exists, skip — that check is the
    whole marker, so the path can neither run twice nor mint a second admin later (`FR-047`).
    Otherwise write one admin carrying `must_change_password` (`FR-045`, `FR-048`), with the address
    validated and folded to lower case (spec assumption).
-3. **Start the sweep.** One `setInterval` running
-   `DELETE FROM auth_attempt WHERE attempted_at < now() - interval '15 minutes'`.
+3. **Start the sweep.** One `setInterval` running three deletes, each matching only rows that are
+   already dead (`FR-044`):
+
+   ```sql
+   DELETE FROM auth_attempt WHERE attempted_at < now() - interval '15 minutes';
+   DELETE FROM session      WHERE expires_at  < now();
+   DELETE FROM reset_token  WHERE used_at IS NOT NULL OR expires_at < now();
+   ```
 
 **This is the installation's only timer** (`FR-044`). R11 adds the notification-mail retry to this
 same callback; it does not start a second one. The interval is `unref()`d and cleared on `SIGTERM`.
@@ -174,7 +183,8 @@ same callback; it does not start a second one. The interval is `unref()`d and cl
 ## Mail
 
 `src/features/auth/server/mail.ts`. One `nodemailer` transport from operator-supplied SMTP
-(`FR-058`, `OT-OPS-012`). Sends the reset link and nothing else in this feature.
+(`FR-058`, `OT-OPS-012`). Sends the reset link and nothing else in this feature. The link is an
+absolute URL built from `APP_URL`, because the mail outlives the request that triggered it (`FR-033`).
 
 A send failure is logged server-side and **never changes what the caller is told** (`FR-033`).
 R11 adds notification mail and the retry sweep on the same transport.

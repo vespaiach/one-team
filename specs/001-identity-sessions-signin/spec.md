@@ -12,6 +12,16 @@
 
 Nothing below is invented. Every statement restates or narrows something [`docs/product/specifications.md`](../../docs/product/specifications.md) states, within the scope boundary [`docs/ROADMAP.md`](../../docs/ROADMAP.md) entry **R1** draws. Where this spec and the roadmap disagree, the roadmap is reconciled first; where this spec and the specification disagree, the specification wins.
 
+## Clarifications
+
+### Session 2026-08-30
+
+- Q: How long should a password-reset token stay valid after it is issued? → A: One hour
+- Q: How should the installation determine its own public URL, used both to build the reset link and to check the origin of mutating requests? → A: One required operator-supplied environment value, `APP_URL`
+- Q: When should a throttle refusal lift — when the oldest counted attempt ages out of the fifteen-minute window, or fifteen minutes after the failure that triggered the refusal? → A: When the oldest counted attempt ages out (rolling window)
+- Q: When first-run seeding is refused because `ADMIN_PASSWORD` fails the policy, what should the installation do next? → A: Exit non-zero before serving any request
+- Q: Should expired session rows and spent or expired reset tokens be removed, and if so how? → A: Swept by the same in-process interval timer
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - An account holder signs in and stays signed in (Priority: P1)
@@ -43,14 +53,14 @@ An operator deploys the box, sets `ADMIN_EMAIL` and `ADMIN_PASSWORD` in the envi
 
 **Why this priority**: No other route creates the first account — there is no public sign-up and an invitation must be issued by an admin who does not yet exist. Second only to sign-in because the break-glass command (Story 5) is an alternative way in, so this is the convenient path rather than the only one.
 
-**Independent Test**: Start against an empty database with a compliant `ADMIN_PASSWORD` and confirm exactly one admin row carrying `must_change_password`. Restart and confirm no second admin. Start against an empty database with a ten-character password and confirm the app refuses, names the rule that failed, and writes nothing.
+**Independent Test**: Start against an empty database with a compliant `ADMIN_PASSWORD` and confirm exactly one admin row carrying `must_change_password`. Restart and confirm no second admin. Start against an empty database with a ten-character password and confirm the app names the rule that failed, writes nothing, and exits non-zero.
 
 **Acceptance Scenarios**:
 
 1. **Given** a database with no `user` rows and compliant environment values, **When** the app starts, **Then** exactly one admin account exists, carrying `must_change_password`.
 2. **Given** a database with at least one `user` row, **When** the app starts, **Then** seeding is skipped and no row is created or changed, whatever the environment values say.
-3. **Given** an empty database and an `ADMIN_PASSWORD` under twelve characters, **When** the app starts, **Then** seeding does not run, no row is written, and the app reports that the value is too short.
-4. **Given** an empty database and an `ADMIN_PASSWORD` on the common-password blocklist, **When** the app starts, **Then** seeding does not run, no row is written, and the app reports that the value is blocklisted.
+3. **Given** an empty database and an `ADMIN_PASSWORD` under twelve characters, **When** the app starts, **Then** seeding does not run, no row is written, the app reports that the value is too short, and the process exits non-zero without serving a request.
+4. **Given** an empty database and an `ADMIN_PASSWORD` on the common-password blocklist, **When** the app starts, **Then** seeding does not run, no row is written, the app reports that the value is blocklisted, and the process exits non-zero without serving a request.
 5. **Given** the seeded admin is signed in, **When** any authenticated screen renders, **Then** an advisory banner says the password must be changed, and every control on the screen still works.
 6. **Given** the seeded admin, **When** they complete a password reset, **Then** `must_change_password` is cleared and the banner stops rendering.
 
@@ -81,7 +91,7 @@ A holder cannot remember their password. They ask for a reset link from the sign
 
 ### User Story 4 - The installation resists credential guessing (Priority: P4)
 
-An attacker tries passwords against one address, and separately sprays many addresses from one machine. Both are stopped for fifteen minutes and told how long is left. Restarting the box does not help them. Reset traffic cannot be used to lock a real user out of signing in, and failed sign-ins cannot block the reset that would fix them.
+An attacker tries passwords against one address, and separately sprays many addresses from one machine. Both are stopped for up to fifteen minutes and told how long is left. Restarting the box does not help them. Reset traffic cannot be used to lock a real user out of signing in, and failed sign-ins cannot block the reset that would fix them.
 
 **Why this priority**: The product has one credential and four public routes; unlimited guessing against them is the whole attack surface. Below recovery because it hardens an existing capability rather than adding one.
 
@@ -176,7 +186,7 @@ No user journey observes these directly — they are conventions every later ent
 - **FR-020**: Every request MUST resolve its actor by looking up the session row the cookie names and reading the user's role and deactivation instant from the database in the same query. Identity, role and membership MUST NOT be cached anywhere. (`OT-SEC-008`)
 - **FR-021**: A cookie naming no session row, a session past its expiry, and a session whose user is deactivated MUST each resolve to no actor.
 - **FR-022**: An unauthenticated request to an authenticated route MUST redirect to `/signin` and MUST NOT reach the Forbidden screen. (`OT-SEC-015`)
-- **FR-023**: Every mutating request MUST be refused unless its stated origin is the installation's own; a CSRF token MUST NOT be used, and a missing origin MUST be treated as a foreign one. (`OT-SEC-009`)
+- **FR-023**: Every mutating request MUST be refused unless its stated origin is the installation's own; a CSRF token MUST NOT be used, and a missing origin MUST be treated as a foreign one. The installation's own origin MUST be the operator-supplied `APP_URL`, never a value taken from the request being checked. (`OT-SEC-009`)
 - **FR-024**: Every mutator MUST validate its input and enforce its authorization on the server, deriving the subject from stored rows rather than from a client-supplied identifier. (`OT-AUTHZ-004`)
 - **FR-025**: Responses to a caller MUST carry generic messages; database errors, stack traces and configuration MUST stay in the server log.
 
@@ -192,7 +202,7 @@ No user journey observes these directly — they are conventions every later ent
 - **FR-030**: `/reset` MUST render outside the shell carrying an email field and a "Send reset link" control, and nothing else. (§3.1)
 - **FR-031**: A reset request MUST always answer "If that address has an account, a link is on the way", whether or not the address has an account. (`OT-SEC-011`)
 - **FR-032**: A reset request MUST record one attempt row in the reset counter every time it is made, never only when the address is unknown. (`OT-SEC-017`)
-- **FR-033**: A reset request MUST mail a single-use link only where the address belongs to an account that may sign in, and a mail failure MUST NOT change the answer the caller is given. (§3.1, `OT-SEC-011`)
+- **FR-033**: A reset request MUST mail a single-use link only where the address belongs to an account that may sign in, and a mail failure MUST NOT change the answer the caller is given. The link MUST be an absolute URL built from the operator-supplied `APP_URL`, and MUST expire one hour after it is issued. (§3.1, `OT-SEC-011`)
 
 #### Change password (screen 13)
 
@@ -204,17 +214,17 @@ No user journey observes these directly — they are conventions every later ent
 
 #### Throttle and sweep
 
-- **FR-039**: Sign-in MUST refuse for fifteen minutes after five failures for one address, and independently after twenty failures from one IP address across any addresses it targeted; the refusal MUST state the remaining time. (`OT-SEC-010`)
+- **FR-039**: Sign-in MUST be refused while five or more failures for one address, or independently twenty or more from one IP address across any addresses it targeted, fall inside the last fifteen minutes; the refusal MUST state the time remaining until the oldest counted attempt leaves that window. (`OT-SEC-010`)
 - **FR-040**: Reset requests MUST be throttled under the same two limits and the same window in their own counter, discriminated by flow, so reset traffic MUST NOT lock an address out of sign-in and failed sign-ins MUST NOT block the reset that would fix them. (`OT-SEC-017`)
-- **FR-041**: A sign-in MUST record an attempt row only when it fails. (`OT-SEC-017`, §5)
+- **FR-041**: A sign-in MUST record an attempt row only when it fails; a refused attempt MUST NOT record one, so a refusal cannot extend the window that produced it. (`OT-SEC-017`, §5)
 - **FR-042**: Attempts MUST be counted over the last fifteen minutes for one flow, kind and subject taken together, where kind distinguishes an address from an IP address. (§5)
 - **FR-043**: Attempt counters MUST be durable — restarting the installation MUST NOT reset any of them. (`OT-SEC-010`)
-- **FR-044**: Attempt rows past the window MUST be removed by a sweep run from one in-process interval timer, and that timer MUST be the installation's only one; a queue or external scheduler MUST NOT be used. Entry R11 adds the notification-mail retry sweep to this same timer. (`OT-OPS-003`)
+- **FR-044**: Attempt rows past the window, session rows past their expiry, and reset tokens that are spent or expired MUST be removed by a sweep run from one in-process interval timer, and that timer MUST be the installation's only one; a queue or external scheduler MUST NOT be used. Every row the sweep removes MUST already be dead, so no live behaviour changes when it runs. Entry R11 adds the notification-mail retry sweep to this same timer. (`OT-OPS-003`)
 
 #### First-run bootstrap
 
 - **FR-045**: On a first deployment the installation MUST seed a single default admin from the operator-supplied `ADMIN_EMAIL` and `ADMIN_PASSWORD` environment values. (§6)
-- **FR-046**: `ADMIN_PASSWORD` MUST be held to the password policy; a non-compliant value MUST stop seeding, MUST write nothing, and MUST make the app report which rule the value failed. (`OT-SEC-019`)
+- **FR-046**: `ADMIN_PASSWORD` MUST be held to the password policy; a non-compliant value MUST stop seeding, MUST write nothing, MUST make the app report which rule the value failed, and MUST stop the process with a non-zero exit status before any request is served. (`OT-SEC-019`)
 - **FR-047**: Seeding MUST be skipped whenever any `user` row already exists, and that check MUST be the whole marker, so the path can neither run twice nor mint a second admin later. (`OT-SEC-014`)
 - **FR-048**: The seeded row MUST carry the must-change-password flag; every account created any other way MUST default to not carrying it. (§5, §6)
 - **FR-049**: While that flag is set on the signed-in user, an advisory banner MUST state it on every authenticated screen, and MUST block nothing. This feature MUST deliver the banner; entry R2 places the slot that hosts it. (§6)
@@ -232,7 +242,7 @@ No user journey observes these directly — they are conventions every later ent
 
 #### Deployment
 
-- **FR-058**: The installation MUST run self-hosted on a single box, with the mail transport supplied by the operator. (`OT-OPS-012`)
+- **FR-058**: The installation MUST run self-hosted on a single box, with the mail transport supplied by the operator. The operator MUST also supply `APP_URL`, the installation's own public URL, and the app MUST refuse to start when it is absent or unparseable. (`OT-OPS-012`)
 
 ### Out of Scope
 
@@ -241,7 +251,7 @@ Deferred by the roadmap's R1 boundary, and named here so no scenario above is re
 - **Invitation acceptance and every route that issues an invitation** — entry R3. `OT-SEC-002`'s fourth public route stays closed until then, and `OT-SEC-003` and `OT-SEC-016`'s invite half belong to that entry.
 - **The Profile screen and its "Change password" link** — entry R4. This feature delivers the request-and-token mechanism that link will reuse; it delivers no route to it.
 - **`/home` itself, and the shell that hosts the must-change-password banner on every screen** — entry R2. This feature redirects to `/home` and delivers the banner; it renders neither the page nor the frame.
-- **The notification-mail retry half of the interval timer** — entry R11. This feature delivers the timer and the attempt sweep only.
+- **The notification-mail retry half of the interval timer** — entry R11. This feature delivers the timer and its sweep of attempt rows, expired sessions and spent tokens only.
 - **The Accounts screen, its deactivate and reactivate controls, and its roster** — entry R3. Deactivation here is a command run on the box.
 - **Project membership in any form** — entry R5. `isMember` has nothing to read until then, and this feature enforces `isAdmin` alone.
 - **Sign-out as a control.** The session-deletion capability is delivered here; the user chip that would offer sign-out is entry R2's, so no sign-out control ships in this feature.
@@ -250,8 +260,8 @@ Deferred by the roadmap's R1 boundary, and named here so no scenario above is re
 
 - **User** — a person who may sign in. Carries their names, address, avatar URL, account role (`admin` or `member`), the optional profile fields, a deactivation instant, a must-change-password flag and a remembered feed filter. The address is unique when folded to lower case. Never deleted. The password is not on this record.
 - **Credential** — the Argon2id hash of one user's password, held apart from the user record so it is never selected into a response.
-- **Session** — one live sign-in: the user it belongs to, when it was created, when it was last seen, when it expires, and the user agent and IP address it came from. Addressed by an opaque identifier whose digest is what is stored. Deleted by sign-out, by a completed reset and by deactivation.
-- **Reset token** — a single-use grant to set one user's password, stored as a digest, carrying an expiry and a record of whether it has been spent.
+- **Session** — one live sign-in: the user it belongs to, when it was created, when it was last seen, when it expires, and the user agent and IP address it came from. Addressed by an opaque identifier whose digest is what is stored. Deleted by sign-out, by a completed reset, by deactivation, and by the sweep once it is past its expiry.
+- **Reset token** — a single-use grant to set one user's password, stored as a digest, carrying an expiry one hour after issue and a record of whether it has been spent. Removed by the sweep once it is spent or expired.
 - **Attempt** — the durable counter behind both throttles: which flow (sign-in or reset), which kind of subject (address or IP address), the subject itself, and when the attempt happened. Never read by any screen.
 - **Actor** — not a table: the resolved answer to "who is making this request", produced fresh on every request from the session row and the user row behind it, and handed to every read and every mutator.
 
@@ -263,7 +273,7 @@ Deferred by the roadmap's R1 boundary, and named here so no scenario above is re
 - **SC-002**: Starting the installation any number of times after the first creates no additional account: the admin count after N starts on a seeded database is exactly the count after the first.
 - **SC-003**: A wrong password and an unknown address are indistinguishable to the caller — identical wording, identical outcome, and no field in either response that differs.
 - **SC-004**: A holder who uses the product at least once every thirty days is never asked to sign in again; one who does not is asked exactly once on their next visit.
-- **SC-005**: Five wrong passwords for one address block the sixth attempt for fifteen minutes, and twenty wrong passwords from one machine block the twenty-first, in both cases with the remaining time stated.
+- **SC-005**: Five wrong passwords for one address block the sixth attempt until the earliest of the five leaves the fifteen-minute window, and twenty wrong passwords from one machine block the twenty-first on the same basis, in both cases with the remaining time stated.
 - **SC-006**: Restarting the installation during a lockout removes none of it: the lockout still expires at the instant it originally would have.
 - **SC-007**: A reset lockout never prevents a sign-in, and a sign-in lockout never prevents a reset request — verified in both directions.
 - **SC-008**: A completed password reset ends 100% of that user's sessions, on every device, by the time the next request from any of them is answered.
@@ -279,7 +289,6 @@ Reasonable defaults chosen where the source is silent, and reconciliations recor
 
 ### Defaults chosen because the source is silent
 
-- **Reset-token lifetime is one hour.** The specification fixes seven days for an invitation, fifteen minutes for a throttle window and thirty days for a session, but says nothing about a reset token. One hour is the ordinary web default and keeps a mail-borne grant short-lived. This is the single most consequential silence in this feature and the first thing worth confirming.
 - **The blocklist is a bundled list of common passwords, compared case-insensitively after trimming nothing.** The specification says "a blocklist of the common ones" without naming a source or a size. No dependency is approved for it, so it is repository data rather than a package. A list on the order of the ten thousand most common passwords is assumed.
 - **A reset request for a deactivated account answers identically and mails nothing.** Sign-in is revoked for such an account, so a new password would grant nothing, and mailing the link would confirm the address exists to whoever asked.
 - **The seed address is validated as an address and folded to lower case** before it is written, like every other address the system stores. The specification states the password rule for seeding and is silent on the address.
@@ -303,5 +312,5 @@ Reasonable defaults chosen where the source is silent, and reconciliations recor
 ### Dependencies
 
 - **Roadmap position**: R1 has no upstream entry. R2 through R12 all consume it.
-- **Operator-supplied**: a PostgreSQL instance, an SMTP host, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `SUPPORT_EMAIL` (optional) and the server timezone.
+- **Operator-supplied**: a PostgreSQL instance, an SMTP host, `APP_URL`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `SUPPORT_EMAIL` (optional) and the server timezone.
 - **Downstream reach-back**: entry R11 adds the notification-mail retry sweep to the interval timer this feature delivers. Entry R3's `deactivateUser` shares the active-admin lock this feature establishes.
