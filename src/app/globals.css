@@ -68,12 +68,12 @@
   --color-surface-sunken: var(--color-neutral-50);
 
   --color-border: var(--color-neutral-300);
-  --color-border-active: var(--color-neutral-500);
+  --color-border-control: var(--color-neutral-500);
   --color-border-strong: var(--color-neutral-900);
 
   --color-text: var(--color-neutral-900);
   --color-text-muted: var(--color-neutral-600);
-  --color-text-placeholder: var(--color-neutral-500);
+  --color-text-placeholder: var(--color-neutral-600);
   --color-text-disabled: var(--color-neutral-400);
 
   --color-accent: var(--color-accent-500);
@@ -94,7 +94,7 @@
   --color-advisory-text: var(--color-amber-700);
 
   /* --- type · Archivo, six steps ----------------------------- */
-  --font-sans: Archivo, ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
 
   --text-micro: 11px;
   --text-micro--line-height: 16px;
