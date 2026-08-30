@@ -125,7 +125,7 @@ One live sign-in. Addressed by an opaque identifier whose SHA-256 digest is what
 | Any authenticated request | `last_seen_at = now`, `expires_at = now + 30 days` — sliding, refreshed on use |
 | Completed password reset | **every** row for that user deleted, including the requesting one (`FR-038`, `OT-SEC-012`) |
 | `admin:deactivate` | every row for that user deleted (`FR-054`, §6) |
-| Past `expires_at` | resolves to no actor (`FR-021`); swept only by expiry, not by the timer |
+| Past `expires_at` | resolves to no actor (`FR-021`), and the row is removed by the sweep (`FR-044`) |
 
 ### Resolution (`FR-020`, `OT-SEC-008`)
 
@@ -145,7 +145,7 @@ A single-use grant to set one user's password.
 | `id` | `uuid` | PK, UUIDv7 |
 | `user_id` | `uuid` | `NOT NULL`, `REFERENCES user(id) ON DELETE CASCADE`, indexed |
 | `token_digest` | `text` | `NOT NULL`, `UNIQUE`, `CHECK (char_length = 64)` |
-| `expires_at` | `timestamptz` | `NOT NULL` — one hour after issue (spec assumption) |
+| `expires_at` | `timestamptz` | `NOT NULL` — one hour after issue (`FR-033`) |
 | `used_at` | `timestamptz` | null until spent |
 | `created_at` | `timestamptz` | `NOT NULL` |
 
@@ -164,6 +164,10 @@ A single-use grant to set one user's password.
 inside the same transaction as the password write and the session deletion; zero rows affected means
 the token was spent concurrently and the whole transaction rolls back. `FR-037`'s "exactly once"
 is enforced by that predicate, not by a prior read.
+
+**Spent and expired tokens are swept.** A row with `used_at` set, or with `expires_at` in the past,
+is removed by the interval timer's sweep (`FR-044`). Both are already dead to every read above, so
+removing them changes no state a caller can observe.
 
 **Sibling tokens are not withdrawn.** Two outstanding tokens for one address stay independently
 usable until each expires or is used — the specification makes each single-use and says nothing
@@ -194,10 +198,10 @@ rows are inserted and swept, never edited (research C-1).
 | Counted over the last **fifteen minutes** for one `(flow, kind, subject)` taken together | `FR-042` |
 | Sign-in refuses at **5** for `kind = 'email'`, **20** for `kind = 'ip'` | `FR-039` |
 | Reset uses the **same two limits and window**, in its own `flow` | `FR-040` |
-| A sign-in records a row **only when it fails** | `FR-041` |
+| A sign-in records a row **only when it fails**; a refused attempt records none | `FR-041` |
 | A reset request records a row **every time**, success or not | `FR-032` |
 | A successful sign-in clears that address's `('signin','email')` rows **only** | `FR-018` |
-| Rows past the window are removed by the sweep | `FR-044` |
+| Rows past the window are removed by the sweep, alongside expired sessions and spent tokens | `FR-044` |
 
 The two flows never share a counter, which is what makes `SC-007` true in both directions: a reset
 lockout cannot block sign-in, and a sign-in lockout cannot block the reset that would fix it.
@@ -206,8 +210,9 @@ lockout cannot block sign-in, and a sign-in lockout cannot block the reset that 
 
 The count, the refusal decision and the failure insert run in one transaction holding
 `pg_advisory_xact_lock` keyed on `(flow, kind, subject)` (research C-5), so two attempts racing the
-fifth failure cannot both pass. The sweep needs no lock: its predicate can only match rows already
-outside every live window (research C-6).
+fifth failure cannot both pass. The sweep needs no lock: each of its three predicates can only match
+rows that are already dead — attempts outside every live window, sessions past their expiry, and
+tokens spent or expired (research C-6).
 
 ---
 

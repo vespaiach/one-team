@@ -55,7 +55,7 @@ account-existence oracle (spec edge case). `contact` is `SUPPORT_EMAIL` from the
 
 | Condition | Status | Body |
 | --- | --- | --- |
-| `Origin` absent or not the installation's own | `403` | `{ "error": "forbidden" }` |
+| `Origin` absent, or not the origin `APP_URL` names | `403` | `{ "error": "forbidden" }` |
 | Body malformed or fields missing | `400` | `{ "error": "invalid_request" }` |
 
 ### The cookie
@@ -114,7 +114,8 @@ Each is a public server entry point: origin check, then validation, then the wor
 | Never | mails to a deactivated account (spec assumption) |
 
 The token is 32 random bytes; its SHA-256 digest is stored and its plaintext appears only in the
-mail body. Lifetime one hour (spec assumption).
+mail body. It expires one hour after it is issued, and the mailed link is an absolute URL built from
+`APP_URL` (`FR-033`).
 
 ### `completePasswordReset(prevState, formData)`
 

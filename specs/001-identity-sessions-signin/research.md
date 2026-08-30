@@ -293,7 +293,9 @@ exactly `FR-021`.
 **Decision.** `src/instrumentation.ts` exports `register()`, guarded by
 `process.env.NEXT_RUNTIME === 'nodejs'`, which dynamically imports one module that (1) validates the
 environment, (2) seeds the first admin, and (3) starts the single `setInterval` sweep. A
-module-level flag makes a second `register()` in one process a no-op.
+module-level flag makes a second `register()` in one process a no-op. A failed validation — `APP_URL`
+absent or unparseable, or `ADMIN_PASSWORD` outside the policy on an empty database — ends the process
+with a non-zero exit status before any request is served (`FR-046`, `FR-058`).
 
 **Rationale.** `register()` is the framework's own "run once when a server instance starts, before
 it handles requests" hook (`03-api-reference/03-file-conventions/instrumentation.md`), which is what
@@ -312,15 +314,20 @@ callback rather than starting a second one.
 ### B-5. The origin check is one shared function used by every mutating entry point
 
 **Decision.** `assertSameOrigin()` in `src/features/auth/server/origin.ts` compares the request's
-`Origin` header against the installation's own origin, derived from `x-forwarded-host` / `host`
-and `x-forwarded-proto`. A missing or mismatched `Origin` is refused. The sign-in route handler
-calls it; every Server Action calls it as its first statement.
+`Origin` header against the origin `APP_URL` names. A missing or mismatched `Origin` is refused. The
+sign-in route handler calls it; every Server Action calls it as its first statement.
 
 **Rationale.** `OT-SEC-009` forbids a CSRF token and asks for `SameSite=Lax` plus an origin check on
 **every** mutating request. Next.js applies its own origin check to Server Actions, but AGENTS.md
 treats each Server Action as a public server entry point in its own right, and relying on a
 framework internal to satisfy a stated requirement leaves nothing for a test to assert against.
 One function, called explicitly, is both testable and Principle III.
+
+**Deriving the expected origin from `x-forwarded-host` / `host` and `x-forwarded-proto` was rejected.**
+Those headers travel with the request under test, so the check would compare a request against itself
+and could never refuse anything — it would satisfy `FR-023`'s wording while enforcing nothing.
+`APP_URL` is operator-supplied, is the same value the reset link is built from, and is validated at
+startup (`FR-023`, `FR-033`, `FR-058`).
 
 ### B-6. `/` redirects to `/home`; the Next.js starter page is deleted
 
@@ -444,12 +451,20 @@ and `auth_attempt` is already the specified counter.
 
 ### C-6. The sweep is safe by predicate and needs no lock
 
-**Decision.** `DELETE FROM auth_attempt WHERE attempted_at < now() - interval '15 minutes'`, run
-from the B-4 timer.
+**Decision.** Three deletes, run from the B-4 timer:
 
-**Rationale.** The predicate can only match rows already outside every live window, so the spec's
-"the sweep must not remove a row inside the live window" holds without coordinating with C-5's lock.
-`FR-043`'s durability is a property of the rows, not of the sweep.
+```sql
+DELETE FROM auth_attempt WHERE attempted_at < now() - interval '15 minutes';
+DELETE FROM session      WHERE expires_at  < now();
+DELETE FROM reset_token  WHERE used_at IS NOT NULL OR expires_at < now();
+```
+
+**Rationale.** Each predicate can only match rows that are already dead — attempts outside every live
+window, sessions that `FR-021` already resolves to no actor, and tokens that already render as used
+or expired. So the spec's "the sweep must not remove a row inside the live window" holds without
+coordinating with C-5's lock, and no caller can observe the difference between a swept row and an
+unswept one. `FR-043`'s durability is a property of the rows, not of the sweep. `FR-044` requires the
+session and token deletes to share this callback rather than start a second timer.
 
 ### C-7. The last-active-admin guard locks the admin row set
 
@@ -483,10 +498,12 @@ reason than time passing. Recorded so the two screens cannot disagree.
 | `(user_id)` on `reset_token` | cascade on deactivation |
 | `(flow, kind, subject, attempted_at)` on `auth_attempt` | the windowed count |
 | `(attempted_at)` on `auth_attempt` | the sweep |
+| `(expires_at)` on `session` | the sweep |
 
 **Rationale.** AGENTS.md: add indexes for known query patterns only, and PostgreSQL does not index
 the referencing side of a foreign key. Each row above names the query it exists for; none is
-speculative.
+speculative. `reset_token` gets no sweep index: its predicate is a disjunction that an index serves
+poorly, and the table holds one short-lived row per reset request for a team under twenty people.
 
 ### C-10. `setup_check` is dropped in the same migration that creates the five tables
 
@@ -549,8 +566,8 @@ feature rather than being resolved silently.
 ## Assumptions carried forward for `/speckit-clarify`
 
 The specification's own silences, already recorded in [`spec.md`](./spec.md)'s Assumptions section,
-stand unchanged — chiefly the **one-hour reset-token lifetime**, which remains the most consequential.
-This document adds three of its own:
+stand unchanged, less the **one-hour reset-token lifetime**, which `/speckit-clarify` settled on
+2026-08-30 and `FR-033` now fixes. This document adds three of its own:
 
 1. **`user_agent` bounded at 1000 characters** (C-3) — §5's buckets do not cover it.
 2. **`avatar_url` bounded at 2000 characters** (C-4) — same reason.
