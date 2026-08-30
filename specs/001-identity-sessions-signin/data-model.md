@@ -20,7 +20,7 @@ Every later slice inherits these. They are `FR-001` through `FR-004` and `OT-DAT
 | Primary keys | `uuid`, server-generated with `uuidv7()` at the application boundary. No database default, no `serial`. |
 | Enumerations | `text` with a `CHECK` constraint. Never `pgEnum` — widening a `CHECK` is an ordinary transactional migration. |
 | Instants | `timestamptz`. Application logic is UTC; calendar comparison uses the operator's server timezone. |
-| Free text | Every column bounded by a `CHECK`: **200** for names and handles, **10 000** for long free text, and the three exceptions research records (C-2, C-3, C-4). |
+| Free text | Every column bounded by a `CHECK`: **200** for names and handles, **10 000** for long free text, and — where the content is neither — its own stated bound with the reason it falls outside the two buckets (`FR-002`): **45** for an IP address (C-3), **1000** for a user agent (C-3), **2000** for an avatar URL (C-4), **255** for an encoded hash (C-11), **64** for a hex digest (C-2). No column is left unbounded. |
 | `updated_at` | Written explicitly by every mutator through one `touched()` helper. Never a trigger. Present on the tables that are edited (C-1). |
 | Naming | `snake_case`, singular table names. |
 | Read boundary | `user` is read through `publicUser`; contact fields only through `accountUser`. `credential`, `session`, `reset_token` and `auth_attempt` are unreachable from any read endpoint (`FR-005`). |
@@ -52,8 +52,15 @@ A person who may sign in. **Never deleted** (`FR-007`, `OT-INV-017`) — closing
 
 **Validation at the boundary** (`FR-006`, Principle II). An address is validated as an address and
 folded to lower case before it is written, at every entry point that writes one: first-run seeding,
-`admin:grant`, and — from R3 — invitation. The unique index folds case, so the database is the
-backstop rather than the only check.
+`admin:grant`, and — from R3 — invitation. Folding uses the runtime's Unicode-aware lower-casing and
+**the folded value is what is stored**, so `lower()` in the index folds a value that is already
+folded and the database and the application cannot disagree about two addresses being the same
+(`FR-006`). The unique index is the backstop rather than the only check.
+
+**A uniqueness violation is an outcome, not an error** (`FR-059`). Two writers racing the same address
+leave the constraint to decide: seeding treats the rejected insert as "already seeded" and continues
+starting (`FR-047`), and `admin:grant` treats it as "this address exists" and promotes instead. Neither
+reads first to check.
 
 **Written by this feature.** First-run seeding (`FR-045`), `admin:grant` (`FR-051`),
 `admin:deactivate` (`FR-054`), and the flag clear a completed reset performs (`FR-050`).
@@ -86,7 +93,7 @@ One user's Argon2id hash, held apart from `user` so it can never be selected int
 | --- | --- | --- |
 | `id` | `uuid` | PK, UUIDv7 |
 | `user_id` | `uuid` | `NOT NULL`, `UNIQUE`, `REFERENCES user(id) ON DELETE CASCADE` |
-| `password_hash` | `text` | `NOT NULL` |
+| `password_hash` | `text` | `NOT NULL`, `CHECK ≤ 255` (C-11) |
 | `created_at` | `timestamptz` | `NOT NULL` |
 | `updated_at` | `timestamptz` | `NOT NULL`, written by `touched()` |
 

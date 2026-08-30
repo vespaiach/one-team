@@ -14,11 +14,11 @@
 - [x] CHK002 Is the success message shown on `/signin` after a completed reset specified as to where and how it renders? The requirement fixes the redirect and the message, and nothing describes its surface. [Gap, Spec §FR-038]
 - [x] CHK003 Are the seven proposed copy strings recorded as requiring team confirmation, or have they been absorbed as decided? [Assumption, research §A-10]
 - [x] CHK004 Is an accessibility conformance target stated as a requirement for these screens, rather than left to the contrast note in the layout contract? [Gap, contracts/auth-layout.md]
-- [ ] CHK005 Are requirements defined for the page title, heading structure and document language of the three unauthenticated screens? [Gap, Spec §FR-012]
-- [ ] CHK006 Is a minimum supported viewport width stated, given the "desktop only, no breakpoints" constraint? [Gap, design-brief.md]
+- [x] CHK005 Are requirements defined for the page title, heading structure and document language of the three unauthenticated screens? [Gap, Spec §FR-012]
+- [x] CHK006 Is a minimum supported viewport width stated, given the "desktop only, no breakpoints" constraint? [Gap, design-brief.md]
 - [x] CHK007 Are requirements defined for the banner's placement, or only for its content and its non-blocking nature? [Completeness, Spec §FR-049]
 - [x] CHK008 Is a requirement stated for what the reset-request screen shows while its submission is in flight? [Gap, Spec §FR-030]
-- [ ] CHK009 Are error-summary or focus-management requirements defined for a form that fails validation on submit? [Gap, Spec §FR-027]
+- [x] CHK009 Are error-summary or focus-management requirements defined for a form that fails validation on submit? [Gap, Spec §FR-027]
 
 ## Requirement Clarity
 
@@ -32,7 +32,7 @@
 ## Requirement Consistency
 
 - [x] CHK016 Is there a stated requirement that the rejected and deactivated states match in visual treatment, or does that rule live only in the layout contract? A visual difference is as much an existence oracle as a wording one. [Consistency, Gap, Spec §FR-013]
-- [ ] CHK017 Is the banner copy's instruction to change the password from a profile screen consistent with the Profile screen being deferred to entry R4? [Conflict, research §A-10]
+- [x] CHK017 Is the banner copy's instruction to change the password from a profile screen consistent with the Profile screen being deferred to entry R4? [Conflict, research §A-10]
 - [x] CHK018 Does the design brief's request for a live countdown agree with the decision to state whole minutes computed server-side? [Conflict, design-brief.md]
 - [x] CHK019 Are the field inventories for the three screens consistent between the functional requirements and the layout contract's screens table? [Consistency, Spec §FR-012]
 - [x] CHK020 Do the validation requirements and the brief agree that the submit control stays enabled while a field is invalid? [Consistency, Spec §FR-027]
@@ -45,17 +45,17 @@
 
 ## Scenario Coverage
 
-- [ ] CHK024 Are requirements defined for keyboard-only completion of each of the three screens? [Coverage, Gap]
-- [ ] CHK025 Are requirements defined for how a screen reader is told a submission failed, as distinct from how the failure looks? [Coverage, Gap, Spec §FR-027]
-- [ ] CHK026 Are requirements stated for the throttled state's presentation on the reset screen, as distinct from sign-in? Resets are throttled under the same limits and no screen state describes it. [Coverage, Gap, Spec §FR-040]
-- [ ] CHK027 Is a requirement defined for what `/signin` renders when the caller already holds a session? [Coverage, Gap]
+- [x] CHK024 Are requirements defined for keyboard-only completion of each of the three screens? [Coverage, Gap]
+- [x] CHK025 Are requirements defined for how a screen reader is told a submission failed, as distinct from how the failure looks? [Coverage, Gap, Spec §FR-027]
+- [x] CHK026 Are requirements stated for the throttled state's presentation on the reset screen, as distinct from sign-in? Resets are throttled under the same limits and no screen state describes it. [Coverage, Gap, Spec §FR-040]
+- [x] CHK027 Is a requirement defined for what `/signin` renders when the caller already holds a session? [Coverage, Gap]
 
 ## Edge Case Coverage
 
-- [ ] CHK028 Are requirements defined for presenting a very long email address or error message inside a fixed-width card? [Edge Case, Gap]
-- [ ] CHK029 Is behaviour specified when browser autofill populates fields without firing the blur the validation rule depends on? [Edge Case, Gap, Spec §FR-027]
-- [ ] CHK030 Are requirements defined for a reduced-motion or high-contrast user preference on these screens? [Edge Case, Gap]
-- [ ] CHK031 Is behaviour defined when a reset submission succeeds but its redirect target cannot be rendered? [Edge Case, Gap, Spec §FR-038]
+- [x] CHK028 Are requirements defined for presenting a very long email address or error message inside a fixed-width card? [Edge Case, Gap]
+- [x] CHK029 Is behaviour specified when browser autofill populates fields without firing the blur the validation rule depends on? [Edge Case, Gap, Spec §FR-027]
+- [x] CHK030 Are requirements defined for a reduced-motion or high-contrast user preference on these screens? [Edge Case, Gap]
+- [x] CHK031 Is behaviour defined when a reset submission succeeds but its redirect target cannot be rendered? [Edge Case, Gap, Spec §FR-038]
 
 ## Ambiguities & Dependencies
 

@@ -12,22 +12,22 @@
 
 - [x] CHK001 Does the spec state whether the installation continues serving traffic after seeding is refused, or stops? "Stop seeding and write nothing" leaves the process's fate open. [Ambiguity, Gap, Spec §FR-046]
 - [x] CHK002 Are requirements defined for a first start where the database is empty and `ADMIN_EMAIL` is absent? [Coverage, Gap, Spec §FR-045]
-- [ ] CHK003 Is the sweep's interval period specified? The requirement fixes one timer and not how often it fires. [Gap, Spec §FR-044]
-- [ ] CHK004 Are requirements stated for the reset mail's sender address and the base URL its link carries? [Gap, Dependency, Spec §FR-033]
+- [x] CHK003 Is the sweep's interval period specified? The requirement fixes one timer and not how often it fires. [Gap, Spec §FR-044]
+- [x] CHK004 Are requirements stated for the reset mail's sender address and the base URL its link carries? [Gap, Dependency, Spec §FR-033]
 - [x] CHK005 Is the operator's recovery procedure for a lost sole-admin account documented beyond the grant command existing? [Completeness, Spec §FR-051]
-- [ ] CHK006 Are requirements defined for backup, restore, or log retention on the single box? [Gap, Spec §FR-058]
-- [ ] CHK007 Is a requirement stated for the grant command run against an address that is already an active admin? The contract enumerates three other cases. [Gap, contracts/cli-admin.md]
-- [ ] CHK008 Are requirements defined for the exit status and output format of the two commands, so an operator can script them? [Gap, Spec §FR-051]
-- [ ] CHK009 Is a requirement stated for the installation's behaviour when the database is unreachable at startup? [Gap, Spec §FR-045]
+- [x] CHK006 Are requirements defined for backup, restore, or log retention on the single box? [Gap, Spec §FR-058]
+- [x] CHK007 Is a requirement stated for the grant command run against an address that is already an active admin? The contract enumerates three other cases. [Gap, contracts/cli-admin.md]
+- [x] CHK008 Are requirements defined for the exit status and output format of the two commands, so an operator can script them? [Gap, Spec §FR-051]
+- [x] CHK009 Is a requirement stated for the installation's behaviour when the database is unreachable at startup? [Gap, Spec §FR-045]
 - [x] CHK010 Are requirements defined for SMTP that is configured but rejects the connection, as distinct from SMTP that is unconfigured? [Coverage, Gap, Spec §FR-033]
 
 ## Requirement Clarity
 
 - [x] CHK011 Is "on a first deployment" defined by the empty-user-table check alone, and does it read consistently with the rule that the check is the whole marker? [Consistency, Spec §FR-045]
-- [ ] CHK012 Does "make the app report which rule the value failed" specify where that report goes — standard output, the server log, or a failed start? [Clarity, Spec §FR-046]
+- [x] CHK012 Does "make the app report which rule the value failed" specify where that report goes — standard output, the server log, or a failed start? [Clarity, Spec §FR-046]
 - [x] CHK013 Is "the installation's only one" a constraint on this feature or on the whole product, and is the difference stated? [Clarity, Spec §FR-044]
-- [ ] CHK014 Is the prohibition on a password argument clear on whether an unrecognised flag is an error or silently ignored? [Ambiguity, Spec §FR-052]
-- [ ] CHK015 Does "mail transport supplied by the operator" state what the installation requires of that transport? [Clarity, Spec §FR-058]
+- [x] CHK014 Is the prohibition on a password argument clear on whether an unrecognised flag is an error or silently ignored? [Ambiguity, Spec §FR-052]
+- [x] CHK015 Does "mail transport supplied by the operator" state what the installation requires of that transport? [Clarity, Spec §FR-058]
 
 ## Requirement Consistency
 
@@ -45,23 +45,23 @@
 
 ## Scenario Coverage
 
-- [ ] CHK024 Are requirements defined for two application processes starting against the same empty database at once? [Coverage, Gap, Spec §FR-047]
-- [ ] CHK025 Are requirements stated for an upgrade or migration run against an installation already carrying data? [Coverage, Gap]
-- [ ] CHK026 Are requirements defined for the deactivate command run against an address with no account? [Coverage, Gap, contracts/cli-admin.md]
-- [ ] CHK027 Are requirements defined for the sweep throwing — whether the timer survives the failure? [Recovery, Gap, Spec §FR-044]
-- [ ] CHK028 Are shutdown requirements defined, so an in-flight sweep or seed is not truncated? [Recovery, Gap, Spec §FR-044]
+- [x] CHK024 Are requirements defined for two application processes starting against the same empty database at once? [Coverage, Gap, Spec §FR-047]
+- [x] CHK025 Are requirements stated for an upgrade or migration run against an installation already carrying data? [Coverage, Gap]
+- [x] CHK026 Are requirements defined for the deactivate command run against an address with no account? [Coverage, Gap, contracts/cli-admin.md]
+- [x] CHK027 Are requirements defined for the sweep throwing — whether the timer survives the failure? [Recovery, Gap, Spec §FR-044]
+- [x] CHK028 Are shutdown requirements defined, so an in-flight sweep or seed is not truncated? [Recovery, Gap, Spec §FR-044]
 
 ## Edge Case Coverage
 
-- [ ] CHK029 Is behaviour specified when `ADMIN_EMAIL` is present but is not a valid address? The specification is silent and an assumption fills it. [Edge Case, Assumption, Spec §Assumptions]
-- [ ] CHK030 Are requirements defined for the box's clock moving backwards, given every window and expiry is an instant? [Edge Case, Gap]
-- [ ] CHK031 Is the effect of the timezone variable on any behaviour in this feature stated, given every stored instant is timezone-aware? [Ambiguity, contracts/environment.md]
-- [ ] CHK032 Are requirements defined for a terminal that cannot suppress echo when the grant command prompts for a password? [Edge Case, Gap, Spec §FR-052]
+- [x] CHK029 Is behaviour specified when `ADMIN_EMAIL` is present but is not a valid address? The specification is silent and an assumption fills it. [Edge Case, Assumption, Spec §Assumptions]
+- [x] CHK030 Are requirements defined for the box's clock moving backwards, given every window and expiry is an instant? [Edge Case, Gap]
+- [x] CHK031 Is the effect of the timezone variable on any behaviour in this feature stated, given every stored instant is timezone-aware? [Ambiguity, contracts/environment.md]
+- [x] CHK032 Are requirements defined for a terminal that cannot suppress echo when the grant command prompts for a password? [Edge Case, Gap, Spec §FR-052]
 
 ## Dependencies & Assumptions
 
 - [x] CHK033 Are the operator-supplied prerequisites stated with the minimum versions the feature depends on? [Dependency, Spec §Dependencies]
-- [ ] CHK034 Is the assumption that the installation runs as a single instance recorded as a premise the throttle and the timer rely on? [Assumption, Spec §FR-044]
+- [x] CHK034 Is the assumption that the installation runs as a single instance recorded as a premise the throttle and the timer rely on? [Assumption, Spec §FR-044]
 
 ## Notes
 
