@@ -10,43 +10,43 @@
 
 ## Requirement Completeness
 
-- [ ] CHK001 Is the reset-token lifetime stated as a requirement rather than only as an assumption? `FR-036` names the expired state without fixing a duration. [Gap, Spec §FR-036]
-- [ ] CHK002 Is the base URL used to build the emailed reset link specified anywhere? `FR-033` requires a mailed link and the environment contract names no origin or app-URL value. [Gap, Dependency, contracts/environment.md]
+- [x] CHK001 Is the reset-token lifetime stated as a requirement rather than only as an assumption? `FR-036` names the expired state without fixing a duration. [Gap, Spec §FR-036]
+- [x] CHK002 Is the base URL used to build the emailed reset link specified anywhere? `FR-033` requires a mailed link and the environment contract names no origin or app-URL value. [Gap, Dependency, contracts/environment.md]
 - [ ] CHK003 Is the session cookie's name specified, or left to implementation? The HTTP contract writes it as a placeholder. [Gap, contracts/http-and-actions.md]
 - [ ] CHK004 Are the Argon2id cost parameters stated as a requirement, or only as a research decision? `FR-028` fixes the algorithm and not its tuning. [Gap, Spec §FR-028]
 - [ ] CHK005 Is the source of randomness for the 32 bytes required to be cryptographically secure? [Gap, Spec §FR-029]
 - [ ] CHK006 Is the size and provenance of the common-password blocklist specified, or does it rest on the "order of ten thousand" assumption? [Assumption, Spec §FR-026]
 - [ ] CHK007 Are requirements defined for deriving `ip_address` when the installation sits behind a reverse proxy, and for whether a forwarded header may be trusted by the per-IP throttle? [Gap, Spec §FR-039]
-- [ ] CHK008 Is a retention or expiry-sweep requirement stated for `session` and `reset_token` rows? `FR-044` sweeps attempt rows only. [Gap, Spec §FR-044]
+- [x] CHK008 Is a retention or expiry-sweep requirement stated for `session` and `reset_token` rows? `FR-044` sweeps attempt rows only. [Gap, Spec §FR-044]
 - [ ] CHK009 Are requirements defined for a caller who already holds a valid session and posts to sign-in again? [Coverage, Gap]
 - [ ] CHK010 Is any limit on concurrent sessions per user specified? [Gap, Spec §FR-016]
 - [ ] CHK011 Are requirements stated for what the installation *does* log on an authentication failure? `SC-010` constrains only what must not appear. [Gap, Spec §SC-010]
 
 ## Requirement Clarity
 
-- [ ] CHK012 Is "refreshed on every use" defined — whether every request refreshes the expiry, or only one that resolves an actor? [Clarity, Spec §FR-017]
-- [ ] CHK013 Is "refuse for fifteen minutes after five failures" reconcilable with a rolling fifteen-minute window, or does it describe a fixed lockout starting at the fifth failure? The two models expire at different instants. [Ambiguity, Spec §FR-039]
+- [x] CHK012 Is "refreshed on every use" defined — whether every request refreshes the expiry, or only one that resolves an actor? [Clarity, Spec §FR-017]
+- [x] CHK013 Is "refuse for fifteen minutes after five failures" reconcilable with a rolling fifteen-minute window, or does it describe a fixed lockout starting at the fifth failure? The two models expire at different instants. [Ambiguity, Spec §FR-039]
 - [ ] CHK014 Are the units of the "remaining time" the refusal must state specified? Research proposes whole minutes while the transport contract returns seconds. [Conflict, Spec §FR-039]
-- [ ] CHK015 Is "the installation's own origin" defined — how it is determined, and against which configured value it is compared? [Clarity, Spec §FR-023]
-- [ ] CHK016 Does "no other difference an unauthenticated caller can observe" state explicitly that response timing is included? [Clarity, Spec §FR-013]
-- [ ] CHK017 Is "opaque" defined by a property a reviewer can check rather than by contrast with a signed token? [Measurability, Spec §FR-017]
+- [x] CHK015 Is "the installation's own origin" defined — how it is determined, and against which configured value it is compared? [Clarity, Spec §FR-023]
+- [x] CHK016 Does "no other difference an unauthenticated caller can observe" state explicitly that response timing is included? [Clarity, Spec §FR-013]
+- [x] CHK017 Is "opaque" defined by a property a reviewer can check rather than by contrast with a signed token? [Measurability, Spec §FR-017]
 - [ ] CHK018 Is "read or disclose any `user` record" clear about whether an internal lookup that never reaches a response is permitted? Sign-in must read a user row to verify a password. [Ambiguity, Spec §FR-015]
-- [ ] CHK019 Is "MUST NOT be reachable from any read endpoint" expressed so a reviewer can decide what counts as reachable? [Measurability, Spec §FR-005]
+- [x] CHK019 Is "MUST NOT be reachable from any read endpoint" expressed so a reviewer can decide what counts as reachable? [Measurability, Spec §FR-005]
 
 ## Requirement Consistency
 
-- [ ] CHK020 Do the sign-in requirements state that the deactivated message is reachable only once the password is proved? The edge-case list says so; neither `FR-013` nor `FR-014` does. [Consistency, Spec §FR-014]
-- [ ] CHK021 Do the clearing rules settle that a successful sign-in clears only sign-in-flow, address-kind rows, without a second statement widening it? [Consistency, Spec §FR-018]
-- [ ] CHK022 Are the opposite recording rules for the two flows stated with the reason the asymmetry exists? [Consistency, Spec §FR-032]
-- [ ] CHK023 Does "every mutating request" hold for both Server Actions as well as the sign-in route handler, with nothing elsewhere narrowing it? [Consistency, Spec §FR-023]
-- [ ] CHK024 Do the no-delete rule and the cascade deletes declared on dependent tables conflict in what they imply about a user row's deletability? [Conflict, Spec §FR-007]
+- [x] CHK020 Do the sign-in requirements state that the deactivated message is reachable only once the password is proved? The edge-case list says so; neither `FR-013` nor `FR-014` does. [Consistency, Spec §FR-014]
+- [x] CHK021 Do the clearing rules settle that a successful sign-in clears only sign-in-flow, address-kind rows, without a second statement widening it? [Consistency, Spec §FR-018]
+- [x] CHK022 Are the opposite recording rules for the two flows stated with the reason the asymmetry exists? [Consistency, Spec §FR-032]
+- [x] CHK023 Does "every mutating request" hold for both Server Actions as well as the sign-in route handler, with nothing elsewhere narrowing it? [Consistency, Spec §FR-023]
+- [x] CHK024 Do the no-delete rule and the cascade deletes declared on dependent tables conflict in what they imply about a user row's deletability? [Conflict, Spec §FR-007]
 
 ## Acceptance Criteria Quality
 
-- [ ] CHK025 Can "no field in either response that differs" be objectively verified, given the result union carries no discriminator for the two rejected cases? [Measurability, Spec §SC-003]
+- [x] CHK025 Can "no field in either response that differs" be objectively verified, given the result union carries no discriminator for the two rejected cases? [Measurability, Spec §SC-003]
 - [ ] CHK026 Is "any log line the installation produces" bounded to a set a reviewer can enumerate? [Measurability, Spec §SC-010]
-- [ ] CHK027 Does the five-failure criterion state the observation window that makes it checkable? [Acceptance Criteria, Spec §SC-005]
-- [ ] CHK028 Is "by the time the next request from any of them is answered" stated as a condition a test can assert? [Measurability, Spec §SC-008]
+- [x] CHK027 Does the five-failure criterion state the observation window that makes it checkable? [Acceptance Criteria, Spec §SC-005]
+- [x] CHK028 Is "by the time the next request from any of them is answered" stated as a condition a test can assert? [Measurability, Spec §SC-008]
 
 ## Scenario Coverage
 
@@ -65,8 +65,8 @@
 
 ## Dependencies & Assumptions
 
-- [ ] CHK038 Is the one-hour reset-token lifetime carried as an open question for the team rather than settled silently downstream? [Assumption, Spec §Assumptions]
-- [ ] CHK039 Is the assumption that a sibling reset token stays usable recorded where a reviewer of the single-use rule will meet it? [Assumption, Spec §FR-037]
+- [x] CHK038 Is the one-hour reset-token lifetime carried as an open question for the team rather than settled silently downstream? [Assumption, Spec §Assumptions]
+- [x] CHK039 Is the assumption that a sibling reset token stays usable recorded where a reviewer of the single-use rule will meet it? [Assumption, Spec §FR-037]
 - [ ] CHK040 Is the dependency on operator-supplied SMTP stated with its security consequence, given the reset link travels over it? [Dependency, Spec §FR-058]
 
 ## Notes

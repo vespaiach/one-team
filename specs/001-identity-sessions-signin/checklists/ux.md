@@ -10,38 +10,38 @@
 
 ## Requirement Completeness
 
-- [ ] CHK001 Is the in-flight state of the Sign in control required anywhere in the specification, or only in the design brief? No functional requirement covers it. [Gap, Spec §FR-012]
-- [ ] CHK002 Is the success message shown on `/signin` after a completed reset specified as to where and how it renders? The requirement fixes the redirect and the message, and nothing describes its surface. [Gap, Spec §FR-038]
-- [ ] CHK003 Are the seven proposed copy strings recorded as requiring team confirmation, or have they been absorbed as decided? [Assumption, research §A-10]
+- [x] CHK001 Is the in-flight state of the Sign in control required anywhere in the specification, or only in the design brief? No functional requirement covers it. [Gap, Spec §FR-012]
+- [x] CHK002 Is the success message shown on `/signin` after a completed reset specified as to where and how it renders? The requirement fixes the redirect and the message, and nothing describes its surface. [Gap, Spec §FR-038]
+- [x] CHK003 Are the seven proposed copy strings recorded as requiring team confirmation, or have they been absorbed as decided? [Assumption, research §A-10]
 - [ ] CHK004 Is an accessibility conformance target stated as a requirement for these screens, rather than left to the contrast note in the layout contract? [Gap, contracts/auth-layout.md]
 - [ ] CHK005 Are requirements defined for the page title, heading structure and document language of the three unauthenticated screens? [Gap, Spec §FR-012]
 - [ ] CHK006 Is a minimum supported viewport width stated, given the "desktop only, no breakpoints" constraint? [Gap, design-brief.md]
-- [ ] CHK007 Are requirements defined for the banner's placement, or only for its content and its non-blocking nature? [Completeness, Spec §FR-049]
-- [ ] CHK008 Is a requirement stated for what the reset-request screen shows while its submission is in flight? [Gap, Spec §FR-030]
+- [x] CHK007 Are requirements defined for the banner's placement, or only for its content and its non-blocking nature? [Completeness, Spec §FR-049]
+- [x] CHK008 Is a requirement stated for what the reset-request screen shows while its submission is in flight? [Gap, Spec §FR-030]
 - [ ] CHK009 Are error-summary or focus-management requirements defined for a form that fails validation on submit? [Gap, Spec §FR-027]
 
 ## Requirement Clarity
 
-- [ ] CHK010 Is "and nothing else" precise enough to settle whether a product name, a page heading, or supporting text may appear on the card? [Clarity, Spec §FR-012]
-- [ ] CHK011 Is "renders outside the shell" defined by what it excludes, given the shell it names does not exist until entry R2? [Clarity, Spec §FR-012]
-- [ ] CHK012 Does "per field on blur" define behaviour after the first blur — whether a field re-validates on each keystroke from then on? [Ambiguity, Spec §FR-027]
-- [ ] CHK013 Is "distinguishable from one another" for the three token states expressed as a checkable property rather than left entirely to the copy? [Measurability, Spec §FR-036]
-- [ ] CHK014 Is "advisory banner" defined tightly enough to exclude a dismissible or modal treatment? [Clarity, Spec §FR-049]
-- [ ] CHK015 Does "reachable only through the emailed link" state a rendering requirement, an access-control requirement, or both? [Ambiguity, Spec §FR-034]
+- [x] CHK010 Is "and nothing else" precise enough to settle whether a product name, a page heading, or supporting text may appear on the card? [Clarity, Spec §FR-012]
+- [x] CHK011 Is "renders outside the shell" defined by what it excludes, given the shell it names does not exist until entry R2? [Clarity, Spec §FR-012]
+- [x] CHK012 Does "per field on blur" define behaviour after the first blur — whether a field re-validates on each keystroke from then on? [Ambiguity, Spec §FR-027]
+- [x] CHK013 Is "distinguishable from one another" for the three token states expressed as a checkable property rather than left entirely to the copy? [Measurability, Spec §FR-036]
+- [x] CHK014 Is "advisory banner" defined tightly enough to exclude a dismissible or modal treatment? [Clarity, Spec §FR-049]
+- [x] CHK015 Does "reachable only through the emailed link" state a rendering requirement, an access-control requirement, or both? [Ambiguity, Spec §FR-034]
 
 ## Requirement Consistency
 
-- [ ] CHK016 Is there a stated requirement that the rejected and deactivated states match in visual treatment, or does that rule live only in the layout contract? A visual difference is as much an existence oracle as a wording one. [Consistency, Gap, Spec §FR-013]
+- [x] CHK016 Is there a stated requirement that the rejected and deactivated states match in visual treatment, or does that rule live only in the layout contract? A visual difference is as much an existence oracle as a wording one. [Consistency, Gap, Spec §FR-013]
 - [ ] CHK017 Is the banner copy's instruction to change the password from a profile screen consistent with the Profile screen being deferred to entry R4? [Conflict, research §A-10]
-- [ ] CHK018 Does the design brief's request for a live countdown agree with the decision to state whole minutes computed server-side? [Conflict, design-brief.md]
-- [ ] CHK019 Are the field inventories for the three screens consistent between the functional requirements and the layout contract's screens table? [Consistency, Spec §FR-012]
-- [ ] CHK020 Do the validation requirements and the brief agree that the submit control stays enabled while a field is invalid? [Consistency, Spec §FR-027]
+- [x] CHK018 Does the design brief's request for a live countdown agree with the decision to state whole minutes computed server-side? [Conflict, design-brief.md]
+- [x] CHK019 Are the field inventories for the three screens consistent between the functional requirements and the layout contract's screens table? [Consistency, Spec §FR-012]
+- [x] CHK020 Do the validation requirements and the brief agree that the submit control stays enabled while a field is invalid? [Consistency, Spec §FR-027]
 
 ## Acceptance Criteria Quality
 
-- [ ] CHK021 Can "identical in treatment — position, spacing, and the element that carries them" be objectively verified by a reviewer? [Measurability, contracts/auth-layout.md]
-- [ ] CHK022 Does the under-three-minutes recovery loop state which steps it counts, so two reviewers would measure it the same way? [Measurability, Spec §SC-009]
-- [ ] CHK023 Are the six settled design decisions — card width, type scale, spacing unit, field height, focus ring, dark mode — recorded with values a reviewer can check a screen against? [Acceptance Criteria, research §A]
+- [x] CHK021 Can "identical in treatment — position, spacing, and the element that carries them" be objectively verified by a reviewer? [Measurability, contracts/auth-layout.md]
+- [x] CHK022 Does the under-three-minutes recovery loop state which steps it counts, so two reviewers would measure it the same way? [Measurability, Spec §SC-009]
+- [x] CHK023 Are the six settled design decisions — card width, type scale, spacing unit, field height, focus ring, dark mode — recorded with values a reviewer can check a screen against? [Acceptance Criteria, research §A]
 
 ## Scenario Coverage
 
@@ -59,9 +59,9 @@
 
 ## Ambiguities & Dependencies
 
-- [ ] CHK032 Is the muted-text and danger-token contrast shortfall on the page background recorded as an accepted risk carrying a rule later slices must follow? [Assumption, contracts/auth-layout.md]
-- [ ] CHK033 Is the dependency on entry R2 for the banner's host slot stated in the requirement itself rather than only in the plan's complexity table? [Dependency, Spec §FR-049]
-- [ ] CHK034 Is the decision to exclude dark mode recorded where a later slice will meet it, given every token would need a second value to reverse it? [Assumption, research §A-3]
+- [x] CHK032 Is the muted-text and danger-token contrast shortfall on the page background recorded as an accepted risk carrying a rule later slices must follow? [Assumption, contracts/auth-layout.md]
+- [x] CHK033 Is the dependency on entry R2 for the banner's host slot stated in the requirement itself rather than only in the plan's complexity table? [Dependency, Spec §FR-049]
+- [x] CHK034 Is the decision to exclude dark mode recorded where a later slice will meet it, given every token would need a second value to reverse it? [Assumption, research §A-3]
 
 ## Notes
 
