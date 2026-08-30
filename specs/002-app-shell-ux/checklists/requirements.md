@@ -36,44 +36,56 @@ Entry **R2** assigns seventeen requirement IDs. Each is cited by at least one fu
 | Assigned ID | Covered by |
 |---|---|
 | `OT-SCOPE-004` | FR-010 |
-| `OT-SCOPE-007` | FR-027 |
-| `OT-UX-001` | FR-001, FR-003, FR-004, FR-026 |
-| `OT-UX-002` | FR-022 |
+| `OT-SCOPE-007` | FR-028, FR-029 |
+| `OT-UX-001` | FR-001, FR-003, FR-004, FR-027 |
+| `OT-UX-002` | FR-023 |
 | `OT-UX-003` | FR-011 |
-| `OT-UX-004` | FR-021 |
-| `OT-UX-005` | FR-030 |
-| `OT-UX-006` | FR-031 |
-| `OT-UX-007` | FR-023 |
-| `OT-UX-016` | FR-032 |
-| `OT-UX-017` | FR-033 |
-| `OT-UX-018` | FR-028, FR-029 |
+| `OT-UX-004` | FR-022 |
+| `OT-UX-005` | FR-032 |
+| `OT-UX-006` | FR-033 |
+| `OT-UX-007` | FR-024 |
+| `OT-UX-016` | FR-034 |
+| `OT-UX-017` | FR-035 |
+| `OT-UX-018` | FR-030, FR-031 |
 | `OT-UX-019` | FR-017 |
 | `OT-UX-021` | FR-013, FR-014 |
-| `OT-SEC-015` | FR-020 |
-| `OT-AUTHZ-005` | FR-014, FR-015 |
+| `OT-SEC-015` | FR-021 |
+| `OT-AUTHZ-005` | FR-014, FR-015, FR-029 |
 | `OT-AUTHZ-012` | FR-016 |
 
 One further ID is cited without being assigned: `OT-SCOPE-001`, which the roadmap attributes to the
-whole epic, at FR-006's no-team-switcher rule. Citing it is not a claim on it.
+whole epic, at FR-006's no-team-switcher rule. Citing it is not a claim on it. FR-018 (sign-out) cites
+`OT-SEC-009` and `OT-AUTHZ-004`, both entry R1's, because it is this feature's only mutating request and
+they are the rules that protect one; no index ID covers the control itself — §6 requires the capability
+and entry R1 defers the control here.
 
 ## Notes
 
-- **Five of the thirty-three functional requirements have no acceptance scenario, by design.**
-  FR-013 and FR-022 state the disabled-control-with-inline-reason rule, and FR-030 to FR-033 state
+- **Six of the thirty-five functional requirements have no acceptance scenario, by design.**
+  FR-013 and FR-023 state the disabled-control-with-inline-reason rule, and FR-032 to FR-035 state
   the toast, skeleton, re-query and connection-banner rules. This feature renders no unusable
-  control, performs no write and loads no data, so none of the six can be exercised here. Each is
-  recorded under *Assumptions → Reconciliations* with the entry that implements it, and change gate 1
-  asks this feature for no test it cannot write. A reviewer should read the absence as deliberate
-  rather than as missing coverage.
-- **On "no implementation details".** FR-028 names React Aria Components, and FR-001 and FR-005 name
+  control, loads no data, and its one write — sign-out, FR-018 — ends the session and leaves the
+  application, so none of the six can be exercised here. Each carries an inline marker naming the
+  entry that implements it, so the absence is visible on the requirement's own line rather than only
+  in this note, and change gate 1 asks this feature for no test it cannot write. A reviewer should
+  read the absence as deliberate rather than as missing coverage.
+- **On "no implementation details".** FR-030 names React Aria Components, and FR-001 and FR-005 name
   a 262px sidebar. Both are product requirements taken upstream — `OT-UX-018` and §3 and §7 of the
   specification — not choices this document makes. Everything that *is* a choice appears only under
   *Assumptions → Inherited constraints*, where it is labelled as inherited.
-- **The two assumptions worth clarifying first** are the minimum layout width below which the page
-  scrolls horizontally, and whether sidebar entries should render before the screens they point at
-  exist. The second changes what a reviewer sees on day one of every entry from R3 to R11.
-- **The roadmap's *In* list and this feature's testable surface diverge in one place**, recorded as
-  the first reconciliation: disabled-control-with-inline-reason is listed as in scope but has no
-  caller until R5 or R6. This is a candidate for a roadmap amendment under §5 rather than a defect in
-  this spec.
+- **Both open assumptions were settled** in *Clarifications → Session 2026-08-30*: the minimum page
+  width is 1280px with horizontal scrolling below it (FR-010), and sidebar entries render from this
+  entry onward with undelivered routes answering the not-found convention (FR-029). Nothing in
+  *Assumptions* is now marked as awaiting confirmation.
+- **The roadmap divergence is closed.** `docs/ROADMAP.md` has been amended under §5 in the same
+  change: disabled-control-with-inline-reason moved out of R2's *In* list into its *fixed here as
+  rules, not implemented here* sentence, and the R2 row now names sign-out on the user chip. The
+  rule's first caller is entry R3's last-active-admin `Deactivate` control (§3.9) — earlier than the
+  R5/R6 this checklist previously guessed, and earlier than R4, which has no such control at all.
+- **The count was nearly eight, not six.** As first written, FR-029 had every undelivered route answer
+  "This doesn't exist", and in this feature every admin-only route is undelivered — which left FR-019
+  and FR-020 with no reachable caller and made four acceptance scenarios untestable, on a screen the
+  roadmap lists under R2's *In*. FR-029 now orders the two checks, authorization before existence, and
+  the route group registers each guard alongside its route. Forbidden is testable here against a real
+  route, and the six remain six.
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`.
