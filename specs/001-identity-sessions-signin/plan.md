@@ -74,10 +74,11 @@ table (IV).
 stories, 5 tables, 3 screens plus 1 unmounted component, 1 route handler, 2 Server Actions, 2 CLI
 commands.
 
-**Unknowns**: one, carried into `tasks.md` as T007. Research C-3 flags that `NextRequest.ip` existed in
-earlier Next versions and was removed, so whether a Route Handler can read the connection's peer
-address is unverified — this worktree has no `node_modules` to check against. `FR-016` fixes the rule
-either way; only the mechanism is open, and T049 depends on the answer.
+**Unknowns**: none remaining. T007 verified against the installed `next@16.3.2` package that
+`NextRequest.ip` was removed in `v15.0.0` and never replaced; research C-3 records the mechanism
+`FR-016`'s rule reads through instead — `X-Forwarded-For`, first hop when `TRUST_PROXY` is unset
+(Next's own server populates it from the socket only when no proxy already set it), last hop when
+it is set. T049 implements it.
 
 Everything else is settled. The design brief's six open decisions and its neutral-scale gap are
 resolved in [`research.md`](./research.md) §A. `/speckit-clarify` settled nine more on 2026-08-30 —
