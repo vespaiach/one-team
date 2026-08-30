@@ -12,25 +12,25 @@
 
 - [x] CHK001 Is the reset-token lifetime stated as a requirement rather than only as an assumption? `FR-036` names the expired state without fixing a duration. [Gap, Spec §FR-036]
 - [x] CHK002 Is the base URL used to build the emailed reset link specified anywhere? `FR-033` requires a mailed link and the environment contract names no origin or app-URL value. [Gap, Dependency, contracts/environment.md]
-- [ ] CHK003 Is the session cookie's name specified, or left to implementation? The HTTP contract writes it as a placeholder. [Gap, contracts/http-and-actions.md]
-- [ ] CHK004 Are the Argon2id cost parameters stated as a requirement, or only as a research decision? `FR-028` fixes the algorithm and not its tuning. [Gap, Spec §FR-028]
-- [ ] CHK005 Is the source of randomness for the 32 bytes required to be cryptographically secure? [Gap, Spec §FR-029]
-- [ ] CHK006 Is the size and provenance of the common-password blocklist specified, or does it rest on the "order of ten thousand" assumption? [Assumption, Spec §FR-026]
-- [ ] CHK007 Are requirements defined for deriving `ip_address` when the installation sits behind a reverse proxy, and for whether a forwarded header may be trusted by the per-IP throttle? [Gap, Spec §FR-039]
+- [x] CHK003 Is the session cookie's name specified, or left to implementation? The HTTP contract writes it as a placeholder. [Gap, contracts/http-and-actions.md]
+- [x] CHK004 Are the Argon2id cost parameters stated as a requirement, or only as a research decision? `FR-028` fixes the algorithm and not its tuning. [Gap, Spec §FR-028]
+- [x] CHK005 Is the source of randomness for the 32 bytes required to be cryptographically secure? [Gap, Spec §FR-029]
+- [x] CHK006 Is the size and provenance of the common-password blocklist specified, or does it rest on the "order of ten thousand" assumption? [Assumption, Spec §FR-026]
+- [x] CHK007 Are requirements defined for deriving `ip_address` when the installation sits behind a reverse proxy, and for whether a forwarded header may be trusted by the per-IP throttle? [Gap, Spec §FR-039]
 - [x] CHK008 Is a retention or expiry-sweep requirement stated for `session` and `reset_token` rows? `FR-044` sweeps attempt rows only. [Gap, Spec §FR-044]
-- [ ] CHK009 Are requirements defined for a caller who already holds a valid session and posts to sign-in again? [Coverage, Gap]
-- [ ] CHK010 Is any limit on concurrent sessions per user specified? [Gap, Spec §FR-016]
-- [ ] CHK011 Are requirements stated for what the installation *does* log on an authentication failure? `SC-010` constrains only what must not appear. [Gap, Spec §SC-010]
+- [x] CHK009 Are requirements defined for a caller who already holds a valid session and posts to sign-in again? [Coverage, Gap]
+- [x] CHK010 Is any limit on concurrent sessions per user specified? [Gap, Spec §FR-016]
+- [x] CHK011 Are requirements stated for what the installation *does* log on an authentication failure? `SC-010` constrains only what must not appear. [Gap, Spec §SC-010]
 
 ## Requirement Clarity
 
 - [x] CHK012 Is "refreshed on every use" defined — whether every request refreshes the expiry, or only one that resolves an actor? [Clarity, Spec §FR-017]
 - [x] CHK013 Is "refuse for fifteen minutes after five failures" reconcilable with a rolling fifteen-minute window, or does it describe a fixed lockout starting at the fifth failure? The two models expire at different instants. [Ambiguity, Spec §FR-039]
-- [ ] CHK014 Are the units of the "remaining time" the refusal must state specified? Research proposes whole minutes while the transport contract returns seconds. [Conflict, Spec §FR-039]
+- [x] CHK014 Are the units of the "remaining time" the refusal must state specified? Research proposes whole minutes while the transport contract returns seconds. [Conflict, Spec §FR-039]
 - [x] CHK015 Is "the installation's own origin" defined — how it is determined, and against which configured value it is compared? [Clarity, Spec §FR-023]
 - [x] CHK016 Does "no other difference an unauthenticated caller can observe" state explicitly that response timing is included? [Clarity, Spec §FR-013]
 - [x] CHK017 Is "opaque" defined by a property a reviewer can check rather than by contrast with a signed token? [Measurability, Spec §FR-017]
-- [ ] CHK018 Is "read or disclose any `user` record" clear about whether an internal lookup that never reaches a response is permitted? Sign-in must read a user row to verify a password. [Ambiguity, Spec §FR-015]
+- [x] CHK018 Is "read or disclose any `user` record" clear about whether an internal lookup that never reaches a response is permitted? Sign-in must read a user row to verify a password. [Ambiguity, Spec §FR-015]
 - [x] CHK019 Is "MUST NOT be reachable from any read endpoint" expressed so a reviewer can decide what counts as reachable? [Measurability, Spec §FR-005]
 
 ## Requirement Consistency
@@ -44,30 +44,30 @@
 ## Acceptance Criteria Quality
 
 - [x] CHK025 Can "no field in either response that differs" be objectively verified, given the result union carries no discriminator for the two rejected cases? [Measurability, Spec §SC-003]
-- [ ] CHK026 Is "any log line the installation produces" bounded to a set a reviewer can enumerate? [Measurability, Spec §SC-010]
+- [x] CHK026 Is "any log line the installation produces" bounded to a set a reviewer can enumerate? [Measurability, Spec §SC-010]
 - [x] CHK027 Does the five-failure criterion state the observation window that makes it checkable? [Acceptance Criteria, Spec §SC-005]
 - [x] CHK028 Is "by the time the next request from any of them is answered" stated as a condition a test can assert? [Measurability, Spec §SC-008]
 
 ## Scenario Coverage
 
-- [ ] CHK029 Are requirements defined for a sign-in attempt against an account that has no credential row? [Coverage, Gap]
-- [ ] CHK030 Are requirements defined for a reset completion whose token belongs to an account deactivated after the link was issued? [Coverage, Gap, Spec §FR-038]
-- [ ] CHK031 Are requirements stated for which refusal is reported when an address and its IP are both inside their windows? [Coverage, Gap, Spec §FR-039]
-- [ ] CHK032 Are recovery requirements defined for a caller locked out by the per-IP limit through no fault of their own, such as a shared office address? [Recovery, Gap, Spec §FR-039]
-- [ ] CHK033 Are requirements defined for sign-in when the browser has JavaScript disabled, given the transport is a client-side request? [Coverage, Gap, Spec §FR-010]
+- [x] CHK029 Are requirements defined for a sign-in attempt against an account that has no credential row? [Coverage, Gap]
+- [x] CHK030 Are requirements defined for a reset completion whose token belongs to an account deactivated after the link was issued? [Coverage, Gap, Spec §FR-038]
+- [x] CHK031 Are requirements stated for which refusal is reported when an address and its IP are both inside their windows? [Coverage, Gap, Spec §FR-039]
+- [x] CHK032 Are recovery requirements defined for a caller locked out by the per-IP limit through no fault of their own, such as a shared office address? [Recovery, Gap, Spec §FR-039]
+- [x] CHK033 Are requirements defined for sign-in when the browser has JavaScript disabled, given the transport is a client-side request? [Coverage, Gap, Spec §FR-010]
 
 ## Edge Case Coverage
 
-- [ ] CHK034 Is a maximum accepted password length specified, so an unbounded value cannot reach the hash function? [Edge Case, Gap, Spec §FR-026]
-- [ ] CHK035 Are requirements defined for an email address exceeding the free-text bound at the sign-in and reset boundaries? [Edge Case, Gap, Spec §FR-002]
-- [ ] CHK036 Does the spec state which case-folding rule makes two addresses the same, for addresses outside ASCII? [Edge Case, Spec §FR-006]
-- [ ] CHK037 Are requirements defined for a reset link opened with an empty or malformed token parameter, as distinct from an unknown one? [Edge Case, Gap, Spec §FR-036]
+- [x] CHK034 Is a maximum accepted password length specified, so an unbounded value cannot reach the hash function? [Edge Case, Gap, Spec §FR-026]
+- [x] CHK035 Are requirements defined for an email address exceeding the free-text bound at the sign-in and reset boundaries? [Edge Case, Gap, Spec §FR-002]
+- [x] CHK036 Does the spec state which case-folding rule makes two addresses the same, for addresses outside ASCII? [Edge Case, Spec §FR-006]
+- [x] CHK037 Are requirements defined for a reset link opened with an empty or malformed token parameter, as distinct from an unknown one? [Edge Case, Gap, Spec §FR-036]
 
 ## Dependencies & Assumptions
 
 - [x] CHK038 Is the one-hour reset-token lifetime carried as an open question for the team rather than settled silently downstream? [Assumption, Spec §Assumptions]
 - [x] CHK039 Is the assumption that a sibling reset token stays usable recorded where a reviewer of the single-use rule will meet it? [Assumption, Spec §FR-037]
-- [ ] CHK040 Is the dependency on operator-supplied SMTP stated with its security consequence, given the reset link travels over it? [Dependency, Spec §FR-058]
+- [x] CHK040 Is the dependency on operator-supplied SMTP stated with its security consequence, given the reset link travels over it? [Dependency, Spec §FR-058]
 
 ## Notes
 

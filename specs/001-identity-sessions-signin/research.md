@@ -221,12 +221,12 @@ specification fixes are unchanged and are not repeated here.
 | Surface | Text |
 | --- | --- |
 | Deactivated, contact configured | `This account is closed. Contact <SUPPORT_EMAIL>.` |
-| Throttled | `Too many attempts. Try again in <n> minutes.` |
+| Throttled | `Too many attempts. Try again in <n> minutes.` — `<n>` is the transport's `retryAfterSeconds` rounded **up** to whole minutes, so a live refusal never renders as zero (`FR-039`) |
 | Expired token | `This link has expired. Reset links are good for one hour — request a new one.` |
 | Used token | `This link has already been used. If you still need to change your password, request a new one.` |
 | Unknown token | `This link isn't valid. Request a new one to change your password.` |
 | `/signin` after a completed reset | `Your password has been changed. Sign in with it.` |
-| Must-change-password banner | `You're still using the password this installation was set up with. Change it from your profile.` |
+| Must-change-password banner | `You're still using the password this installation was set up with.` — and nothing more: R1 delivers no screen from which a signed-in user can change a password, so an instruction naming one would send the reader nowhere. R4's Profile adds the route, and amends this string when it does. |
 
 **Rationale.** The three token states each name their own cause and each carry the same route
 forward — back to `/reset` — which is what `OT-SEC-016` means by "distinguishable". The throttle
@@ -425,6 +425,17 @@ validating at the entry point is `Principle II` applied where the untrusted valu
 `user_agent` is not one of §5's named buckets, so 1000 is chosen: long enough for real strings,
 short enough to bound the row. **Assumption, flagged for `/speckit-clarify`.**
 
+**Which address is recorded.** The connection's own peer address, unless the operator has set
+`TRUST_PROXY`, in which case the last hop of `X-Forwarded-For` is used instead — settled by
+`/speckit-clarify` on 2026-08-30 and fixed by `FR-016`. The header is attacker-controlled on a
+direct connection, so reading it unconditionally would let a caller present a fresh address on every
+attempt and the twenty-per-IP limit would refuse nothing. Defaulting the other way costs an
+installation actually behind a proxy nothing worse than every caller sharing one counter, which is
+visible rather than silent. **Verify before implementing** that Next.js 16 exposes the peer address
+to a Route Handler; `NextRequest.ip` existed in earlier versions and was removed, and this worktree
+has no `node_modules` to check against. If it does not, the value has to come from the runtime
+adapter, and that is a `/speckit-tasks` concern rather than a change to the rule.
+
 ### C-4. `user.avatar_url` is bounded at 2000
 
 **Decision.** `text CHECK (char_length(avatar_url) <= 2000)`.
@@ -505,6 +516,19 @@ the referencing side of a foreign key. Each row above names the query it exists 
 speculative. `reset_token` gets no sweep index: its predicate is a disjunction that an index serves
 poorly, and the table holds one short-lived row per reset request for a team under twenty people.
 
+### C-11. `credential.password_hash` is bounded at 255
+
+**Decision.** `text CHECK (char_length(password_hash) <= 255)`.
+
+**Rationale.** `FR-002` leaves no free-text column unbounded, and a stored hash is neither a name nor
+long free text. `@node-rs/argon2` writes the PHC string
+`$argon2id$v=19$m=19456,t=2,p=1$<22-char salt>$<43-char hash>` — 96 characters at the B-10
+parameters. 255 leaves room for a later parameter change without a migration while still bounding
+the row. The column was unbounded until the requirements review found it; it is the fourth column
+outside §5's two buckets, alongside C-2, C-3 and C-4.
+
+---
+
 ### C-10. `setup_check` is dropped in the same migration that creates the five tables
 
 **Decision.** One generated migration removes `setup_check` and creates `user`, `credential`,
@@ -569,9 +593,12 @@ The specification's own silences, already recorded in [`spec.md`](./spec.md)'s A
 stand unchanged, less the **one-hour reset-token lifetime**, which `/speckit-clarify` settled on
 2026-08-30 and `FR-033` now fixes. This document adds three of its own:
 
-1. **`user_agent` bounded at 1000 characters** (C-3) — §5's buckets do not cover it.
-2. **`avatar_url` bounded at 2000 characters** (C-4) — same reason.
-3. **The seven strings in A-10**, which the design brief lists as unwritten and which this document
+1. **The seven strings in A-10**, which the design brief lists as unwritten and which this document
    proposes rather than discovers.
 
-None blocks implementation; each is a value that can change without changing a structure.
+The bounds this document introduced — `user_agent` at 1000 (C-3), `avatar_url` at 2000 (C-4) and
+`password_hash` at 255 (C-11) — are no longer carried here alone. `FR-002` now requires a column
+outside §5's two buckets to state its own bound and its reason, and `spec.md`'s Assumptions record
+all three values, so they are decisions rather than research residue.
+
+The copy does not block implementation; it is text that can change without changing a structure.

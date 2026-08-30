@@ -119,8 +119,16 @@ slice inherits them.
 | Validation per field, on blur; the submit control stays enabled and reports inline | `OT-UX-011`, research B-8 |
 | `<Form validationBehavior="aria">`, controlled `isInvalid`, `<FieldError>` for the message | research B-8 |
 | Every control has an accessible name, a visible focus indicator, and error text associated with it | AGENTS.md |
+| The conformance target is **WCAG 2.2 Level AA** — the bar A-4's contrast figures were measured against, and one A-7's 40px fields and 44px button already clear for 2.2's 24×24 target-size minimum | `FR-012` |
 | State and errors are never conveyed by colour alone | AGENTS.md |
-| No breakpoints — desktop only | §3, design brief |
+| Each screen sets its own document title and carries exactly one `<h1>`; language and direction come from the root layout | `FR-079` |
+| A refused submit moves focus to the first invalid field. **No error summary** — the failure belongs on the field | `FR-081` |
+| A form-level outcome — rejected, deactivated, throttled, a token state, the success banner — is announced when it appears, not only rendered | `FR-082` |
+| Every screen is completable by keyboard alone, focus order following the card's visual order | `FR-083` |
+| A long address or message wraps and grows the card. Never truncated, never overflowing, never a horizontal scroll | `FR-084` |
+| Validation also runs on submit for a field that was never blurred, so an autofilled value is still checked | `FR-085` |
+| No animation and no transition, so there is no motion for a reduced-motion preference to reduce | `FR-086` |
+| No breakpoints — desktop only, usable down to a **1024px** viewport; below that is unsupported and not designed for | §3, design brief, `FR-080` |
 
 ---
 
@@ -129,8 +137,8 @@ slice inherits them.
 | Route | Heading | Body | States |
 | --- | --- | --- | --- |
 | `/signin` | Sign in | email, password, "Sign in", "Forgot password?" — **nothing else**, no sign-up link, no "remember me" | form · rejected · deactivated (with and without `SUPPORT_EMAIL`) · throttled · in-flight · success-after-reset banner |
-| `/reset` | Forgot password | email, "Send reset link" — nothing else | form · in-flight · one confirmation, identical either way |
-| `/reset?token=…` | Change password | New password, Confirm password | form · mismatch · policy failure (too short / blocklisted) · expired · used · unknown · in-flight |
+| `/reset` | Forgot password | email, "Send reset link" — nothing else | form · in-flight · one confirmation, identical either way · **throttled** (`FR-087`) |
+| `/reset?token=…` | Change password | New password, Confirm password | form · mismatch · policy failure (too short / too long / blocklisted) · expired · used · unknown · in-flight |
 
 The rejected and deactivated states must be **identical in treatment** — position, spacing, and the
 element that carries them — because a visual difference is as much an account-existence oracle as a

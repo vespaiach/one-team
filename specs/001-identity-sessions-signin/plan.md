@@ -74,11 +74,18 @@ stories, 5 tables, 3 screens plus 1 unmounted component, 1 route handler, 2 Serv
 commands.
 
 **Unknowns**: none outstanding. The design brief's six open decisions and its neutral-scale gap are
-resolved in [`research.md`](./research.md) §A. `/speckit-clarify` settled five more on 2026-08-30 —
-the reset-token lifetime, `APP_URL`, the throttle's window model, the seeding-refusal exit and the
-sweep's scope — each now carried by a functional requirement rather than an assumption. The
-specification's remaining silences stand as the Assumptions [`spec.md`](./spec.md) records; research
-adds three of its own (research, *Assumptions carried forward*). None blocks implementation.
+resolved in [`research.md`](./research.md) §A. `/speckit-clarify` settled nine more on 2026-08-30 —
+the reset-token lifetime, `APP_URL`, the throttle's window model, the seeding-refusal exit, the
+sweep's scope, the 128-character password bound, the `TRUST_PROXY` rule for deriving a caller's
+address, the refusal's units and the WCAG 2.2 AA conformance target — each now carried by a
+functional requirement rather than an assumption. The
+requirements-quality review that followed closed the remaining 55 items: 29 became new requirements
+(`FR-059`…`FR-087`), nine existing requirements were amended, nine more items were recorded as
+Assumptions and one as Out of Scope, and the review found four defects — an unbounded
+`credential.password_hash`, a `throttled` result no screen rendered, `FR-015` forbidding a read
+sign-in cannot avoid, and an address bound stated at one boundary but not the other — each now
+fixed. Research carries one assumption forward, the seven proposed copy strings in A-10. None blocks
+implementation.
 
 ## Constitution Check
 
@@ -90,7 +97,7 @@ holds governance and the version record (v1.0.0).
 | | Principle | Assessment | Post-design |
 | --- | --- | --- | --- |
 | **I** | Component-Driven Architecture | The shared layout has three confirmed call sites on day one, so it is extracted from fact, not anticipation. `accountUser` is defined with no caller in this slice — justified below. No component library ships; `MustChangePasswordBanner` is one component, not a set. | pass, with one entry in Complexity Tracking |
-| **II** | Validated Input Boundaries | Every entry point validates on the server: the sign-in JSON body, both Server Actions, both CLI commands, the `token` query parameter, the `Origin` header, the `X-Forwarded-For` value written to `session.ip_address`, and `APP_URL` / `ADMIN_EMAIL` / `ADMIN_PASSWORD` at startup. Blur-time checks in the browser are a UX affordance and never the control (`FR-027`). | pass |
+| **II** | Validated Input Boundaries | Every entry point validates on the server: the sign-in JSON body, both Server Actions, both CLI commands, the `token` query parameter, the `Origin` header, the `X-Forwarded-For` value written to `session.ip_address` — read at all only under `TRUST_PROXY` (`FR-016`) — the presented password's 128-character bound on the verification path as well as where a credential is set (`FR-026`), and `APP_URL` / `ADMIN_EMAIL` / `ADMIN_PASSWORD` at startup. Blur-time checks in the browser are a UX affordance and never the control (`FR-027`). | pass |
 | **III** | Straightforward Over Clever | No metaprogramming, no dynamic dispatch, no generic machinery. The two non-obvious mechanisms — a transaction-scoped advisory lock and `SELECT … FOR UPDATE` on the admin set — are PostgreSQL built-ins chosen over a retry loop, and each is documented against the requirement that forces it (research C-5, C-7). | pass |
 | **IV** | Built-In Features Over Third-Party Libraries | Three dependencies, all pre-approved in AGENTS.md's table. Everything else is a built-in: `node:crypto` for tokens and digests, `node:util`'s `parseArgs` and `node:readline` for the CLI, `setInterval` for the sweep, `instrumentation.ts` for startup, a route group for the layout, and Tailwind v4's own type and spacing scales instead of custom tokens. The blocklist is a data file. | pass |
 | **V** | Intention-Revealing Code Without Comments | No comments in the diff. The one place a directive was tempting — a per-file `@vitest-environment` docblock — is replaced by two Vitest projects in config (research D-1). | pass |
