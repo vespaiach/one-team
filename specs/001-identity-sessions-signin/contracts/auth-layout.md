@@ -35,9 +35,9 @@ frame is needed — only on the body.
 | The layout owns | Each page owns |
 | --- | --- |
 | The page background (`--color-page`) | Its `<h1>` |
-| Vertical and horizontal centring | Its form, or its explanatory state |
+| Horizontal centring and the card's vertical anchor | Its form, or its explanatory state |
 | The card: surface, border, radius, padding, `max-width` | Its fields and its submit control |
-| The app mark above the card | Its own error, success and in-flight states |
+| The app mark above the card | Its own error, success and in-flight states — **all three routes have an in-flight state**, not only `/signin` |
 | The document `<main>` landmark | — |
 
 **It performs no data access, no authorization and no redirect.** These are the public routes; there
@@ -49,18 +49,23 @@ is nothing to check. It also holds no state: the layout has no `"use client"`, i
 ## Structural contract
 
 ```text
-main                                  --color-page, min-h-full, grid, place-items-center, py-16
-└── div                               w-full, max-w-[400px], flex-col, gap-6
-    ├── p                             app mark — text-sm, --color-text, centred
+main                                  --color-page, min-h-full, flex-col, items-center,
+                                      pt-[max(12vh,96px)], pb-16
+└── div                               w-full, max-w-[440px], flex-col, gap-6
+    ├── p                             app mark — the One/Team lockup, aligned to the card's left edge
     └── div                           the card — --color-surface, 1px --color-border,
-                                      rounded-lg, p-8, flex-col, gap-6
+                                      radius 0, p-8, flex-col, gap-6
         └── {children}                the page
 ```
 
 `min-h-full` rather than `min-h-screen`: the root layout already sets `h-full` on `<html>` and
 `min-h-full flex flex-col` on `<body>`, so the group's `<main>` inherits the height it needs.
-`py-16` on the centring container means a tall state — change password with two fields and two
-policy messages — scrolls instead of centring off the top of the viewport.
+
+**The card is never vertically centred.** Its top edge sits at `12vh` with a `96px` floor. These
+screens add and remove message blocks between states, and a vertically centred card slides under the
+reader while they are reading the error that just appeared; the floor means a short window rises
+rather than clipping, and `pb-16` means a tall state — change password with two fields and two policy
+messages — scrolls instead of running off the bottom.
 
 **Every page's first child is its `<h1>`.** The heading is not lifted into the layout because a
 layout cannot receive per-page props, and passing one through a context or a slot would be
@@ -75,31 +80,36 @@ no `tailwind.config.js` and none is created (AGENTS.md).
 
 ### Added by this feature
 
-The ten-step neutral ramp and the thirteen semantic tokens in [`../research.md`](../research.md) A-4.
-Components name **only** the semantic tokens; the ramp exists so a semantic token has somewhere
-consistent to point.
+The eleven-step warm neutral ramp and the semantic layer in [`../research.md`](../research.md) A-4,
+the six type steps in A-5, and `--spacing`, `--size-field` and `--size-card` in A-6 and A-7.
+Components name **only** the semantic tokens; the ramps exist so a semantic token has somewhere
+consistent to point, which is what keeps A-3's dark-mode reversal a one-block edit.
 
 ### Taken from the specification unchanged
 
-`--color-accent: #5b5bd6` and `--color-danger: #c8453c` are §7's accent and red. The other five
-palette colours are content colours — projects, board columns, labels — and no UI surface in this
-feature uses one.
+`--color-accent-500: #5b5bd6` and `--color-red-500: #c8453c` are §7's accent and red, each extended
+into a ramp so both have a tint, the declared value, and a step dark enough to set text on their own
+tint. The other five palette colours are content colours — projects, board columns, labels — and no
+UI surface in this feature uses one as chrome; green and amber are borrowed through
+`--color-success-*` and `--color-advisory-*` for the post-reset and must-change blocks.
 
-### One rule the token names do not carry
+### The one rule that lives in a token name
 
-`--color-text-muted` and `--color-danger` clear WCAG AA on `--color-surface` and **miss it** on
-`--color-page` (4.36:1 and 4.20:1 — research A-4). All text on these screens sits inside the card
-except the app mark, which therefore uses `--color-text`. A later slice rendering muted or error
-text directly on the page background uses `--color-text`, or adds a `-on-page` token at
-`neutral-700`.
+`--color-border` is **decorative** — the card edge and dividers, 1.49:1 on the card. Anything a user
+has to aim at uses `--color-border-control` (3.42:1), and that includes **every field border from
+rest**, because a field carries no fill of its own and its border is the only thing separating white
+from white (WCAG 1.4.11, `FR-012`). The names carry the distinction because that is the only place it
+survives eleven later slices.
+
+`src/app/globals.test.ts` asserts every foreground/background pair the screens use directly against
+`globals.css`, so a token edit that drops a pair below 4.5:1 (text) or 3:1 (non-text) fails gate 8.
 
 ### Deliberately **not** added
 
 | | Why |
 | --- | --- |
 | A dark-mode token set | Research A-3 — out of v1; the starter's `prefers-color-scheme` block is deleted |
-| Type-scale tokens | Research A-5 — Tailwind v4's default scale covers it (Principle IV) |
-| A spacing unit token | Research A-6 — the built-in 0.25rem unit is already the rhythm |
+| A `--color-focus` token | Research A-8 — the ring is `--color-accent`; a second name that always resolves to it is indirection with no requirement today (Principle III) |
 | A component library | Principle I, and the roadmap's §1.1: R2 ships none either; a shared primitive is extracted at its second call site |
 
 ---
@@ -115,11 +125,11 @@ slice inherits them.
 | Import from the package's subpath exports — `react-aria-components/TextField`, `/Form`, `/Button` — matching the root layout's existing `react-aria-components/I18nProvider` | pinned 1.20.0 package layout |
 | `onPress`, never `onClick` | AGENTS.md |
 | Visual state through `data-hovered`, `data-pressed`, `data-focus-visible` — never a hand-rolled `:hover` on an interactive element | AGENTS.md |
-| One focus-ring declaration: `outline: 2px solid var(--color-focus); outline-offset: 2px`, on `data-focus-visible` only | research A-8 |
+| One focus-ring declaration: `outline: 2px solid var(--color-accent); outline-offset: 2px`, on `data-focus-visible` only | research A-8 |
 | Validation per field, on blur; the submit control stays enabled and reports inline | `OT-UX-011`, research B-8 |
 | `<Form validationBehavior="aria">`, controlled `isInvalid`, `<FieldError>` for the message | research B-8 |
 | Every control has an accessible name, a visible focus indicator, and error text associated with it | AGENTS.md |
-| The conformance target is **WCAG 2.2 Level AA** — the bar A-4's contrast figures were measured against, and one A-7's 40px fields and 44px button already clear for 2.2's 24×24 target-size minimum | `FR-012` |
+| The conformance target is **WCAG 2.2 Level AA** — the bar A-4's contrast figures are asserted against, and one A-7's 44px fields and 44px button clear for 2.2's 24×24 target-size minimum | `FR-012` |
 | State and errors are never conveyed by colour alone | AGENTS.md |
 | Each screen sets its own document title and carries exactly one `<h1>`; language and direction come from the root layout | `FR-079` |
 | A refused submit moves focus to the first invalid field. **No error summary** — the failure belongs on the field | `FR-081` |

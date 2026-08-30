@@ -24,9 +24,10 @@ centred card and the app mark; each page owns its heading, its form and its stat
 exist on day one, so Principle I's two-call-site rule is met by fact rather than by anticipation, and
 `OT-UX-001`'s "outside the shell" becomes structural rather than a rule three pages must remember —
 R2's `(app)` group lands as a sibling and neither can leak into the other. The layout rests on the
-smallest token set that will carry eleven later slices: a neutral scale, thirteen semantic colour
-tokens, and **no** type-scale, spacing or dark-mode tokens, because Tailwind v4's built-ins already
-cover the first two and the third is not a requirement the specification states.
+token set that will carry eleven later slices: a warm eleven-step neutral scale, accent and red
+ramps, the semantic layer every component names, six type steps and the 4px spacing unit — and
+**no** dark-mode tokens, which the specification never asks for. A contrast test asserts the colour
+half of that set against `globals.css` rather than recording it in prose.
 
 Full reasoning in [`research.md`](./research.md); the layout and token contract in
 [`contracts/auth-layout.md`](./contracts/auth-layout.md).
@@ -154,9 +155,13 @@ each names why it exists.
 ```text
 src/
 ├── app/
-│   ├── layout.tsx                          EDIT — drop the Arial override so Geist applies (A-9)
-│   ├── globals.css                         EDIT — neutral scale + semantic tokens; delete the
-│   │                                              starter dark block (A-3, A-4)
+│   ├── layout.tsx                          EDIT — load Archivo, drop Geist and the Arial
+│   │                                              override (A-9)
+│   ├── globals.css                         EDIT — neutral scale + semantic tokens, type and
+│   │                                              space; delete the starter dark block
+│   │                                              (A-3 … A-8)
+│   ├── globals.test.ts                     NEW — asserts every contrast pair against the
+│   │                                              tokens (FR-012, A-4)
 │   ├── page.tsx                            REPLACE — / redirects to /home (B-6)
 │   ├── provider.tsx                        unchanged
 │   ├── (auth)/

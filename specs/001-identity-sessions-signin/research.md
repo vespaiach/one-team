@@ -76,95 +76,112 @@ the team made — it is dead code under Principle VI.
 later means adding a second value per token in one file, not editing components. That is recorded
 so the choice reads as deferred rather than foreclosed.
 
-### A-4. The neutral scale — ten steps anchored on the palette's own grey
+### A-4. The neutral scale — eleven steps, warm, beside §7's grey rather than on it
 
-**Decision.** A ten-step neutral ramp whose 500 step **is** the specification's `grey #8b909a`, so
-the neutral scale and the content palette are one system rather than two:
+**Decision.** An eleven-step warm neutral ramp. §7's `grey #8b909a` is **not** folded into it and stays
+a content colour:
 
-| Token | Value | | Token | Value |
-| --- | --- | --- | --- | --- |
-| `--color-neutral-50` | `#f7f8f9` | | `--color-neutral-500` | `#8b909a` |
-| `--color-neutral-100` | `#eef0f2` | | `--color-neutral-600` | `#6b7079` |
-| `--color-neutral-200` | `#e2e5e9` | | `--color-neutral-700` | `#4d525a` |
-| `--color-neutral-300` | `#cdd2d8` | | `--color-neutral-800` | `#33373d` |
-| `--color-neutral-400` | `#aab0b9` | | `--color-neutral-900` | `#1c1f23` |
+| Token | Value | | Token | Value | | Token | Value |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `--color-neutral-50` | `#fbfaf9` | | `--color-neutral-400` | `#b3aeaa` | | `--color-neutral-800` | `#3a3735` |
+| `--color-neutral-100` | `#f4f2f0` | | `--color-neutral-500` | `#8f8a86` | | `--color-neutral-900` | `#24211f` |
+| `--color-neutral-200` | `#e8e5e2` | | `--color-neutral-600` | `#6e6a66` | | `--color-neutral-950` | `#151312` |
+| `--color-neutral-300` | `#d7d3cf` | | `--color-neutral-700` | `#55514e` | | | |
 
-Components never name a ramp step. They name a semantic token:
+Components never name a ramp step. They name a semantic token, and every semantic token points at a
+ramp step rather than a hex — which is what keeps A-3 cheap to reverse:
 
-| Token | Value | Role |
+| Token | Points at | Role |
 | --- | --- | --- |
-| `--color-page` | `neutral-100` `#eef0f2` | the page behind the card |
-| `--color-surface` | `#ffffff` | the card, and every input fill |
-| `--color-border` | `neutral-300` `#cdd2d8` | dividers and the card edge — decorative only |
-| `--color-border-control` | `neutral-500` `#8b909a` | input and control boundaries |
-| `--color-text` | `neutral-900` `#1c1f23` | body and headings |
-| `--color-text-muted` | `neutral-600` `#6b7079` | secondary and helper text |
-| `--color-text-disabled` | `neutral-400` `#aab0b9` | disabled control text |
-| `--color-accent` | `#5b5bd6` | §7 accent — the default wherever a colour is required |
-| `--color-accent-hover` | `#4a4ac4` | `data-hovered` on an accent-filled control |
-| `--color-accent-pressed` | `#3f3fb0` | `data-pressed` |
-| `--color-danger` | `#c8453c` | §7 red — error text and invalid borders |
-| `--color-danger-surface` | `#fdf2f1` | the fill behind a message-level error |
-| `--color-focus` | `#5b5bd6` | the focus ring (A-8) |
+| `--color-page` | neutral-100 | the page behind the card |
+| `--color-surface` | `#ffffff` | the card, and the inside of every field |
+| `--color-surface-sunken` | neutral-50 | neutral message blocks — the token states |
+| `--color-border` | neutral-300 | **decorative only** — card edge and dividers |
+| `--color-border-control` | neutral-500 | **every field border, from rest** — anything a user aims at |
+| `--color-border-strong` | neutral-900 | the 2px rule opening a section or a message block |
+| `--color-text` | neutral-900 | headings, labels, field values |
+| `--color-text-muted` | neutral-600 | the one quiet line per surface, helper text |
+| `--color-text-placeholder` | neutral-600 | placeholders only |
+| `--color-text-disabled` | neutral-400 | rare here — the submit never goes dead (`OT-UX-011`) |
+| `--color-accent` / `-hover` / `-pressed` / `-text` | accent-500 / 600 / 700 / 700 | primary fill, hover, pressed, links, and the focus ring (A-8) |
+| `--color-danger` / `-fill` / `-text` | red-500 / 100 / 700 | errored border, error ground, error ink |
+| `--color-success` / `-fill` / `-text` | green-500 / 100 / 700 | the post-reset banner on `/signin` |
+| `--color-advisory` / `-fill` / `-text` | amber-500 / 100 / 700 | the must-change-password banner |
 
-**Contrast, measured rather than assumed** (WCAG 2.1 ratios against `--color-surface` `#ffffff`):
+**Contrast is asserted, not recorded.** `src/app/globals.test.ts` computes every pair below from
+`globals.css` and fails the build gate if one drops under its threshold, so this table cannot drift
+from the tokens:
 
-| Pair | Ratio | Requirement | |
-| --- | --- | --- | --- |
-| `--color-text` on surface | 16.54:1 | 4.5:1 text | pass |
-| `--color-text-muted` on surface | 4.98:1 | 4.5:1 text | pass |
-| `--color-danger` on surface | 4.80:1 | 4.5:1 text | pass |
-| `--color-accent` on surface | 5.37:1 | 4.5:1 text · 3:1 non-text | pass |
-| `#ffffff` on `--color-accent` | 5.37:1 | 4.5:1 text | pass |
-| `--color-border-control` on surface | 3.20:1 | 3:1 non-text (1.4.11) | pass |
-| `--color-border` on surface | 1.52:1 | decorative only | **not a control boundary** |
-| `--color-text` on **page** | 14.48:1 | 4.5:1 text | pass |
-| `--color-text-muted` on **page** | 4.36:1 | 4.5:1 text | **fails** |
-| `--color-danger` on **page** | 4.20:1 | 4.5:1 text | **fails** |
-
-**Two tokens are surface-only, and their names do not say so — so the rule is written down here.**
-`--color-text-muted` and `--color-danger` clear AA against `--color-surface` and miss it against
-`--color-page`. Every text on these three screens sits inside the card, with exactly one exception:
-the app mark, which sits on the page. **It uses `--color-text`** (14.48:1), not muted (A-7).
-Anything a later slice renders directly on `--color-page` follows the same rule, or introduces a
-`--color-text-muted-on-page` token at `neutral-700` (6.88:1) — the fix is a darker text token, never
-a lighter page.
-
-**Rationale.** Anchoring 500 on `#8b909a` means the one grey the specification already fixed is not
-duplicated by a near-miss neighbour. The two-tier border token exists because `#cdd2d8` reads well
-as a card edge but fails WCAG 1.4.11's 3:1 for anything a user has to aim at — writing that
-distinction into the token names is what stops the failure recurring in eleven later slices.
-
-**Alternatives rejected.** *A single `--color-border`.* One token would have to satisfy both the
-decorative and the control case; the value that passes 3:1 is heavier than a card edge wants, and
-the value that looks right fails. *A hue-neutral grey ramp.* It would sit slightly warm against the
-violet accent, and would not contain the specification's own grey.
-
-### A-5. Type scale — Tailwind v4's default, five steps of it, each with one job
-
-**Decision.** Add **no** type tokens. Use Tailwind v4's built-in scale and fix which five steps the
-product uses and what each is for:
-
-| Step | Size / line-height | Used for |
+| Pair | Ratio | Requirement |
 | --- | --- | --- |
-| `text-xs` | 12 / 16 | field error text, helper text |
-| `text-sm` | 14 / 20 | field labels, secondary and muted lines |
-| `text-base` | 16 / 24 | input values, body copy, button labels |
-| `text-lg` | 18 / 28 | reserved for R2's header title block |
-| `text-2xl` | 24 / 32 | the card heading (`<h1>`) |
+| `--color-text` on page / on surface | 14.33:1 / 16.00:1 | 4.5:1 |
+| `--color-text-muted` on page / on surface | 4.80:1 / 5.36:1 | 4.5:1 |
+| `--color-text-placeholder` on surface | 5.36:1 | 4.5:1 |
+| `--color-accent-text` on surface | 9.06:1 | 4.5:1 |
+| `--color-surface` on `--color-accent` | 5.37:1 | 4.5:1 |
+| `--color-danger-text` on `--color-danger-fill` | 6.95:1 | 4.5:1 |
+| `--color-success-text` on `--color-success-fill` | 5.27:1 | 4.5:1 |
+| `--color-advisory-text` on `--color-advisory-fill` | 4.68:1 | 4.5:1 |
+| `--color-border-control` on surface | 3.42:1 | 3:1 (1.4.11) |
+| `--color-danger` on surface | 4.80:1 | 3:1 (1.4.11) |
+| `--color-accent` on surface / on page | 5.37:1 / 4.81:1 | 3:1 (1.4.11) |
 
-**Rationale.** Principle IV — a built-in covers the need, so redeclaring identical values in
-`@theme inline` would be a dependency on our own restatement. The decision the design brief actually
-asks for is *how many steps and what they mean*, and that is what is fixed here.
+`--color-border` is absent from that list deliberately: at 1.49:1 on the card it is a rule, never a
+boundary a user has to find. **The distinction lives in the two token names**, because that is the
+only place it survives eleven later slices.
 
-### A-6. Spacing — Tailwind v4's default 0.25rem unit, on a rhythm of 4
+**Rationale.** The warm ramp clears 4.5:1 for muted text on the page background as well as on the
+card, which the earlier cool ramp did not — its `#6b7079` reached only 4.36:1 there and forced a
+written-down "surface-only" caveat that no token name carried. Keeping §7's grey out of the ramp is
+the second half of the same idea: content grey is cool because someone *chose* it for a project or a
+label, and a value someone chose must not read as chrome.
 
-**Decision.** Keep `--spacing: 0.25rem`. The card's rhythm: `p-8` (32px) card padding, `gap-5`
-(20px) between fields, `gap-6` (24px) between sections, `gap-2` (8px) between a label, its input and
-its error. Nothing on these screens uses an odd multiple.
+**Alternatives rejected.** *Folding §7's grey in as neutral-500.* It makes one system out of two at
+the cost of every neutral surface inheriting a colour that means "a user picked this". *A single
+`--color-border`.* One token has to serve both the decorative and the control case; the value that
+passes 3:1 is heavier than a card edge wants, and the value that looks right fails — which is
+exactly the failure the returned design shipped and `globals.test.ts` now catches.
 
-**Rationale.** As A-5 — the built-in unit is already 4px; the decision worth recording is the rhythm
-built on it, not the unit.
+**Supersedes** the ten-step cool ramp anchored on `#8b909a` with `--color-border-control` and
+`--color-focus`, recorded here before the design returned.
+
+### A-5. Type scale — six named steps in Archivo
+
+**Decision.** Six tokens, one family, absolute line heights so every step lands on the 4px unit:
+
+| Token | Size / line-height / weight | Used for |
+| --- | --- | --- |
+| `--text-micro` | 11 / 16 / 600 / +0.08em / caps | field labels |
+| `--text-small` | 13 / 20 / 400 | inline field errors, helper text |
+| `--text-body` | 15 / 24 / 400 | message blocks, the quiet line, links |
+| `--text-control` | 16 / 24 / 500 | field values, button labels |
+| `--text-title` | 22 / 28 / 600 / −0.01em | reserved — no R1 surface uses it |
+| `--text-display` | 32 / 36 / 700 / −0.02em | the card heading |
+
+**Rationale.** Principle IV prefers a built-in **where the built-in covers the need**. Tailwind v4's
+default scale does not contain these values — not 11, 13, 15 or 22, and none of the absolute line
+heights — so using it would mean either redrawing the type or writing arbitrary values at every call
+site. Six tokens state the scale once.
+
+**Consequence worth knowing.** Type and spacing are both absolute, so the surfaces respond to browser
+zoom but not to a raised default font size. That follows from the design's own "line heights are
+absolute so every step lands on the 4px unit", and it is a deliberate trade, not an oversight. WCAG
+1.4.4 is met through zoom.
+
+**Supersedes** the earlier decision to add no type tokens and use five steps of Tailwind's default.
+
+### A-6. Spacing — the 4px unit, declared
+
+**Decision.** `--spacing: 4px`. Everything structural lands on 8; 4 exists only for the gap between
+a control and the text annotating it. The card's rhythm: 32 padding, 24 last field → submit and
+message block → form, 20 between field groups, 8 label → field, 4 control → its inline error. 48 and
+64 are reserved for R2's shell gutters and page sections.
+
+**Rationale.** The value matches Tailwind v4's default 0.25rem at a default root size, so the
+declaration buys no new capability — it fixes the unit as absolute, consistent with A-5's absolute
+type, and puts it where the rest of the system is read from.
+
+**Supersedes** the earlier decision to declare no spacing token.
 
 ### A-7. Card geometry and field treatment
 
@@ -172,68 +189,87 @@ built on it, not the unit.
 
 | | |
 | --- | --- |
-| Card max-width | `400px` |
-| Card | `--color-surface` fill, `1px --color-border`, `rounded-lg` (8px), `p-8`, no shadow |
-| Placement | horizontally centred; vertically centred with `py-16` on the centring container, so a tall state scrolls rather than centring off-screen |
-| App mark | above the card, `gap-6`, `text-sm --color-text` — **not** muted, which fails AA on the page background (A-4) |
-| Field height | `40px` (`h-10`) |
-| Input | `--color-surface` fill, `1px --color-border-control`, `rounded-md` (6px), `px-3`, `text-base` |
-| Invalid input | border swaps to `--color-danger`; the message renders below in `text-xs --color-danger` |
-| Button | `44px` (`h-11`), full width, `--color-accent` fill, `#ffffff` label, `rounded-md`, `text-base font-medium` |
+| Card max-width | `440px` (`--size-card`), form column 376px |
+| Card | `--color-surface` fill, `1px --color-border`, **radius 0**, 32px padding, no shadow |
+| Placement | horizontally centred; top edge at **12vh with a 96px floor**, **never vertically centred** |
+| App mark | above the card, left-aligned to its edge — the two-tone `One`/`Team` lockup |
+| Field | `44px` (`--size-field`), no fill of its own, `1px --color-border-control` **from rest**, radius 0, 16px inline padding, `--text-control` |
+| Invalid field | border swaps to `--color-danger`; the message renders below in `--text-small --color-danger-text` |
+| Button | `44px`, full card width, `--color-accent` fill, `--color-surface` label, radius 0, `--text-control` at 600, label flush left |
 
-**Rationale.** 400px holds a 16px input value and a label comfortably at the reading measure a
-two-field form wants, and leaves the change-password screen's two fields plus a per-field policy
-message unclipped. No shadow: §4's tone is "one quiet line per surface", and a border already
-separates a white card from a `#eef0f2` page. The submit control is taller than a field because it
-is the only primary action on the surface, not because size encodes state — `OT-UX-011` keeps it
-enabled at all times.
+**Rationale.** Never vertically centring is the load-bearing half: these screens add and remove
+message blocks between states, and a vertically centred card slides under the reader while they are
+reading the error that just appeared. A 96px floor means a short window rises rather than clipping.
+Radius 0 throughout is one fewer value to carry into eleven slices. The submit is the same height as
+a field because size does not encode state here — `OT-UX-011` keeps it enabled at all times.
 
-**Invalid state is never colour alone.** `--color-danger` on the border is accompanied by the
-message text and by React Aria's `aria-invalid` / `aria-describedby` wiring, per §7's frontend rules.
+**The field border starts at `--color-border-control`.** The field carries no fill, so its border is
+the only thing separating white from white, and WCAG 1.4.11 applies to it at 3:1. This costs the
+returned design one affordance — the border can no longer darken to mark a field holding a value,
+because it starts there — and rest, focus and invalid remain distinct without it.
 
-### A-8. Focus ring — one rule, driven by `data-focus-visible`
+**Invalid state is never colour alone.** `--color-danger` on the border is accompanied by the message
+text and by React Aria's `aria-invalid` / `aria-describedby` wiring.
+
+**Supersedes** the 400px card, `rounded-lg` / `rounded-md` radii, 40px field and vertical centring
+recorded before the design returned.
+
+### A-8. Focus ring — one rule, driven by `data-focus-visible`, drawn in the accent
 
 **Decision.** One declaration reused by every focusable element:
-`outline: 2px solid var(--color-focus); outline-offset: 2px`, applied on `data-focus-visible` only,
-never on `:focus`.
+`outline: 2px solid var(--color-accent); outline-offset: 2px`, applied on `data-focus-visible` only,
+never on `:focus`. **There is no `--color-focus` token.**
 
 **Rationale.** `outline-offset` puts the ring outside the control with the card between them, so on
-the accent-filled submit button the ring is measured against `--color-surface` (5.37:1) rather than
-against the button's own accent fill, where it would be invisible. React Aria Components expose
-`data-focus-visible` on every interactive primitive, so one Tailwind variant covers the product and
-no component hand-rolls a focus style.
+the accent-filled submit the ring is measured against `--color-surface` (5.37:1) rather than against
+the button's own fill; on the page it is 4.81:1. Both clear 3:1, and `globals.test.ts` asserts it.
+A separate `--color-focus` would be a second semantic name that always resolves to `--color-accent`,
+which is indirection with no requirement behind it today (Principle III); if the ring ever needs to
+leave the accent, adding the token is one declaration.
 
-### A-9. The starter's font override is a bug and is deleted
+**Supersedes** the `--color-focus` token named in earlier drafts of this document and of
+`contracts/auth-layout.md`.
 
-**Decision.** Remove `body { font-family: Arial, Helvetica, sans-serif }` from `globals.css`, and
-set the body font from the `--font-sans` token the root layout already wires to Geist.
+### A-9. Archivo replaces the starter's Geist, and its Arial override
 
-**Rationale.** `src/app/layout.tsx` loads Geist Sans and Geist Mono through `next/font` and exposes
-`--font-geist-sans`; `@theme inline` already maps `--font-sans` to it. The `body` rule then overrides
-all of it with Arial, so the loaded fonts are downloaded and never used. This is starter residue on
-the first surfaces the product renders.
+**Decision.** Load **Archivo** through `next/font/google` into `--font-archivo`; `--font-sans` points
+at it. `Geist`, `Geist_Mono` and the starter's `body { font-family: Arial… }` are all removed.
 
-### A-10. Copy the design brief lists as "still to be written"
+**Rationale.** The six steps in A-5 were drawn in Archivo, and its weights and tracking are what the
+scale assumes. Geist was starter residue; `--font-geist-mono` was loaded on every request and
+referenced by no token, which is dead code under Principle VI. `next/font/google` self-hosts the
+files at build time, so there is no runtime request to Google, no layout shift, and no new dependency
+under Principle IV.
 
-**Decision.** Proposed wording, to be confirmed by the team. The three verbatim strings the
-specification fixes are unchanged and are not repeated here.
+### A-10. Copy the design brief listed as "still to be written"
 
-| Surface | Text |
-| --- | --- |
-| Deactivated, contact configured | `This account is closed. Contact <SUPPORT_EMAIL>.` |
-| Throttled | `Too many attempts. Try again in <n> minutes.` — `<n>` is the transport's `retryAfterSeconds` rounded **up** to whole minutes, so a live refusal never renders as zero (`FR-039`) |
-| Expired token | `This link has expired. Reset links are good for one hour — request a new one.` |
-| Used token | `This link has already been used. If you still need to change your password, request a new one.` |
-| Unknown token | `This link isn't valid. Request a new one to change your password.` |
-| `/signin` after a completed reset | `Your password has been changed. Sign in with it.` |
-| Must-change-password banner | `You're still using the password this installation was set up with.` — and nothing more: R1 delivers no screen from which a signed-in user can change a password, so an instruction naming one would send the reader nowhere. R4's Profile adds the route, and amends this string when it does. |
+**Decision.** The wording the design returned, with the throttle string corrected. The three verbatim
+strings the specification fixes are unchanged and are not repeated here.
 
-**Rationale.** The three token states each name their own cause and each carry the same route
-forward — back to `/reset` — which is what `OT-SEC-016` means by "distinguishable". The throttle
-message states minutes rather than a live countdown: the value is computed server-side from
-`auth_attempt` on each refused attempt, and a ticking client timer would be state the server does not
-own. The deactivated message names the address and nothing else, so no `user` row is disclosed
-(`OT-SEC-018`).
+| Surface | Block | Text |
+| --- | --- | --- |
+| Deactivated, contact configured | Notice | `This account has been deactivated. Contact <SUPPORT_EMAIL>.` |
+| Throttled | Error | `Too many attempts. Try again in <n> minutes.` — `<n>` is `retryAfterSeconds` rounded **up** to whole minutes, so a live refusal never renders as zero (`FR-039`) |
+| Expired token | Notice | `This link has expired. Reset links last one hour.` |
+| Used token | Notice | `This link has already been used. Your password was changed with it.` |
+| Unknown token | Notice | `This link isn't one we recognise. Check the whole address came across from the email.` |
+| `/signin` after a completed reset | Success | `Your password has been changed. Sign in with it now.` |
+| Must-change-password banner | Advisory | `Your password is still the one set when this server was installed.` |
+
+**Rationale.** Both deactivated variants open on the same sentence, so the two differ only in whether
+an address follows and no `user` row is disclosed (`OT-SEC-018`). The three token states each name
+their own cause and each carry the same route forward — a "Request a new link" control back to
+`/reset` — which is what `OT-SEC-016` means by "distinguishable"; naming that route in the sentence
+as well would say it twice.
+
+**The throttle states minutes, not a countdown.** The design returned a ticking `mm:ss` timer. The
+value is computed server-side from `auth_attempt` on each refused attempt, a client timer is state
+the server does not own, and it reaches `00:00` while the refusal is still in force. `FR-039` is
+explicit — "expressed to the caller as whole minutes rounded up" — and the specification wins.
+
+**The banner carries no control.** The design returned a "Change it" link. R1 delivers no screen from
+which a signed-in user can change a password, so the link resolves nowhere; R4's Profile adds the
+route and amends this string when it does.
 
 ---
 
