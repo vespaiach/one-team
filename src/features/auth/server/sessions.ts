@@ -8,6 +8,9 @@ const SESSION_LIFETIME_MS = 30 * 24 * 60 * 60 * 1000;
 
 export type SessionRecord = typeof session.$inferSelect;
 
+type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+type DbOrTransaction = typeof db | Transaction;
+
 export async function issueSession(params: {
   userId: string;
   ipAddress: string;
@@ -55,6 +58,9 @@ export async function resolveSession(token: string, now: Date = new Date()): Pro
   return { ...row, ...slid };
 }
 
-export async function deleteAllSessionsForUser(userId: string): Promise<void> {
-  await db.delete(session).where(eq(session.userId, userId));
+export async function deleteAllSessionsForUser(
+  userId: string,
+  executor: DbOrTransaction = db,
+): Promise<void> {
+  await executor.delete(session).where(eq(session.userId, userId));
 }

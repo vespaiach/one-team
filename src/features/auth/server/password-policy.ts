@@ -1,10 +1,11 @@
 import "server-only";
 import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export type PasswordPolicyFailure = "too_short" | "too_long" | "blocklisted";
 
-const BLOCKLIST_PATH = fileURLToPath(new URL("./common-passwords.txt", import.meta.url));
+const BLOCKLIST_PATH = join(dirname(fileURLToPath(import.meta.url)), "common-passwords.txt");
 
 const BLOCKLIST = new Set(
   readFileSync(BLOCKLIST_PATH, "utf8")
