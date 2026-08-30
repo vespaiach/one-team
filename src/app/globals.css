@@ -1,26 +1,171 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* --- neutral · warm, eleven steps -------------------------- */
+  --color-neutral-50:  #fbfaf9;
+  --color-neutral-100: #f4f2f0;
+  --color-neutral-200: #e8e5e2;
+  --color-neutral-300: #d7d3cf;
+  --color-neutral-400: #b3aeaa;
+  --color-neutral-500: #8f8a86;
+  --color-neutral-600: #6e6a66;
+  --color-neutral-700: #55514e;
+  --color-neutral-800: #3a3735;
+  --color-neutral-900: #24211f;
+  --color-neutral-950: #151312;
+
+  /* --- accent · §7 #5b5bd6 is 500 ---------------------------- */
+  --color-accent-50:  #f2f2fc;
+  --color-accent-100: #e4e4f9;
+  --color-accent-200: #c9c9f2;
+  --color-accent-300: #a5a5e9;
+  --color-accent-400: #8080df;
+  --color-accent-500: #5b5bd6;
+  --color-accent-600: #4a4ac0;
+  --color-accent-700: #3c3c9c;
+  --color-accent-800: #2f2f78;
+  --color-accent-900: #23235a;
+
+  /* --- red · §7 #c8453c is 500 ------------------------------- */
+  --color-red-50:  #fdf3f2;
+  --color-red-100: #fbe4e2;
+  --color-red-200: #f5c4c0;
+  --color-red-300: #ec9a94;
+  --color-red-400: #dd6b63;
+  --color-red-500: #c8453c;
+  --color-red-600: #ad3730;
+  --color-red-700: #8c2b25;
+  --color-red-800: #6b211d;
+  --color-red-900: #4f1917;
+
+  /* --- content colours · §7, three steps each ----------------
+     Projects, board columns and labels. No interface meaning. */
+  --color-blue-100:   #e7f1f9;
+  --color-blue-500:   #2f7fc4;
+  --color-blue-700:   #1f5c92;
+
+  --color-green-100:  #e7f4ec;
+  --color-green-500:  #3a9d5d;
+  --color-green-700:  #27713f;
+
+  --color-violet-100: #f3ebfd;
+  --color-violet-500: #9b5de5;
+  --color-violet-700: #6f39ad;
+
+  --color-amber-100:  #fbf2dc;
+  --color-amber-500:  #d4a017;
+  --color-amber-700:  #8a6708;
+
+  --color-grey-100:   #eff0f2;
+  --color-grey-500:   #8b909a;
+  --color-grey-700:   #5a5f68;
+
+  /* --- semantic · the only names components use --------------
+     Every one points at a ramp step, never a hex. Adding dark
+     mode later is a remap of this block and nothing else. */
+  --color-page:             var(--color-neutral-100);
+  --color-surface:          #ffffff;
+  --color-surface-sunken:   var(--color-neutral-50);
+
+  --color-border:           var(--color-neutral-300);
+  --color-border-active:    var(--color-neutral-500);
+  --color-border-strong:    var(--color-neutral-900);
+
+  --color-text:             var(--color-neutral-900);
+  --color-text-muted:       var(--color-neutral-600);
+  --color-text-placeholder: var(--color-neutral-500);
+  --color-text-disabled:    var(--color-neutral-400);
+
+  --color-accent:           var(--color-accent-500);
+  --color-accent-hover:     var(--color-accent-600);
+  --color-accent-pressed:   var(--color-accent-700);
+  --color-accent-text:      var(--color-accent-700);
+
+  --color-danger:           var(--color-red-500);
+  --color-danger-fill:      var(--color-red-100);
+  --color-danger-text:      var(--color-red-700);
+
+  --color-success:          var(--color-green-500);
+  --color-success-fill:     var(--color-green-100);
+  --color-success-text:     var(--color-green-700);
+
+  --color-advisory:         var(--color-amber-500);
+  --color-advisory-fill:    var(--color-amber-100);
+  --color-advisory-text:    var(--color-amber-700);
+
+  /* --- type · Archivo, six steps ----------------------------- */
+  --font-sans: Archivo, ui-sans-serif, system-ui, sans-serif;
+
+  --text-micro:   11px;
+  --text-micro--line-height:   16px;
+  --text-micro--font-weight:   600;
+  --text-micro--letter-spacing: 0.08em;
+
+  --text-small:   13px;
+  --text-small--line-height:   20px;
+
+  --text-body:    15px;
+  --text-body--line-height:    24px;
+
+  --text-control: 16px;
+  --text-control--line-height: 24px;
+
+  --text-title:   22px;
+  --text-title--line-height:   28px;
+  --text-title--letter-spacing: -0.01em;
+
+  --text-display: 32px;
+  --text-display--line-height: 36px;
+  --text-display--letter-spacing: -0.02em;
+
+  /* --- space and geometry ------------------------------------
+     Unit 4px. Structure lands on 8; 4 is only ever the gap
+     between a control and the text annotating it. */
+  --spacing: 4px;
+  --radius-none: 0px;
+  --size-field: 44px;
+  --size-card:  440px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    font-family: var(--font-sans);
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  body {
+    background: var(--color-page);
+    color: var(--color-text);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Nothing in this product has a rounded corner. */
+  * {
+    border-radius: 0;
+  }
+
+  /* One rule, every control. React Aria sets the attribute. */
+  [data-focus-visible],
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: var(--color-accent-100);
+    color: var(--color-accent-900);
+  }
+
+  ::placeholder {
+    color: var(--color-text-placeholder);
+  }
+
+  a {
+    color: var(--color-accent-text);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  a:hover {
+    color: var(--color-accent);
+  }
 }
