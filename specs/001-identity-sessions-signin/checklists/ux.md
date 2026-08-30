@@ -32,8 +32,8 @@
 ## Requirement Consistency
 
 - [x] CHK016 Is there a stated requirement that the rejected and deactivated states match in visual treatment, or does that rule live only in the layout contract? A visual difference is as much an existence oracle as a wording one. [Consistency, Gap, Spec §FR-013]
-- [x] CHK017 Is the banner copy's instruction to change the password from a profile screen consistent with the Profile screen being deferred to entry R4? [Conflict, research §A-10]
-- [x] CHK018 Does the design brief's request for a live countdown agree with the decision to state whole minutes computed server-side? [Conflict, design-brief.md]
+- [x] CHK017 Is the banner copy's instruction to change the password from a profile screen consistent with the Profile screen being deferred to entry R4? [Conflict, research §A-10] — resolved: no control on the banner in R1. The returned design carries a "Change it" link and is amended, not followed (design-brief.md L4).
+- [x] CHK018 Does the design brief's request for a live countdown agree with the decision to state whole minutes computed server-side? [Conflict, design-brief.md] — resolved in favour of `FR-039`'s whole minutes. `Sign-In Screens.dc.html` and `Foundations.dc.html` §10 still render `mm:ss` and are amended, not followed (design-brief.md L1).
 - [x] CHK019 Are the field inventories for the three screens consistent between the functional requirements and the layout contract's screens table? [Consistency, Spec §FR-012]
 - [x] CHK020 Do the validation requirements and the brief agree that the submit control stays enabled while a field is invalid? [Consistency, Spec §FR-027]
 
