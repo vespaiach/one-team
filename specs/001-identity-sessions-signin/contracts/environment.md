@@ -15,6 +15,7 @@ introduced by this feature**: nothing here reaches the browser (AGENTS.md).
 | `ADMIN_EMAIL` | first run only | the seeded admin's address | seeding does not run; the app reports it |
 | `ADMIN_PASSWORD` | first run only | the seeded admin's password | held to the password policy; a short or blocklisted value stops seeding, writes nothing, makes the app report **which rule** failed, and exits non-zero before a request is served (`FR-046`, `OT-SEC-019`) |
 | `SUPPORT_EMAIL` | no | the contact the deactivated sign-in message names | the message names no address and reads "Contact your One Team administrator." (`FR-014`) |
+| `TRUST_PROXY` | no | declares that a reverse proxy sits in front, so the client address is taken from the last hop of `X-Forwarded-For` rather than from the connection | unset means no proxy: the connection's own peer address is used and no forwarded header is read (`FR-016`) |
 | `SMTP_URL` | no | the reset-mail transport | reset requests answer identically and mail nothing; the failure is logged server-side only (`FR-033`) |
 | `TZ` | no | the server timezone calendar dates are compared in | defaults to the host's; §5 has the operator set it once |
 | `NODE_ENV` | set by the toolchain | decides the session cookie's `Secure` flag | research B-7 |
@@ -29,6 +30,14 @@ of a request that may never recur, so the link cannot be built from request head
 check that compares a request against a value taken from that same request can never refuse anything.
 One configured origin answers both (`FR-023`, `FR-033`). A value that is absent or unparseable stops
 the app at startup, like `DATABASE_URL`.
+
+**`TRUST_PROXY` defaults to off because the per-IP throttle is only a control while the address
+cannot be chosen by the caller.** `X-Forwarded-For` is a request header like any other: read
+unconditionally, it lets an attacker present a fresh address on every attempt and the twenty-per-IP
+limit stops refusing anything. Read only when the operator states a proxy is there, and only at its
+last hop, the value is the one that proxy wrote. The cost of the default is that an installation
+actually behind a proxy sees every caller as one address until the operator sets this, which shows
+up as the whole installation sharing one counter rather than as a silent hole (`FR-016`, `FR-039`).
 
 `ADMIN_EMAIL` and `ADMIN_PASSWORD` are read **only** by `instrumentation.ts` at startup, and their
 values never appear in a response or a log (`SC-010`).

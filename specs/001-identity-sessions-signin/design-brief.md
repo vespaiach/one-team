@@ -67,7 +67,7 @@ Four states, each replacing or annotating the form:
 | **Form** | The default. |
 | **Rejected** | One message covering both a wrong password and an unknown email. Never reveals whether an account exists — so the treatment must be identical in both cases, down to spacing and position. |
 | **Deactivated** | Its own distinct message: the credentials were right, the account is closed. Names an operator-configured contact address when one is set; names none when it isn't. Design both. |
-| **Throttled** | Sign-in is refused while the window holds too many failures, for up to fifteen minutes, and states the **remaining time**. The value is whole minutes computed server-side on each refused attempt, not a ticking client countdown (research A-10). |
+| **Throttled** | Sign-in is refused while the window holds too many failures, for up to fifteen minutes, and states the **remaining time**. The value is whole minutes **rounded up**, computed server-side on each refused attempt, not a ticking client countdown (research A-10). |
 
 Also needed: the **in-flight state** of the Sign in control while the request is out (§4, *Slow write*).
 
@@ -88,7 +88,7 @@ emailed link — never entered directly.
 | State | Content |
 | --- | --- |
 | **Mismatch** | Inline error on *Confirm password*. |
-| **Policy failure** | The field reports **which rule failed** — minimum twelve characters, or "on the common-password blocklist". No composition rules, so never a checklist of symbol/number requirements. |
+| **Policy failure** | The field reports **which rule failed** — minimum twelve characters, maximum 128, or "on the common-password blocklist". No composition rules, so never a checklist of symbol/number requirements. |
 | **Expired token** | Its own explanatory state. |
 | **Used token** | Its own explanatory state. |
 | **Unknown token** | Its own explanatory state. |

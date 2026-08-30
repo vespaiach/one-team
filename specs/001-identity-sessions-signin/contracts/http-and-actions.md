@@ -25,8 +25,10 @@ a Server Action** — §6 pins it here so the throttle and the origin check sit 
 ```
 
 **Validation, in order.** Origin → shape → address form → throttle → credentials. A body that is not
-an object, a missing field, a non-string, an address over 200 characters or one that is not an
-address is refused before anything is read from the database.
+an object, a missing field, a non-string, an address over 200 characters, one that is not an
+address, or a password over 128 characters is refused before anything is read from the database.
+The length bound holds on this verification path as well as where a credential is set, so no
+unbounded value reaches Argon2id (`FR-026`).
 
 ### Response
 
@@ -39,7 +41,7 @@ cannot distinguish outcomes without reading the body.
 | `ok` | `{ "result": "ok" }` | one `session` row written; the session cookie set; that address's `('signin','email')` attempt rows cleared |
 | `rejected` | `{ "result": "rejected" }` | one `('signin','email')` and one `('signin','ip')` attempt row written |
 | `deactivated` | `{ "result": "deactivated", "contact": "string \| null" }` | no session; no attempt row — the credentials were proved |
-| `throttled` | `{ "result": "throttled", "retryAfterSeconds": number }` | no credential check performed |
+| `throttled` | `{ "result": "throttled", "retryAfterSeconds": number }` | no credential check performed; the screen renders it as whole minutes rounded up (`FR-039`) |
 
 **`rejected` covers a wrong password and an unknown address, and nothing distinguishes them** — not
 the body, not the status, not a header, and not the time taken: an unknown address still performs an
@@ -122,7 +124,7 @@ mail body. It expires one hour after it is issued, and the mailed link is an abs
 | | |
 | --- | --- |
 | Input | `token`, `password`, `confirmPassword` |
-| Returns | `{ status: 'mismatch' }` · `{ status: 'policy', failure: 'too_short' \| 'blocklisted' }` · `{ status: 'used' \| 'expired' \| 'unknown' }` · or redirects |
+| Returns | `{ status: 'mismatch' }` · `{ status: 'policy', failure: 'too_short' \| 'too_long' \| 'blocklisted' }` · `{ status: 'used' \| 'expired' \| 'unknown' }` · or redirects |
 | On success | redirects to `/signin?reset=done` |
 
 **One transaction** does all of: spend the token (`UPDATE … WHERE used_at IS NULL`), write the new
@@ -131,7 +133,7 @@ hash to `credential`, clear `must_change_password`, and delete **every** `sessio
 the token update rolls the whole thing back.
 
 `mismatch` renders inline on Confirm password and writes nothing (`FR-035`). `policy` names the one
-rule that failed rather than restating both (spec edge case). The three token states are
+rule that failed rather than restating the others (spec edge case). The three token states are
 distinguishable from one another and each offers the same route forward, back to `/reset`
 (`FR-036`, `OT-SEC-016`).
 
@@ -145,6 +147,7 @@ distinguishable from one another and each offers the same route forward, back to
 | Rule | Failure |
 | --- | --- |
 | At least 12 characters | `too_short` |
+| At most 128 characters | `too_long` |
 | Not on the common-password blocklist, compared case-insensitively | `blocklisted` |
 | No composition rules — no required symbol, digit or case | — |
 

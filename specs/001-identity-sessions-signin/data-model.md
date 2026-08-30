@@ -265,7 +265,7 @@ as a UI or API model** (AGENTS.md). The DTOs this feature defines:
 | `Actor` | `{ id, role, firstName, lastName }` — resolved fresh per request, never a table | server only; passed to every read and mutator |
 | `PublicUser` | the `publicUser` projection | server → client, from R2 onward |
 | `SignInResult` | a discriminated union: `ok` · `rejected` · `deactivated` · `throttled` | the `POST /api/auth/signin` response body |
-| `PasswordPolicyFailure` | `'too_short'` \| `'blocklisted'` | Server Action results and CLI output |
+| `PasswordPolicyFailure` | `'too_short'` \| `'too_long'` \| `'blocklisted'` | Server Action results and CLI output |
 | `ResetTokenState` | `'valid'` \| `'used'` \| `'expired'` \| `'unknown'` | the change-password page |
 
 `SignInResult`'s `rejected` variant carries no discriminator distinguishing a wrong password from an

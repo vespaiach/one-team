@@ -119,6 +119,7 @@ slice inherits them.
 | Validation per field, on blur; the submit control stays enabled and reports inline | `OT-UX-011`, research B-8 |
 | `<Form validationBehavior="aria">`, controlled `isInvalid`, `<FieldError>` for the message | research B-8 |
 | Every control has an accessible name, a visible focus indicator, and error text associated with it | AGENTS.md |
+| The conformance target is **WCAG 2.2 Level AA** — the bar A-4's contrast figures were measured against, and one A-7's 40px fields and 44px button already clear for 2.2's 24×24 target-size minimum | `FR-012` |
 | State and errors are never conveyed by colour alone | AGENTS.md |
 | No breakpoints — desktop only | §3, design brief |
 
@@ -130,7 +131,7 @@ slice inherits them.
 | --- | --- | --- | --- |
 | `/signin` | Sign in | email, password, "Sign in", "Forgot password?" — **nothing else**, no sign-up link, no "remember me" | form · rejected · deactivated (with and without `SUPPORT_EMAIL`) · throttled · in-flight · success-after-reset banner |
 | `/reset` | Forgot password | email, "Send reset link" — nothing else | form · in-flight · one confirmation, identical either way |
-| `/reset?token=…` | Change password | New password, Confirm password | form · mismatch · policy failure (too short / blocklisted) · expired · used · unknown · in-flight |
+| `/reset?token=…` | Change password | New password, Confirm password | form · mismatch · policy failure (too short / too long / blocklisted) · expired · used · unknown · in-flight |
 
 The rejected and deactivated states must be **identical in treatment** — position, spacing, and the
 element that carries them — because a visual difference is as much an account-existence oracle as a
