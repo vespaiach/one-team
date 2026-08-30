@@ -10,7 +10,7 @@
 
 ## Requirement Completeness
 
-- [ ] CHK001 Does the two-bucket length rule — 200 for names and handles, 10 000 for long free text — cover every free-text column this feature introduces? The user-agent and avatar-URL bounds fall outside both and are set by assumption. [Gap, Spec §FR-002]
+- [x] CHK001 Does the two-bucket length rule — 200 for names and handles, 10 000 for long free text — cover every free-text column this feature introduces? The user-agent and avatar-URL bounds fall outside both and are set by assumption. [Gap, Spec §FR-002]
 - [x] CHK002 Are requirements defined for the length bound and server-side validation of the stored IP address value? [Gap, Spec §FR-016]
 - [x] CHK003 Is any requirement stated about indexes, or is index choice left entirely to the plan? [Gap, Spec §FR-001]
 - [x] CHK004 Are requirements defined for the `user` columns the entity list fixes that this feature never reads or writes? [Completeness, Spec §Key Entities]
@@ -23,7 +23,7 @@
 
 - [x] CHK009 Does "every mutator MUST write `updated_at`" read correctly for the three tables that carry no such column? [Ambiguity, Spec §FR-003]
 - [x] CHK010 Is "a timezone-aware timestamp type" specific enough to exclude a naive timestamp stored in UTC by convention? [Clarity, Spec §FR-001]
-- [ ] CHK011 Is "unique when folded to lower case" tied to a defined folding rule, or left to whatever the database's own lowering does? [Clarity, Spec §FR-006]
+- [x] CHK011 Is "unique when folded to lower case" tied to a defined folding rule, or left to whatever the database's own lowering does? [Clarity, Spec §FR-006]
 - [x] CHK012 Is "reachable" defined as a property of the query surface, the module boundary, or the endpoint? Each admits a different verification. [Measurability, Spec §FR-005]
 - [x] CHK013 Does "no client-held copy" distinguish rendering identity into a response from caching it? [Ambiguity, Spec §FR-009]
 - [x] CHK014 Is "server-generated" clear about whether the key is generated in the application or by the database? [Clarity, Spec §FR-001]
@@ -31,8 +31,8 @@
 ## Requirement Consistency
 
 - [x] CHK015 Do the no-delete rule and the cascade behaviour declared on dependent tables tell a consistent story about whether a user row can be deleted? [Conflict, Spec §FR-007]
-- [ ] CHK016 Is the projection rule consistent with the prohibition on unauthenticated routes reading a user record, given sign-in reads one to verify a password? [Consistency, Spec §FR-015]
-- [ ] CHK017 Do the schema-convention requirements agree on which of the five tables they govern, given some carry neither an enumeration nor free text? [Consistency, Spec §FR-002]
+- [x] CHK016 Is the projection rule consistent with the prohibition on unauthenticated routes reading a user record, given sign-in reads one to verify a password? [Consistency, Spec §FR-015]
+- [x] CHK017 Do the schema-convention requirements agree on which of the five tables they govern, given some carry neither an enumeration nor free text? [Consistency, Spec §FR-002]
 - [x] CHK018 Is the digest-storage rule stated consistently between the secret-storage requirement and the session and reset-token entity definitions? [Consistency, Spec §FR-029]
 
 ## Acceptance Criteria Quality
@@ -48,7 +48,7 @@
 - [x] CHK024 Are requirements defined for two concurrent sign-ins for the same account? [Coverage, Gap, Spec §FR-016]
 - [x] CHK025 Is the ordering rule for a token that is both used and expired stated as a requirement, given the three states must be distinguishable? [Coverage, Spec §FR-036]
 - [x] CHK026 Are requirements stated for the sweep running concurrently with a live insert into the attempt table? The edge-case list names it; no functional requirement does. [Gap, Spec §FR-044]
-- [ ] CHK027 Is a requirement defined for what happens when a uniqueness violation is raised by a concurrent account creation? [Coverage, Gap, Spec §FR-006]
+- [x] CHK027 Is a requirement defined for what happens when a uniqueness violation is raised by a concurrent account creation? [Coverage, Gap, Spec §FR-006]
 
 ## Edge Case Coverage
 
@@ -59,7 +59,7 @@
 
 ## Dependencies & Assumptions
 
-- [ ] CHK032 Are the bounds introduced downstream — user agent, avatar URL, attempt subject — recorded as assumptions in the spec rather than only in research? [Assumption, research §Assumptions carried forward]
+- [x] CHK032 Are the bounds introduced downstream — user agent, avatar URL, attempt subject — recorded as assumptions in the spec rather than only in research? [Assumption, research §Assumptions carried forward]
 - [x] CHK033 Is the dependency on a real PostgreSQL instance for verifying constraint-enforced invariants stated as a condition of the acceptance criteria? [Dependency, Spec §Assumptions]
 - [x] CHK034 Is the rule that no persistence row is exposed as a UI or API model stated where the projections are defined? [Assumption, Spec §FR-004]
 

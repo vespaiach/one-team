@@ -29,6 +29,7 @@ createdb one_team_dev && createdb one_team_test
 DATABASE_URL=postgres://localhost/one_team_dev
 TEST_DATABASE_URL=postgres://localhost/one_team_test
 APP_URL=http://localhost:3000
+MAIL_FROM=one-team@localhost
 ADMIN_EMAIL=you@example.com
 ADMIN_PASSWORD=<at least 12 characters, not on the blocklist>
 SUPPORT_EMAIL=help@example.com

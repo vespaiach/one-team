@@ -79,8 +79,13 @@ the reset-token lifetime, `APP_URL`, the throttle's window model, the seeding-re
 sweep's scope, the 128-character password bound, the `TRUST_PROXY` rule for deriving a caller's
 address, the refusal's units and the WCAG 2.2 AA conformance target — each now carried by a
 functional requirement rather than an assumption. The
-specification's remaining silences stand as the Assumptions [`spec.md`](./spec.md) records; research
-adds three of its own (research, *Assumptions carried forward*). None blocks implementation.
+requirements-quality review that followed closed the remaining 55 items: 29 became new requirements
+(`FR-059`…`FR-087`), nine existing requirements were amended, nine more items were recorded as
+Assumptions and one as Out of Scope, and the review found four defects — an unbounded
+`credential.password_hash`, a `throttled` result no screen rendered, `FR-015` forbidding a read
+sign-in cannot avoid, and an address bound stated at one boundary but not the other — each now
+fixed. Research carries one assumption forward, the seven proposed copy strings in A-10. None blocks
+implementation.
 
 ## Constitution Check
 

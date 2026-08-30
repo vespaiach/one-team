@@ -43,7 +43,8 @@ cannot distinguish outcomes without reading the body.
 | `deactivated` | `{ "result": "deactivated", "contact": "string \| null" }` | no session; no attempt row — the credentials were proved |
 | `throttled` | `{ "result": "throttled", "retryAfterSeconds": number }` | no credential check performed; the screen renders it as whole minutes rounded up (`FR-039`) |
 
-**`rejected` covers a wrong password and an unknown address, and nothing distinguishes them** — not
+**`rejected` covers a wrong password, an unknown address, and an account with no credential row, and
+nothing distinguishes the three** (`FR-062`) — not
 the body, not the status, not a header, and not the time taken: an unknown address still performs an
 Argon2id verification against a fixed dummy hash so the two paths cost the same (`FR-013`,
 `OT-SEC-011`, `SC-003`).
@@ -65,8 +66,11 @@ account-existence oracle (spec edge case). `contact` is `SUPPORT_EMAIL` from the
 One cookie, set only on `ok`:
 
 ```text
-<name>=<32 random bytes, base64url>; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000[; Secure]
+one_team_session=<32 random bytes, base64url>; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000[; Secure]
 ```
+
+The name is `one_team_session`, fixed here rather than left to the implementation so the sign-in
+handler, `loadActor()` and every later slice name the same string.
 
 Opaque — no claims, nothing to verify (`FR-017`, `OT-SEC-007`). The stored value is its SHA-256
 digest, so the database never holds a working credential. `Secure` is set in production; see
@@ -82,7 +86,10 @@ configuration value other than `SUPPORT_EMAIL` (`FR-025`, `FR-028`, `SC-010`).
 
 ## `GET /signin`
 
-Renders the sign-in card (see [`auth-layout.md`](./auth-layout.md)). Reads nothing from the database.
+Renders the sign-in card (see [`auth-layout.md`](./auth-layout.md)). Reads nothing from the database,
+and does **not** redirect a caller who already holds a valid session — it renders the form to them
+like anyone else, and a successful post mints a second session rather than touching the first
+(`FR-060`, `FR-061`).
 
 `?reset=done` renders the success banner a completed reset redirects to (`FR-038`). No other query
 parameter is honoured — in particular, no error state is reachable through the URL.
@@ -94,6 +101,14 @@ parameter is honoured — in particular, no error state is reachable through the
 With no `token`, renders the reset-request card. With `token`, renders Change password (screen 13) in
 one of four states — the token is looked up server-side and only the resulting `ResetTokenState`
 reaches the client. **The token value is never echoed into the rendered HTML.**
+
+**An empty or malformed `token` renders `unknown`, without a lookup** (`FR-067`). It is not treated as
+an absent token, so `?token=` left over from a link mangled in transit explains itself rather than
+silently showing the request form.
+
+The reset-request card has its own **throttled** state (`FR-087`): resets count under the same two
+limits in their own flow (`FR-040`), so `requestPasswordReset` can return `throttled` here exactly as
+sign-in can.
 
 ---
 
@@ -125,6 +140,7 @@ mail body. It expires one hour after it is issued, and the mailed link is an abs
 | --- | --- |
 | Input | `token`, `password`, `confirmPassword` |
 | Returns | `{ status: 'mismatch' }` · `{ status: 'policy', failure: 'too_short' \| 'too_long' \| 'blocklisted' }` · `{ status: 'used' \| 'expired' \| 'unknown' }` · or redirects |
+| Deactivated owner | the token is spent, no password is written, and `unknown` is returned — naming the account's condition would disclose it to whoever holds the link (`FR-066`, `FR-015`) |
 | On success | redirects to `/signin?reset=done` |
 
 **One transaction** does all of: spend the token (`UPDATE … WHERE used_at IS NULL`), write the new
