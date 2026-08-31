@@ -6,7 +6,7 @@
 
 **Created**: 2026-08-30
 
-**Status**: Draft
+**Status**: Planned — spec, plan, Phase 0/1 artifacts and tasks complete; implementation blocked on entry R2
 
 **Input**: User description: "create feature specification for Roadmap Entry R4. Refer to docs/ROADMAP.md -> Entry R4, docs/product/requirements-index.md and docs/product/specifications.md"
 
@@ -153,6 +153,8 @@ Someone changes their first or last name. Everywhere the product writes a person
 
 Each requirement cites the index ID it satisfies where one exists, or the specification section it restates. IDs in `OT-…` form are [`docs/product/requirements-index.md`](../../docs/product/requirements-index.md) rows; `§` references are the specification's own headings.
 
+**Mutator, Server Action, Server Function — one thing at three altitudes.** *Mutator* is [`docs/product/specifications.md`](../../docs/product/specifications.md)'s own word for a named write, and it is the word this spec uses. *Server Action* is what that mutator is in this stack, and it is the word [`plan.md`](./plan.md), the contracts and [`tasks.md`](./tasks.md) use. *Server Function* is the framework's term for the underlying primitive and appears only where framework behaviour is quoted. None of the three is a synonym introduced here, and none replaces another.
+
 ### Functional Requirements
 
 #### The screen
@@ -173,7 +175,7 @@ Each requirement cites the index ID it satisfies where one exists, or the specif
 - **FR-011**: An avatar value MUST be refused unless it is a well-formed absolute link whose scheme is `http` or `https`. Those two are the whole allowlist: every other scheme MUST be refused, and the list MUST be an allowlist rather than a denylist of known-dangerous schemes. The scheme comparison MUST be case-insensitive: a value whose scheme differs from `http` or `https` only in case carries that scheme and MUST be accepted. A refusal MUST render as an inline error on the field and MUST store nothing. Nothing MUST fetch the link to validate it. (§3.12, Principle II)
 - **FR-012**: Every value MUST be trimmed before it is measured against its rule and before it is stored. Trimming MUST remove leading and trailing Unicode whitespace and line terminators and MUST NOT alter the interior of a value: whitespace inside a name is part of the name, and only the join in FR-004 is a single space by rule.
 - **FR-012a**: A value for any of the five optional fields — avatar, job title, Slack handle, phone, bio — that is empty after trimming MUST be stored as no value at all rather than as an empty string, so that a field this screen cleared is indistinguishable from one never set. An empty avatar value MUST clear the field rather than be measured against FR-011's scheme rule, which MUST apply only to a value that is non-empty after trimming. Nothing on this screen MUST write an empty string to any of the five.
-- **FR-012b**: A field holding no value MUST render one quiet line that names what it would hold, and that line MUST itself be the control that opens the field. The four text lines are fixed verbatim: "Add a job title", "Add a Slack handle", "Add a phone number", "Add a bio". An avatar holding no value, and one whose image fails to load, MUST render the display name alone with no substitute image and no broken-image frame. (`OT-UX-007`)
+- **FR-012b**: A field holding no value MUST render one line of placeholder text naming what it would hold, and that line MUST itself be the control that opens the field. It MUST read as a placeholder rather than as a stored value; its visual weight is the styling layer's, under `FR-035`. The four text lines are fixed verbatim: "Add a job title", "Add a Slack handle", "Add a phone number", "Add a bio". An avatar holding no value, and one whose image fails to load, MUST render the display name alone with no substitute image and no broken-image frame. (`OT-UX-007`)
 
 #### Editing behaviour
 
@@ -200,7 +202,7 @@ Each requirement cites the index ID it satisfies where one exists, or the specif
 
 #### Change password
 
-- **FR-026**: A change-password link MUST sit on this screen. Pressing it MUST send a reset link to the signed-in user's own address, asking for no address and showing no form. While the request is in flight the link MUST show that state on itself and MUST NOT be pressable a second time; this write waits for the server rather than applying optimistically, having nothing on screen to apply. (§3.12)
+- **FR-026**: A change-password link MUST sit on this screen. Pressing it MUST send a reset link to the signed-in user's own address, asking for no address and showing no form. While the request is in flight the link MUST show that state on itself and MUST NOT be pressable a second time. That state MUST be conveyed programmatically as well as visually — never by colour or motion alone — and MUST render on the link, never as a separate or full-screen indicator. The lock MUST last exactly as long as the request is in flight and MUST release when it settles, so two presses made in succession are two requests that mail two valid links; `FR-028`'s rate limit, not this lock, is what bounds how many a user may make. This write waits for the server rather than applying optimistically, having nothing on screen to apply. (§3.12)
 - **FR-027**: This feature MUST introduce no password field and no password rule of its own, and MUST NOT become a second place where a password can be set. Its whole obligation under the password policy is negative and directional, and exactly two things MUST be provable of it: that no control on this screen accepts a password, and that the change-password link lands on the screen that does enforce the policy. The policy itself — at least twelve characters, no composition rules, checked against the blocklist — is established and enforced by entry R1 at the one screen that sets a password; this feature MUST NOT restate it as a rule of its own, and its tests MUST NOT re-assert it. (`OT-SEC-004`, §3.1)
 - **FR-028**: The link MUST reuse the same request-and-token mechanism and the same rate limit as the forgotten-password request, in that request's own counter. That counter MUST stay separate from the sign-in counter, so an address locked out of sign-in can still request the change and a refused change cannot block a sign-in. A refused request MUST state the time remaining, in whole minutes rounded up and never below one, so the message reads "Too many requests. Try again in 3 minutes." — the window is fifteen minutes and a count of seconds would be precision the reader cannot use. (§3.12, §3.1, §6, `OT-SEC-017`)
 - **FR-029**: A successful press MUST confirm with the message "Check your email for a link to reset your password." (§3.12)

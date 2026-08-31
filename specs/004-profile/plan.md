@@ -35,7 +35,7 @@ per-screen work authored here, while the message host and the connection banner 
 mounted once in R2's layout — which is why this entry adds no dependency on R3 and nothing here turns
 on which of the two lands first.
 
-Full reasoning in [`research.md`](./research.md) — twenty-six decisions, groups A–E. The screen in
+Full reasoning in [`research.md`](./research.md) — twenty-eight decisions, groups A–E. The screen in
 [`contracts/profile-screen.md`](./contracts/profile-screen.md), the write in
 [`contracts/update-own-profile.md`](./contracts/update-own-profile.md), the link in
 [`contracts/change-password-link.md`](./contracts/change-password-link.md), and the four conventions
@@ -103,7 +103,7 @@ and no restatement of the password policy (`FR-027`, `OT-SEC-004`) · no new dep
 migration (`FR-037`).
 
 **Scale/Scope**: one installation, one team under twenty people. 40 functional requirements, 5 user
-stories, 42 acceptance scenarios, 16 edge cases, 12 success criteria, 12 modules created, 3 edited and 1
+stories, 42 acceptance scenarios, 16 edge cases, 12 success criteria, 12 modules created, 4 edited and 1
 moved, 1 Server Action added here and 1 added to R1's module, 0 tables.
 
 **Unknowns**: none outstanding. Four questions were closed across three `/speckit-clarify` sessions,
@@ -122,7 +122,7 @@ version record (v1.0.0).
 
 | | Principle | Assessment | Post-design |
 | --- | --- | --- | --- |
-| **I** | Component-Driven Architecture | Nine modules, each with one concern. One in-place editing control serves all seven fields — seven call sites on day one, not a guess at a second. Nothing is promoted to `src/components/ui` or `src/lib` except `display-name.ts`, which R2 built with one caller and named this entry as its second. Two extractions were available and both were **declined**: a shared reset helper across the two request paths, and a shared write primitive with R3 — each would abstract over a difference rather than a shared shape. | pass, with two entries in Complexity Tracking |
+| **I** | Component-Driven Architecture | Twelve modules, each with one concern — nine in `src/features/profile`, two added to R2's `shell/` and one promoted to `src/lib`. One in-place editing control serves all seven fields — seven call sites on day one, not a guess at a second. Nothing is promoted to `src/components/ui` or `src/lib` except `display-name.ts`, which R2 built with one caller and named this entry as its second. Two extractions were available and both were **declined**: a shared reset helper across the two request paths, and a shared write primitive with R3 — each would abstract over a difference rather than a shared shape. | pass, with two entries in Complexity Tracking |
 | **II** | Validated Input Boundaries | Two server entry points, and each is checked. `updateOwnProfile` asserts the origin, derives the row from the session, rejects a field outside the seven, trims, then applies presence, the bound and the scheme — rejecting rather than coercing or truncating. `requestOwnPasswordReset` asserts the origin and reads its subject's address from the session-resolved row, never from an argument. The browser's own checks are affordances and are re-derived server-side, which `SC-010` makes explicit by requiring the avatar refusal to hold when the action is called directly. | pass |
 | **III** | Straightforward Over Clever | No metaprogramming, no dynamic dispatch, no generic machinery. The seven fields are a table of plain data, not a schema builder. The unchanged check is one SQL predicate rather than a diffing layer. The one place cleverness was available — folding the two reset request paths together behind a flag — was rejected for a second readable function. | pass |
 | **IV** | Built-In Features Over Third-Party Libraries | No dependency is added and no version range is edited. Three obvious reaches for a library are answered by built-ins: URL validation by the Web platform's `URL`, connection state by `navigator.onLine` and two window events, optimistic state by React's own `useOptimistic`. The message host is React Aria's, which AGENTS.md's table already approves. | pass |
@@ -158,7 +158,7 @@ recorded below rather than left for the diff.
 specs/004-profile/
 ├── spec.md                          the feature specification
 ├── plan.md                          this file
-├── research.md                      Phase 0 — 26 decisions, groups A–E
+├── research.md                      Phase 0 — 28 decisions, groups A–E
 ├── data-model.md                    Phase 1 — no table; the row read, the column written, the DTO
 ├── quickstart.md                    Phase 1 — twelve runnable walkthroughs
 ├── contracts/
@@ -208,7 +208,9 @@ src/
 │   │   ├── messages.ts                         NEW — one app-wide message queue          FR-033
 │   │   └── components/
 │   │       ├── message-host.tsx                NEW — "use client"; the one region        FR-033
-│   │       └── connection-banner.tsx           NEW — "use client"; the one banner        FR-034
+│   │       ├── connection-banner.tsx           NEW — "use client"; the one banner        FR-034
+│   │       └── user-chip.tsx                   EDIT (R2's) — import the join rule from
+│   │                                                its new address                      FR-004
 │   └── auth/
 │       └── actions.ts                          EDIT (R1's) — add requestOwnPasswordReset
 │                                                    FR-026, FR-028
@@ -232,6 +234,14 @@ the only module a Client Component imports server behaviour from in this feature
 top-level `"use server"`; `src/features/auth/actions.ts` already does. `fields.ts` deliberately
 imports nothing server-only, so the client can render a field's label and bound without reaching
 across the boundary. No barrel file mixes server and client exports.
+
+**Test files are not listed above.** Each is colocated beside the module it covers and named by it —
+`fields.test.ts` beside `fields.ts`, `editable-field.test.tsx` beside `editable-field.tsx`, and R2's
+own `user-chip` test extended where the join rule's address changes. Two cover a tree rather than a
+module and so have no neighbour: `src/features/profile/profile-surface.test.ts` and
+`src/features/shell/shell-surface.test.ts`, both structural, in the idiom
+`src/features/auth/role-surface.test.ts` established for `OT-AUTHZ-011`. [`tasks.md`](./tasks.md)
+names every one.
 
 Four modules carry `"use client"` — the field control, the change-password link, the message host and
 the connection banner. Each is the narrowest boundary that makes its interaction work. R2
@@ -258,8 +268,8 @@ second call site, and this has seven on the day it lands — all inside the feat
 
 | Phase | Output | Status |
 | --- | --- | --- |
-| 0 — Outline & research | [`research.md`](./research.md) | complete — 26 decisions, three assumptions carried forward, no unknown outstanding |
+| 0 — Outline & research | [`research.md`](./research.md) | complete — 28 decisions, three assumptions carried forward, no unknown outstanding |
 | 1 — Design & contracts | [`data-model.md`](./data-model.md), [`contracts/`](./contracts/), [`quickstart.md`](./quickstart.md) | complete |
 | Constitution re-check | this file | complete — pass, four items in Complexity Tracking |
-| 2 — Tasks | `tasks.md` | not started — run `/speckit-tasks` |
+| 2 — Tasks | [`tasks.md`](./tasks.md) | complete — 56 tasks in 8 phases, one per user story |
 | Implementation | — | **blocked on entry R2**, which is specified and planned but not built. Entry R1, the other dependency, has landed |

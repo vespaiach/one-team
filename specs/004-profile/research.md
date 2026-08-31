@@ -2,7 +2,7 @@
 
 **Plan**: [`plan.md`](./plan.md) · **Spec**: [`spec.md`](./spec.md) · **Parent**: [`docs/ROADMAP.md`](../../docs/ROADMAP.md) entry **R4**
 
-Twenty-six decisions. Group **A** is the screen and the one read behind it. Group **B** is in-place
+Twenty-eight decisions. Group **A** is the screen and the one read behind it. Group **B** is in-place
 editing and the single write, which is where most of this entry's difficulty sits. Group **C** is
 validation and what actually reaches a column. Group **D** is the four cross-cutting UX conventions
 `FR-031`–`FR-034`, which this entry either authors for itself or stands up once for the whole

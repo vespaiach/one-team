@@ -211,7 +211,7 @@ and reach the change-password link the same way. After each of save, rollback an
 back on the control the field replaced, so `Tab` continues from where you were (`FR-013a`). Inside
 the bio a plain `Enter` inserts a line break; in the six single-line fields it does nothing, because
 `FR-013` binds this screen to the same three gestures every other surface offers. An empty optional
-field is reachable the same way: its quiet line — `Add a job title` and its three siblings — is
+field is reachable the same way: its placeholder line — `Add a job title` and its three siblings — is
 itself the button. Every error is announced against the field it belongs to, and every focused
 control shows the focus ring (`SC-012`).
 

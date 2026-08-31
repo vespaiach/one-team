@@ -18,7 +18,8 @@ knows it.
 | What it asks for | nothing. No address is typed and no form is shown (`FR-026`, US4 scenario 3) |
 | On success | the message "Check your email for a link to reset your password." (`FR-029`, verbatim) |
 | On refusal by the throttle | the request is refused and the message states the time remaining, in whole minutes rounded up and never below one: "Too many requests. Try again in 3 minutes." (`FR-028`) |
-| While in flight | the link shows that state on itself and cannot be pressed a second time. This write waits for the server — it has nothing on screen to apply optimistically (`FR-026`) |
+| While in flight | the link shows that state on itself and cannot be pressed a second time. The state is conveyed programmatically as well as visually — React Aria's own pending semantics, never colour or motion alone — and renders on the link, never as a separate or full-screen indicator. This write waits for the server: it has nothing on screen to apply optimistically (`FR-026`) |
+| Scope of that lock | exactly the in-flight request. It releases when the request settles, so two presses made in succession are two requests and two valid links; `FR-028`'s rate limit, not this lock, is what bounds them (`FR-026`, spec edge case) |
 | Confirmation step | none. One press sends. §3.12 says one click sends a link and shows no form; a second "are you sure" would contradict it, and the act is reversible by ignoring the mail |
 
 ---
@@ -84,7 +85,7 @@ same reasoning to for the two entries' write paths ([`../research.md`](../resear
 | A completed change ends every session for that user, including the requesting browser's | R1, `deleteAllSessionsForUser` | `FR-030`, `OT-SEC-012` |
 | That browser returns to sign-in on its next action | R1's `requireActor()` — the cookie survives, the session row does not | `FR-030`, US4 scenario 7 |
 | A completed change clears `must_change_password` | R1, `completePasswordReset` | US4 scenario 9 |
-| Two presses in quick succession give two valid links; the rate limit stops the third and fourth | R1 | spec edge case |
+| Two presses in quick succession give two valid links; the rate limit stops the third and fourth | R1 issues them; R4 asserts it | spec edge case, `FR-026`, `FR-028` |
 
 **Nothing in this table is implemented by R4.** Each row is a property this entry observes and tests
 end to end, not a mechanism it builds.
