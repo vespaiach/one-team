@@ -94,11 +94,14 @@ feature is their first or a material caller. Citing them is not a claim on them:
   details page (FR-060, FR-061, FR-062). The same session closed a gap the source never covered — what
   a user sees on an over-length title or description, which had existed only as a database `CHECK`
   (FR-037, FR-049, SC-016). All four answers are recorded under *Clarifications* in the spec.
-- **The markdown reconciliation inverts entry R5's.** Roadmap §1.1 names R6 as where `OT-DATA-015`
-  bites first; R5's own spec already recorded that it ships project descriptions earlier. This spec
-  records the consequence rather than re-litigating it: R6 is the second call site, which under
-  Principle I is where the shared renderer is extracted rather than guessed. The dependency decision
-  is untouched — the subset stays hand-written.
+- **The markdown reconciliation is settled, and the extraction is now a requirement.** Roadmap §1.1
+  names R6 as where `OT-DATA-015` bites first and leaves the subset's design to this child spec; R5's
+  own spec recorded that it ships project descriptions earlier and named R6 as the second call site.
+  Both hold, and `/speckit-clarify` closed the gap between them on 2026-08-30: FR-044 makes extracting
+  R5's implementation into one shared renderer a requirement of this feature rather than a choice left
+  to its plan, FR-009 fixes the subset as one subset for both descriptions, and R5's own description
+  scenarios stand as the regression test (SC-017). Neither write surface offers a preview or a
+  formatting toolbar. The dependency decision is untouched — the subset stays hand-written.
 - **Four later entries reach back into this feature.** R7 (activity), R8 (labels and one cascade arm),
   R10 (`moveIssue` as a second writer of column, assignee and priority) and R11 (assignment
   notifications and one cascade arm) all modify mutators delivered here. `/speckit-plan` should keep
