@@ -24,9 +24,10 @@ centred card and the app mark; each page owns its heading, its form and its stat
 exist on day one, so Principle I's two-call-site rule is met by fact rather than by anticipation, and
 `OT-UX-001`'s "outside the shell" becomes structural rather than a rule three pages must remember —
 R2's `(app)` group lands as a sibling and neither can leak into the other. The layout rests on the
-smallest token set that will carry eleven later slices: a neutral scale, thirteen semantic colour
-tokens, and **no** type-scale, spacing or dark-mode tokens, because Tailwind v4's built-ins already
-cover the first two and the third is not a requirement the specification states.
+token set that will carry eleven later slices: a warm eleven-step neutral scale, accent and red
+ramps, the semantic layer every component names, six type steps and the 4px spacing unit — and
+**no** dark-mode tokens, which the specification never asks for. A contrast test asserts the colour
+half of that set against `globals.css` rather than recording it in prose.
 
 Full reasoning in [`research.md`](./research.md); the layout and token contract in
 [`contracts/auth-layout.md`](./contracts/auth-layout.md).
@@ -69,15 +70,29 @@ no external scheduler (`OT-OPS-003`) · exactly three public routes opened, the 
 until R3 (`OT-SEC-002`) · no route sets a role (`OT-AUTHZ-011`) · no dependency outside AGENTS.md's
 table (IV).
 
-**Scale/Scope**: one installation, one team under twenty people. 58 functional requirements, 5 user
+**Scale/Scope**: one installation, one team under twenty people. 87 functional requirements, 5 user
 stories, 5 tables, 3 screens plus 1 unmounted component, 1 route handler, 2 Server Actions, 2 CLI
 commands.
 
-**Unknowns**: none outstanding. The design brief's six open decisions and its neutral-scale gap are
-resolved in [`research.md`](./research.md) §A; the specification's own silences remain as the
-Assumptions [`spec.md`](./spec.md) already records, of which the **one-hour reset-token lifetime** is
-the one most worth confirming with `/speckit-clarify`. Research adds three of its own (research,
-*Assumptions carried forward*). None blocks implementation.
+**Unknowns**: none remaining. T007 verified against the installed `next@16.3.2` package that
+`NextRequest.ip` was removed in `v15.0.0` and never replaced; research C-3 records the mechanism
+`FR-016`'s rule reads through instead — `X-Forwarded-For`, first hop when `TRUST_PROXY` is unset
+(Next's own server populates it from the socket only when no proxy already set it), last hop when
+it is set. T049 implements it.
+
+Everything else is settled. The design brief's six open decisions and its neutral-scale gap are
+resolved in [`research.md`](./research.md) §A. `/speckit-clarify` settled nine more on 2026-08-30 —
+the reset-token lifetime, `APP_URL`, the throttle's window model, the seeding-refusal exit, the
+sweep's scope, the 128-character password bound, the `TRUST_PROXY` rule for deriving a caller's
+address, the refusal's units and the WCAG 2.2 AA conformance target — each now carried by a
+functional requirement rather than an assumption. The
+requirements-quality review that followed closed the remaining 55 items: 29 became new requirements
+(`FR-059`…`FR-087`), nine existing requirements were amended, nine more items were recorded as
+Assumptions and one as Out of Scope, and the review found four defects — an unbounded
+`credential.password_hash`, a `throttled` result no screen rendered, `FR-015` forbidding a read
+sign-in cannot avoid, and an address bound stated at one boundary but not the other — each now
+fixed. Research carries one assumption forward, the seven proposed copy strings in A-10. Neither
+those nor T007 block implementation; T007 is settled in Setup, before the task that needs it.
 
 ## Constitution Check
 
@@ -89,7 +104,7 @@ holds governance and the version record (v1.0.0).
 | | Principle | Assessment | Post-design |
 | --- | --- | --- | --- |
 | **I** | Component-Driven Architecture | The shared layout has three confirmed call sites on day one, so it is extracted from fact, not anticipation. `accountUser` is defined with no caller in this slice — justified below. No component library ships; `MustChangePasswordBanner` is one component, not a set. | pass, with one entry in Complexity Tracking |
-| **II** | Validated Input Boundaries | Every entry point validates on the server: the sign-in JSON body, both Server Actions, both CLI commands, the `token` query parameter, the `Origin` header, the `X-Forwarded-For` value written to `session.ip_address`, and `ADMIN_EMAIL` / `ADMIN_PASSWORD` at startup. Blur-time checks in the browser are a UX affordance and never the control (`FR-027`). | pass |
+| **II** | Validated Input Boundaries | Every entry point validates on the server: the sign-in JSON body, both Server Actions, both CLI commands, the `token` query parameter, the `Origin` header, the `X-Forwarded-For` value written to `session.ip_address` — read at all only under `TRUST_PROXY` (`FR-016`) — the presented password's 128-character bound on the verification path as well as where a credential is set (`FR-026`), and `APP_URL` / `ADMIN_EMAIL` / `ADMIN_PASSWORD` at startup. Blur-time checks in the browser are a UX affordance and never the control (`FR-027`). | pass |
 | **III** | Straightforward Over Clever | No metaprogramming, no dynamic dispatch, no generic machinery. The two non-obvious mechanisms — a transaction-scoped advisory lock and `SELECT … FOR UPDATE` on the admin set — are PostgreSQL built-ins chosen over a retry loop, and each is documented against the requirement that forces it (research C-5, C-7). | pass |
 | **IV** | Built-In Features Over Third-Party Libraries | Three dependencies, all pre-approved in AGENTS.md's table. Everything else is a built-in: `node:crypto` for tokens and digests, `node:util`'s `parseArgs` and `node:readline` for the CLI, `setInterval` for the sweep, `instrumentation.ts` for startup, a route group for the layout, and Tailwind v4's own type and spacing scales instead of custom tokens. The blocklist is a data file. | pass |
 | **V** | Intention-Revealing Code Without Comments | No comments in the diff. The one place a directive was tempting — a per-file `@vitest-environment` docblock — is replaced by two Vitest projects in config (research D-1). | pass |
@@ -146,9 +161,13 @@ each names why it exists.
 ```text
 src/
 ├── app/
-│   ├── layout.tsx                          EDIT — drop the Arial override so Geist applies (A-9)
-│   ├── globals.css                         EDIT — neutral scale + semantic tokens; delete the
-│   │                                              starter dark block (A-3, A-4)
+│   ├── layout.tsx                          EDIT — load Archivo, drop Geist and the Arial
+│   │                                              override (A-9)
+│   ├── globals.css                         EDIT — neutral scale + semantic tokens, type and
+│   │                                              space; delete the starter dark block
+│   │                                              (A-3 … A-8)
+│   ├── globals.test.ts                     NEW — asserts every contrast pair against the
+│   │                                              tokens (FR-012, A-4)
 │   ├── page.tsx                            REPLACE — / redirects to /home (B-6)
 │   ├── provider.tsx                        unchanged
 │   ├── (auth)/
@@ -174,11 +193,15 @@ src/
 │       ├── sessions.ts                     issue, refresh, delete-all    FR-016…FR-018, FR-038
 │       ├── reset-tokens.ts                 issue, resolve state, spend   FR-036, FR-037
 │       ├── admin-guard.ts                  the active-admin row lock     FR-056
-│       ├── bootstrap.ts                    seed + the sweep timer        FR-044…FR-048
+│       ├── bootstrap.ts                    seed + start the sweep        FR-045…FR-048
+│       ├── sweep.ts                        the three deletes             FR-044, FR-069…FR-071
+│       ├── input.ts                        address and password bounds   FR-063, FR-006
+│       ├── log.ts                          the five enumerated events    FR-064
 │       └── mail.ts                         the reset link over SMTP      FR-033, FR-058
 ├── db/
 │   ├── schema.ts                           EDIT — five tables in, setup_check out  FR-001…FR-008
 │   ├── touched.ts                          the one updated_at helper     FR-003
+│   ├── test-database.ts                    the real-PostgreSQL harness   research D-2
 │   └── index.ts                            unchanged
 ├── instrumentation.ts                      register() — validate, seed, start the timer
 └── proxy.ts                                fast unauthenticated redirect, NOT authorization (B-3)
@@ -188,7 +211,7 @@ scripts/
 └── admin-deactivate.ts                     npm run admin:deactivate      FR-054, FR-056
 
 drizzle/                                    the generated migration + metadata, committed
-vitest.config.ts                            EDIT — two projects, node and jsdom (D-1)
+vitest.config.mts                           EDIT — two projects, node and jsdom (D-1)
 package.json                                EDIT — three deps, two admin scripts
 ```
 
@@ -226,4 +249,4 @@ application's mutations". AGENTS.md names it as the single exception, and the sp
 | 0 — Outline & research | [`research.md`](./research.md) | complete — every unknown resolved, three assumptions carried forward |
 | 1 — Design & contracts | [`data-model.md`](./data-model.md), [`contracts/`](./contracts/), [`quickstart.md`](./quickstart.md) | complete |
 | Constitution re-check | this file | complete — pass, three items in Complexity Tracking |
-| 2 — Tasks | `tasks.md` | **not created by this command** — run `/speckit-tasks` |
+| 2 — Tasks | [`tasks.md`](./tasks.md) | complete — 120 tasks over eight phases, every FR and SC cited |

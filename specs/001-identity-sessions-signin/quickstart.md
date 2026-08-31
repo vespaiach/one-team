@@ -28,6 +28,8 @@ createdb one_team_dev && createdb one_team_test
 ```text
 DATABASE_URL=postgres://localhost/one_team_dev
 TEST_DATABASE_URL=postgres://localhost/one_team_test
+APP_URL=http://localhost:3000
+MAIL_FROM=one-team@localhost
 ADMIN_EMAIL=you@example.com
 ADMIN_PASSWORD=<at least 12 characters, not on the blocklist>
 SUPPORT_EMAIL=help@example.com
@@ -84,6 +86,7 @@ npm run dev
 | Step | Expect |
 | --- | --- |
 | Server starts | one admin exists, carrying `must_change_password` |
+| Start once against an empty database with an eleven-character `ADMIN_PASSWORD` | the app names the length rule, writes nothing, and exits non-zero without serving a request (`FR-046`) |
 | Visit `/` | redirected to `/signin` — no session cookie |
 | Sign in with `ADMIN_EMAIL` / `ADMIN_PASSWORD` | redirected to `/home`; **404 until R2 delivers it** — the redirect is what this feature owns |
 | Stop and restart the server | still exactly one admin. Run the count query in `db:studio` to confirm |
@@ -158,7 +161,8 @@ curl -i -X POST http://localhost:3000/api/auth/signin \
 ```
 
 `curl` sends no `Origin`, so expect `403`. Repeat with `-H 'Origin: http://evil.example'` — also
-`403`. A missing origin is a foreign one.
+`403`. A missing origin is a foreign one. The comparison is against `APP_URL`, not against anything
+the request carries, so setting `Host` does not move it.
 
 ### 8 · Operator commands — `SC-012`, `SC-013`
 

@@ -8,6 +8,13 @@
       "when": 1787852656642,
       "tag": "0000_flashy_mister_sinister",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788119762056,
+      "tag": "0001_chubby_stellaris",
+      "breakpoints": true
     }
   ]
 }
