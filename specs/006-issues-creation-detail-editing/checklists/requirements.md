@@ -102,9 +102,13 @@ feature is their first or a material caller. Citing them is not a claim on them:
   to its plan, FR-009 fixes the subset as one subset for both descriptions, and R5's own description
   scenarios stand as the regression test (SC-017). Neither write surface offers a preview or a
   formatting toolbar. The dependency decision is untouched — the subset stays hand-written.
-- **Four later entries reach back into this feature.** R7 (activity), R8 (labels and one cascade arm),
-  R10 (`moveIssue` as a second writer of column, assignee and priority) and R11 (assignment
-  notifications and one cascade arm) all modify mutators delivered here. `/speckit-plan` should keep
-  `createIssue`, `updateIssue` and `deleteIssue` shaped so those additions are extensions rather than
-  rewrites.
+- **Four later entries reach back into this feature, and the shape they need is now specified.** R7
+  (activity), R8 (labels and one cascade arm), R10 (`moveIssue` as a second writer of column, assignee
+  and priority) and R11 (assignment notifications and one cascade arm) all modify mutators delivered
+  here. `/speckit-clarify` stopped leaving that to the plan on 2026-08-30: FR-055 gives `updateIssue`
+  the single transaction the other two mutators already had and the changed-field contract
+  `OT-OPS-016` and the `field_changed` activity row both depend on, and FR-059 has each later cascade
+  arm attach at the database so `deleteIssue`'s body never changes. *Out of Scope* records that no
+  hook, event or dispatch layer is built for them in advance — Principle I extracts at a second call
+  site, not in anticipation of one.
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`.
