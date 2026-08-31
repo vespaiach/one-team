@@ -70,9 +70,9 @@ profile edit has no feed to write to. Citing them is not a claim on them.
   allowlist the product already applies to markdown link targets. It is the first thing
   `/speckit-clarify` should put to the team.
 - **Which slice lands the cross-cutting UX conventions is now settled.** Entry R2 leaves toasts,
-  skeletons, re-query and the connection-lost banner to whichever of R3 or R4 is built first. R3's
-  spec claims that slice, and R3 is on the critical path while R4 is not, so this screen is their
-  second caller. FR-031 to FR-034 are obligations on the screen rather than a claim on who authors
-  them; under Principle I this is the entry at which extracting a shared primitive for them becomes
-  legitimate. Either build order satisfies the requirements as written.
+  skeletons, re-query and the connection-lost banner to the entry holding their first caller, and
+  `docs/ROADMAP.md` and entry R2 both name that entry as R3, so this screen is their second caller.
+  FR-031 to FR-034 are obligations on the screen rather than a claim on who authors them; under
+  Principle I this is the entry at which extracting a shared primitive for them becomes legitimate.
+  Either build order satisfies the requirements as written.
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`.

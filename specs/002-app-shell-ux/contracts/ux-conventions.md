@@ -43,7 +43,7 @@ project-scoped screens, which arrive with R5 and R6.
 **First caller.** R3's last-active-admin **Deactivate** control, which §3.9 already specifies as
 disabled with the reason inline. R4 has no counterpart, so R3 owns it whichever is built first.
 
-### Loading, staleness, toasts and the lost connection — first implemented by R3 or R4
+### Loading, staleness, toasts and the lost connection — first implemented by R3
 
 | Requirement | Rule |
 | --- | --- |
@@ -55,6 +55,11 @@ disabled with the reason inline. R4 has no counterpart, so R3 owns it whichever 
 **Why not here.** The shell loads nothing, and its one write — sign-out — ends the session and leaves
 the application, so there is no optimistic state to roll back, nothing to re-query and no skeleton to
 show.
+
+**First caller.** R3, for all four: its invitation create, its `deactivateUser` and `reactivateUser`
+writes, and the two lists `/settings/accounts` loads. R4's one in-place field edit is their second
+caller, so R3 owns them whichever is built first — the same reasoning that settles `FR-023` above,
+and R4's spec already consumes the four on that footing.
 
 **Two things the implementing entry inherits from this one:**
 

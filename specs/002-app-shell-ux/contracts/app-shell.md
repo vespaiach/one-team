@@ -157,7 +157,7 @@ reasons that have not changed, and the roadmap's §1.1 says R2 ships no componen
 | Every control carries an accessible name; the chip's full display name reaches assistive technology even when the visible text is truncated | `FR-031`, spec edge case |
 | No state is conveyed by colour alone | AGENTS.md |
 | No active-entry indicator, no `aria-current` | spec *Assumptions*, [`../research.md`](../research.md) B-6 |
-| Toasts, skeletons, the connection banner and disabled-with-reason appear nowhere in this contract — they are stated by `FR-013`, `FR-023` and `FR-032`…`FR-035` and built by R3 or R4 | spec *Conventions fixed here* |
+| Toasts, skeletons, the connection banner and disabled-with-reason appear nowhere in this contract — they are stated by `FR-013`, `FR-023` and `FR-032`…`FR-035` and built by R3 | spec *Conventions fixed here* |
 | No breakpoints | §3, `FR-010` |
 
 ---

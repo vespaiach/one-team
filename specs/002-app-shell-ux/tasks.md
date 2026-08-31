@@ -175,7 +175,7 @@ is `/signin`. As an admin, request it again: the answer is "This doesn't exist".
 
 **No `loading.tsx` above any guard in this phase.** A `403` or `404` is a real status only while the
 response has not begun streaming; a skeleton above one of these checks turns the refusal into a
-streamed `200`. When R3 or R4 implements FR-032, the skeleton goes *below* the guard
+streamed `200`. When R3 implements FR-032, the skeleton goes *below* the guard
 ([`contracts/route-surface.md`](./contracts/route-surface.md)).
 
 **Checkpoint**: all three stories work independently. Every route in the surface table answers, and answers in the right order.
