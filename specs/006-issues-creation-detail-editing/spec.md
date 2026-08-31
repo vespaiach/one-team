@@ -12,6 +12,15 @@
 
 Nothing below is invented. Every statement restates or narrows something [`docs/product/specifications.md`](../../docs/product/specifications.md) states, within the scope boundary [`docs/ROADMAP.md`](../../docs/ROADMAP.md) entry **R6** draws. Where this spec and the roadmap disagree, the roadmap is reconciled first; where this spec and the specification disagree, the specification wins.
 
+## Clarifications
+
+### Session 2026-08-30
+
+- Q: Where on the issue detail page should the Delete control sit, who sees it, and does it ask for confirmation before destroying the issue? → A: In the issue rail beneath the four editable fields; admin-only; disabled with an inline reason for everyone else; confirms once before writing.
+- Q: After an admin successfully deletes an issue, which screen should the browser land on? → A: The project's details page, `/projects/:projectKey/details`, which entry R5 already delivers.
+- Q: What should the delete confirmation say — just the issue's identity, or the size of everything the cascade will destroy along with it? → A: Name the issue and state the size of what the cascade reaches, as a project (§3.8) and a label (§3.10) do; with nothing attached to an issue yet it confirms without a count, and each later entry adds its own as it attaches.
+- Q: When someone types a title over 200 characters or a description over 10 000, what should happen? → A: An inline error on the field, on both write surfaces, naming the bound; nothing is truncated, no save is issued, and the server rejects an over-length value independently of the client's check.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - A member creates a unit of work (Priority: P1)
@@ -97,12 +106,12 @@ An admin deletes an issue outright and it is gone with everything that reference
 
 **Why this priority**: It closes the issue's lifecycle, and it is the one place in this feature where the two roles diverge on a destructive act. It is last because an issue that cannot yet be deleted is still a usable issue.
 
-**Independent Test**: As an admin, delete an issue and confirm nothing that referenced it survives and the browser leaves the page; as a member, confirm the delete control is disabled with its reason and that moving the issue into a `canceled`-kind column is available instead.
+**Independent Test**: As an admin, use the issue rail's Delete control, pass its confirmation, and confirm nothing that referenced the issue survives and the browser lands on that project's details page; as a member, confirm the same rail control is visible and disabled with its reason and that moving the issue into a `canceled`-kind column is available instead.
 
 **Acceptance Scenarios**:
 
-1. **Given** an admin on an issue page, **When** they delete the issue and confirm, **Then** the issue and everything that referenced it are gone together, and the browser navigates away.
-2. **Given** a member on an issue page, **When** they look for a delete control, **Then** it is visible, disabled and carries its reason.
+1. **Given** an admin on an issue page, **When** they press Delete in the rail and confirm once, **Then** the issue and everything that referenced it are gone together, and the browser lands on that project's details page.
+2. **Given** a member on an issue page, **When** they look for a delete control, **Then** it is in the rail, visible, disabled and carrying its reason — never hidden.
 3. **Given** a member who wants an issue out of the way, **When** they use the rail's column control, **Then** the project's `canceled`-kind column is offered like any other and the move is reversible.
 4. **Given** a non-admin, **When** they call the delete path directly, bypassing the disabled control, **Then** the server refuses it.
 5. **Given** a project whose highest issue number is 12 and whose issue 12 has been deleted, **When** a member creates a new issue, **Then** it takes number 13 and never 12.
@@ -124,7 +133,9 @@ An admin deletes an issue outright and it is gone with everything that reference
 - **A link whose scheme is neither `http`, `https` nor `mailto`** renders as text rather than as a link.
 - **Create issue opened for a project key that matches nothing** reads "This doesn't exist" rather than Forbidden — there is no project against which to run a membership check.
 - **An issue sitting in the project's only `canceled`-kind column** can still be moved out of it; no transition is terminal and nothing pins an issue to a column.
+- **A title or description past its length bound** is refused on the field with an inline error naming the bound, on the create form and the issue page alike; nothing is shortened and no save is issued.
 - **An admin who is not on the project's roster** creates, edits and deletes issues in it, because `isMember` admits every admin.
+- **An issue whose cascade reaches nothing** — every issue, while this feature is the newest one built — confirms without a count, naming only the issue itself.
 
 ## Requirements *(mandatory)*
 
@@ -181,7 +192,7 @@ No user journey observes these directly. Each is verified against the schema and
 - **FR-034**: Assignee MUST be optional, MUST draw from FR-022's pool, and MUST default to unassigned. (§3.5)
 - **FR-035**: Due date MUST be optional. (§3.5)
 - **FR-036**: The project MUST be fixed by the route and MUST NOT appear as a field on the form. (§3.5)
-- **FR-037**: Validation MUST be per field and on blur. The Create control MUST stay enabled and report what is missing inline rather than going dead. (`OT-UX-011`)
+- **FR-037**: Validation MUST be per field and on blur. The Create control MUST stay enabled and report what is missing inline rather than going dead. A value exceeding FR-008's length bound MUST be reported the same way, as an inline error on the field naming the bound; it MUST NOT be truncated, capped at the keyboard or silently accepted, and the server MUST reject it independently of whatever the client checked. (`OT-UX-011`)
 - **FR-038**: Creation MUST NOT be optimistic: the form MUST wait for the server and MUST show in-flight state on the Create control. (`OT-UX-008`, §3.5)
 - **FR-039**: Create MUST run exactly one `createIssue` call, and that call MUST write the issue and draw its number in one transaction. On success it MUST navigate to the new issue's detail page; Cancel MUST return to where the user came from and MUST write nothing. (§3.5)
 - **FR-040**: `createIssue` MUST write an ordering index after every existing issue in the same project, so a new issue sorts last under every grouping, and MUST touch no existing row. This MUST be the only ordering write in this feature. (`OT-DATA-018`)
@@ -199,7 +210,7 @@ No user journey observes these directly. Each is verified against the schema and
 #### Issue detail — in-place editing and the rail
 
 - **FR-048**: Title and description MUST be edited in place: clicking the value MUST turn it into a field, Escape MUST revert, and a blur or ⌘-enter MUST save, with exactly one `updateIssue` call per field. No edit mode and no separate form MUST exist. (`OT-UX-009`, §3.4)
-- **FR-049**: The title MUST be a single line, required and trimmed; the description MUST be a multi-line area that grows with its content. (§3.4)
+- **FR-049**: The title MUST be a single line, required and trimmed; the description MUST be a multi-line area that grows with its content. A value exceeding FR-008's length bound MUST keep the field open carrying an inline error naming the bound and MUST issue no save, so the two write surfaces refuse an over-length value the same way. (§3.4)
 - **FR-050**: An in-place edit MUST apply optimistically and MUST roll back with a message naming what failed and why when the server refuses it. (`OT-UX-008`)
 - **FR-051**: The rail MUST offer column, priority, assignee and due date as quick-change controls for members, each one `updateIssue` call applied optimistically, and MUST render each as a disabled control with an inline reason for a non-member. (§3.4, `OT-UX-008`, `OT-UX-002`)
 - **FR-052**: The rail's column control MUST offer only board columns of the issue's own project. (`OT-INV-004`, §3.4)
@@ -213,7 +224,9 @@ No user journey observes these directly. Each is verified against the schema and
 - **FR-057**: The delete MUST be hard and MUST cascade in the database. There MUST be no soft-delete marker on an issue; moving to a `canceled`-kind column MUST be the reversible path. (`OT-DATA-007`)
 - **FR-058**: The delete MUST run in one server transaction and its response MUST carry the settled state, so no caller can observe a moment where the issue is gone and something it owned is not. (`OT-DATA-008`)
 - **FR-059**: The cascade MUST reach every row that references the issue. In this feature nothing else references one, so the cascade removes the issue alone; each later entry MUST attach its own tables to the same cascade as they land. (§4)
-- **FR-060**: A successful delete MUST navigate away from the deleted issue. (§4)
+- **FR-060**: A successful delete MUST navigate away from the deleted issue to that project's details page, `/projects/:projectKey/details`. The destination MUST be a route that exists when this feature lands, so the delete leaves no user on a page that has ceased to exist. (§4, §3.8)
+- **FR-061**: The Delete control MUST sit in the issue rail, beneath the column, priority, assignee and due-date controls. For an admin it MUST be enabled; for every other user it MUST render visible and disabled carrying an inline reason, never hidden. It MUST confirm once before writing, and no path MUST exist that destroys an issue without that confirmation. (§2, §3.8, §3.10, `OT-UX-002`)
+- **FR-062**: The confirmation MUST name the issue by its key and title and MUST state the size of what the cascade will destroy alongside it, following the convention a project delete (§3.8) and a label delete (§3.10) already use. Where the cascade reaches nothing, it MUST confirm the same way without a count. Each later entry that attaches rows to the cascade MUST add its own count to this confirmation. (§3.8, §3.10, §4)
 
 ### Out of Scope
 
@@ -254,6 +267,7 @@ Deferred by the roadmap's R6 boundary, and named here so no scenario above is re
 - **SC-013**: A description renders exactly the seven supported constructs; an unsupported construct and any HTML render as their own literal text 100% of the time, and no link with an unlisted scheme is ever clickable.
 - **SC-014**: An issue address that matches nothing reads "This doesn't exist" and never suggests a hidden-access state.
 - **SC-015**: A due date means the same calendar day for every user on the installation, whatever their own machine reports.
+- **SC-016**: No value a user types is ever silently shortened. An over-length title or description is refused on the field with a message naming the bound, on both write surfaces, and the server refuses it too when the client's check is bypassed.
 
 ## Assumptions
 
@@ -261,8 +275,6 @@ Reasonable defaults chosen where the source is silent, and reconciliations recor
 
 ### Defaults chosen because the source is silent
 
-- **The Delete control sits in the issue rail, admin-only, and confirms once.** §2 gives `deleteIssue` to admins and §4 gives it a cascade, but no screen section places the control. Issue detail is the only screen this feature delivers that names one issue, so the rail is where it goes; it renders disabled with its reason for everyone else (`OT-UX-002`), and it confirms once before writing — the convention every other destructive act in the app already follows (§3.8, §3.10). A successful delete navigates away, as a project delete does (§4).
-- **The delete confirmation names what will be destroyed rather than counting it.** §4 requires only that the delete cascade; the counted confirmation is stated for projects (§3.8) and labels (§3.10), not for issues. Today an issue's cascade reaches nothing else, so there is nothing to count; entries R7, R8 and R11 attach comments, activity, label joins and notifications to it.
 - **A save whose value is unchanged writes nothing.** `OT-UX-009` fixes one mutator call per field but does not say whether a blur on an untouched field is one of them. Writing an identical value would touch `updated_at` and, once R7 lands, write an activity row describing no change.
 - **Concurrent edits to one issue resolve last-write-wins.** Locking and live push are out of scope (§1, `OT-SCOPE-005`), and §3.3 already fixes last-write-wins for the board's own write; nothing in the source suggests a different rule for the rail or for in-place editing.
 - **A due date in the past is accepted.** No rule refuses one, and overdue is a state the product reads elsewhere (§3.2).
@@ -274,7 +286,7 @@ Reasonable defaults chosen where the source is silent, and reconciliations recor
 
 - **This feature is the markdown renderer's second call site, not its first.** Roadmap §1.1 names R6 as where `OT-DATA-015` "bites first", but entry R5 shipped project descriptions on two surfaces and is built before this one. The rule and the dependency decision are unchanged — the subset stays hand-written and no library is added (`AGENTS.md` → Technology constraints) — and under Principle I this is the second call site at which the shared renderer is extracted, rather than the first at which it would have been guessed.
 - **Ordering is written here but designed in R10.** `OT-DATA-018` is assigned to this entry and `OT-DATA-017` to R10. `createIssue` writes the foot-of-project index and touches no existing row; every other ordering write originates from a drop, which R10 delivers along with the fractional-index scheme, the one-order-per-project consequence and the `(sort_order, id)` sort.
-- **Entries R7, R8, R10 and R11 will reach back into this feature's mutators and its delete.** R7 adds activity writing to `createIssue`, `updateIssue` and the events §3.4 lists, in the same transaction as the change each describes. R8 adds the label pickers to both screens, the per-label activity, and the `issue_label` arm of `deleteIssue`'s cascade. R10 adds `moveIssue` alongside `updateIssue` as a second writer of column, assignee and priority. R11 adds `assignment` recipient computation to `createIssue` and `updateIssue` under `OT-OPS-016`, and the `notification` arm of `deleteIssue`'s cascade. This is stated here because the roadmap requires every R5, R6, R7 and R10 child spec to say so (§3).
+- **Entries R7, R8, R10 and R11 will reach back into this feature's mutators and its delete.** R7 adds activity writing to `createIssue`, `updateIssue` and the events §3.4 lists, in the same transaction as the change each describes. R8 adds the label pickers to both screens, the per-label activity, and the `issue_label` arm of `deleteIssue`'s cascade. Each of those arms also adds its own count to the delete confirmation FR-062 fixes. R10 adds `moveIssue` alongside `updateIssue` as a second writer of column, assignee and priority. R11 adds `assignment` recipient computation to `createIssue` and `updateIssue` under `OT-OPS-016`, and the `notification` arm of `deleteIssue`'s cascade. This is stated here because the roadmap requires every R5, R6, R7 and R10 child spec to say so (§3).
 - **The header's New issue control is R2's slot, and this feature is what it points at.** R2 delivered the slot and deferred its destination here; R5 renders the header on project details. This feature wires the control on every project-scoped screen that exists when it lands and delivers `OT-UX-021`'s disabled-with-reason for a non-member. R10 brings the board's own entry points — the inline composer and its chevron — under the same rule.
 - **`OT-AUTHZ-015`'s explanation has only its issue half here.** The requirement names both the issue page and the board; the board's half arrives with R10.
 - **`OT-UX-008` and `OT-UX-009` are established by R5 and exercised again here.** The roadmap's cross-cutting list attributes `OT-UX-008` to R5 and names R6 as a material caller; this feature owns neither convention and reuses both unchanged.

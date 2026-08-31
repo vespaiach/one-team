@@ -61,7 +61,7 @@ feature is their first or a material caller. Citing them is not a claim on them:
 - **Entry R1's conventions** — `OT-DATA-001`, `-002`, `-003` (FR-008), `OT-AUTHZ-004` (FR-019),
   `OT-SEC-015` (FR-029).
 - **Entry R2's shell and cross-cutting UX** — `OT-SCOPE-007` (FR-027, FR-041), `OT-AUTHZ-005` (FR-019),
-  `OT-AUTHZ-012` (FR-025), `OT-UX-001` (FR-041), `OT-UX-002` (FR-026, FR-047, FR-051),
+  `OT-AUTHZ-012` (FR-025), `OT-UX-001` (FR-041), `OT-UX-002` (FR-026, FR-047, FR-051, FR-061),
   `OT-UX-004` (FR-046).
 - **Entry R3's account state** — `OT-AUTHZ-014` (FR-024), which this feature exercises on the assignee
   a project has since removed or deactivated.
@@ -87,11 +87,13 @@ feature is their first or a material caller. Citing them is not a claim on them:
 - **FR-001 to FR-011 carry no user journey.** They are structural conventions later entries inherit,
   verified against the schema and against the writes the database refuses rather than through a
   screen; the spec states that verification basis inline under its own subheading.
-- **The delete control's placement is the most consequential assumption in this spec.** §2 gives
-  `deleteIssue` to admins and §4 gives it a cascade, but no screen section places the control or says
-  whether it confirms. The spec puts it in the issue rail, admin-only, confirming once, by analogy
-  with §3.8 and §3.10. It is the first thing worth confirming with the team, since it is the one
-  control on issue detail the source does not name.
+- **The delete control is specified now, not assumed.** §2 gives `deleteIssue` to admins and §4 gives
+  it a cascade, but no screen section placed the control or said whether it confirms. `/speckit-clarify`
+  settled it on 2026-08-30: the issue rail, admin-only, disabled with an inline reason for everyone else,
+  confirming once and stating the size of what the cascade destroys, then landing on the project's
+  details page (FR-060, FR-061, FR-062). The same session closed a gap the source never covered — what
+  a user sees on an over-length title or description, which had existed only as a database `CHECK`
+  (FR-037, FR-049, SC-016). All four answers are recorded under *Clarifications* in the spec.
 - **The markdown reconciliation inverts entry R5's.** Roadmap §1.1 names R6 as where `OT-DATA-015`
   bites first; R5's own spec already recorded that it ships project descriptions earlier. This spec
   records the consequence rather than re-litigating it: R6 is the second call site, which under
