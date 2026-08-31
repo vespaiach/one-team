@@ -247,10 +247,10 @@ directions. `FR-001` asks for exactly that — "262px fixes its width and not it
 scenario 10 is satisfied without a second code path to test. The one place direction has to be said
 out loud is the divider, where `border-e` is the inline-end edge in both directions.
 
-### B-2. 1280px is a `min-width` on the shell, and the document does the scrolling
+### B-2. 1280px is a `min-width` on the shell, the document does the scrolling, and the sidebar is pinned against it
 
-**Decision.** The shell root carries `min-w-[1280px]`; the sidebar is `w-[262px] shrink-0`; the
-content region takes the rest. Nothing sets an `overflow` rule.
+**Decision.** The shell root carries `min-w-[1280px]`; the sidebar is `w-[262px] shrink-0 sticky
+start-0`; the content region takes the rest. Nothing sets an `overflow` rule.
 
 **Rationale.** `FR-010` wants no reflow, no collapse and a horizontal scroll below the minimum. A
 `min-width` wider than the viewport makes the document wider than the viewport, which is already a
@@ -261,25 +261,48 @@ screens, which are a centred 400px card, are unaffected.
 `262 + 1018 = 1280` is the spec's own arithmetic (`FR-010`), so the content region needs no
 `min-width` of its own.
 
-### B-3. The sidebar sits on `--color-page`, the content region on `--color-surface`, and one token is added
+**Why the sidebar is `sticky`, and why that is not a second mechanism.** `FR-005` ends with a
+sentence the `min-width` alone does not satisfy: "The page's own horizontal scrolling under FR-010
+MUST NOT move the sidebar." A plain flex child at inline-start scrolls away with the document, which
+is the opposite of what the frame is for — below 1280px the user scrolling right to reach content
+would lose the navigation. `position: sticky` with an inline-start inset of `0` glues it to the
+viewport edge for the whole scroll range, because its containing block is the 1280px flex row and its
+scrollport is the document. It is `start-0`, not `left-0`, for the same reason the divider is
+`border-e`: `FR-001` fixes a width, not an edge, and the pin has to follow the direction the request
+resolved. No `z-index` is needed — the nav paints after nothing that overlaps it.
+
+**Alternative rejected.** *`position: fixed` on the sidebar.* It takes the nav out of flow, so the
+content region has to reserve the 262px with a margin that then has to be kept in sync with the
+width, and it breaks `FR-002`'s "the arrangement does not reflow" by making the arrangement two
+independent things instead of one flex row. Sticky keeps the single row and asks for one property.
+
+### B-3. The sidebar sits on `--color-page`, the content region on `--color-surface`, and no token is added
 
 **Decision.** Sidebar fill `--color-page`, content region fill `--color-surface`, divider
-`--color-border`. One token is added to `@theme inline` in `src/app/globals.css`:
-`--color-text-muted-on-page` at `neutral-700` `#4d525a`.
+`--color-border`. **No token is added.** `src/app/globals.css` is untouched, and the project-list
+region's quiet empty line uses `--color-text-muted`.
 
-**Rationale.** R1 measured the contrast and left the instruction: `--color-text-muted` and
-`--color-danger` clear WCAG AA on `--color-surface` and **miss** it on `--color-page` (4.36:1 and
-4.20:1), and "a later slice rendering muted or error text directly on the page background uses
-`--color-text`, or adds a `-on-page` token at `neutral-700`" (R1 research A-4,
-[`auth-layout.md`](../001-identity-sessions-signin/contracts/auth-layout.md)). `neutral-700` on
-`--color-page` is 6.88:1, which R1 already computed.
+**Rationale.** The `-on-page` remedy R1 wrote down was for a palette R1 then replaced. Its instruction
+— "a later slice rendering muted or error text directly on the page background uses `--color-text`,
+or adds a `-on-page` token at `neutral-700`" — was measured against the **cool** ramp, whose
+`#6b7079` reached only 4.36:1 on `--color-page`. R1's own A-4 records the reason it switched: "the
+warm ramp clears 4.5:1 for muted text on the page background as well as on the card, which the
+earlier cool ramp did not". The shipped warm ramp puts `--color-text-muted` at `neutral-600`
+`#6e6a66`, which is **4.80:1** on `--color-page` `#f4f2f0` — over AA — and
+`src/app/globals.test.ts` already asserts that exact pair, so the guarantee is enforced and not
+merely computed.
 
-Putting the content region on white is what makes this a one-token problem instead of a four-token
-one: the Forbidden sentence, the not-found sentence and the banner all sit there, and all of them
-stay on the surface R1 measured them safe against. The only muted text this feature puts on the page
-background is the project-list region's quiet empty line (`FR-024`), and that one token covers it.
+Adding `--color-text-muted-on-page` would therefore be a second name for a colour the existing
+semantic token already supplies safely: a custom property with one caller, duplicating a token that
+passes, on a palette whose comment says every name "points at a ramp step" (I, III, VI). The earlier
+draft of this decision also carried the cool ramp's hex, `#4d525a`, which is not the `neutral-700`
+that shipped (`#55514e`) — a second reason the figure could not be trusted forward.
 
-No other token is added. No dark-mode set, no type scale, no spacing unit — R1 rejected all three
+Putting the content region on white still matters and is unchanged: the Forbidden sentence, the
+not-found sentence and the banner all sit on `--color-surface`, the fill R1 measured them safe
+against.
+
+No token is added at all. No dark-mode set, no type scale, no spacing unit — R1 rejected all three
 with reasons that have not changed (research A-3, A-5, A-6).
 
 **Alternative rejected.** *Sidebar on `--color-surface`, content on `--color-page`.* The usual look,

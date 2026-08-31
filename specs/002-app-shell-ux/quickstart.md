@@ -8,19 +8,20 @@ the code.
 
 ---
 
-## Prerequisite: entry R1 is implemented
+## Prerequisite: entry R1 is implemented — and it is
 
-**Nothing here runs until it is.** This entry writes no table, resolves no session and renders no
-form; every one of those is R1's, and today the repository contains only `src/app` and `src/db`.
-Specifically this feature consumes `loadActor()`, `requireActor()`, `assertSameOrigin()`, the
-`session` table and its deletion, `proxy.ts`, the `MustChangePasswordBanner` component, the token set
-in `globals.css`, and the two Vitest projects.
+**Nothing here runs without it.** This entry writes no table, resolves no session and renders no
+form; every one of those is R1's, and R1 has landed. Specifically this feature consumes
+`loadActor()`, `requireActor()` and `assertSameOrigin()`, the `session` table and
+`src/features/auth/server/sessions.ts`, `src/proxy.ts`, the `MustChangePasswordBanner` component, the
+token set in `src/app/globals.css`, and the two Vitest projects.
 
 ```bash
 git log --oneline -1 -- src/features/auth/server/actor.ts
 ```
 
-An empty result means R1 has not landed and this checklist cannot be started.
+Re-run it before starting: an empty result would mean the branch has lost R1, and this checklist
+cannot be walked without it.
 
 ---
 
