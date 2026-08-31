@@ -229,8 +229,15 @@ in-page jump highlights ([`research.md`](./research.md) D-2).
 
 | List | Order | Source |
 | --- | --- | --- |
-| Invitations | `created_at` **descending** — newest first | §3.9, "at the top of the list"; spec assumption |
-| Accounts | active before closed; **alphabetical by display name** inside each group | §3.9 fixes the grouping; the spec's assumption fixes the order within it |
+| Invitations | `created_at` **descending**, then `id` descending — newest first, and total | §3.9, "at the top of the list"; `FR-018` |
+| Accounts | active before closed; **alphabetical by display name** inside each group, then by `email` | §3.9 fixes the grouping; `FR-036` fixes the order within it |
+
+**Both orders are total, and neither varies with the reader.** `FR-018` and `FR-036` require a
+stable tiebreak, so two renders of one data set cannot disagree: `id` is time-ordered and carries
+the invitation tie in the same direction as `created_at`, and `email` is unique so it settles the
+roster's. The roster's collation is fixed in the query and does **not** follow the locale
+`src/app/layout.tsx` resolves per request — a reader's language may change how a name is written,
+never what order two admins see the team in.
 
 Both are `ORDER BY` clauses, not client sorts, so a skeleton's row order matches what replaces it
 (`FR-055`).

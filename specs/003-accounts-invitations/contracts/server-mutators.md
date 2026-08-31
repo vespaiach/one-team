@@ -72,7 +72,7 @@ so `FR-010` holds for both comparisons this action makes without a second normal
 | **Predicate** | `isAdmin` — `FR-012` |
 | **Writes** | a new digest and `expires_at` = now + 7 days on the **existing row**, `updated_at` through `touched()` — `FR-020` |
 | **Effect** | the previously mailed token now matches nothing and resolves to **unknown** |
-| **Refuses** | no such row (already accepted or revoked) |
+| **Refuses** | no such row (already accepted or revoked), writing nothing and mailing nothing — `FR-020a`, `FR-021a` |
 
 Offered on an expired invitation too (`FR-022`), and on any listed one (`FR-019`).
 
@@ -83,6 +83,7 @@ Offered on an expired invitation too (`FR-022`), and on any listed one (`FR-019`
 | **Predicate** | `isAdmin` — `FR-012` |
 | **Writes** | `delete from invite where id = ?` — `FR-021` |
 | **Effect** | the token is invalid at once and the row leaves the list; its link renders **unknown** — `FR-032` |
+| **Refuses** | no such row · a row already **accepted** — the delete would destroy what `FR-031a` retains — `FR-021a` |
 
 **Revoke racing acceptance.** Both target the same row and PostgreSQL serialises them. Acceptance
 first: the delete removes an already-spent row — refused, because the row is loaded and its
@@ -101,6 +102,7 @@ The one action with no `isAdmin` and no actor.
 | **Validates** | R1's `assertPasswordPolicy` — ≥12 chars, no composition rules, blocklist — **on the server whatever the form allowed** (`FR-027`, `OT-SEC-004`, `OT-SEC-019`) |
 | **Writes** | in one transaction: spend the invitation · `user` (`role: "member"`, `must_change_password: false`) · `credential` · `session` — `FR-028`, `FR-029`, `FR-030` |
 | **Then** | sets the session cookie, `redirect("/home")` — `FR-028` |
+| **A session already held** | irrelevant to whether the route renders, and **neither reused, extended nor deleted**. The cookie is overwritten with the new session; the old row expires or is swept on its own terms — R1's rule for a second sign-in — `FR-024b` |
 
 ```text
 type AcceptState =
@@ -108,7 +110,8 @@ type AcceptState =
   | { status: "policy"; failure: PasswordPolicyFailure }
   | { status: "names" }                                 first or last name missing
   | { status: "used" } | { status: "expired" } | { status: "unknown" }        FR-032
-  | { status: "taken" }                                 FR-034 — the address acquired an account
+  | { status: "taken" }                                 FR-034 — the address acquired an account,
+                                                        named as such and pointed at sign-in
 ```
 
 **Three atomicity claims, and what holds each:**
@@ -122,6 +125,13 @@ type AcceptState =
 **It reads no `user` row.** The address on the form comes from `invite.email` (`FR-033`,
 `OT-SEC-018`), and the collision above is discovered by the constraint rather than by a lookup.
 
+**`taken` names the account, and that is not an enumeration leak** (`FR-034`). The caller holds a
+token this installation issued for that address; the disclosure is bounded by the secret exactly as
+R1's deactivated sign-in message is bounded by the password.
+
+**The token never reaches a log** (`FR-024a`). It is read from the query, digested, and discarded;
+`logUnhandledServerError` receives the invitation's id, never its secret.
+
 **The created account has no role control anywhere.** `member` is written literally; no form field,
 no parameter and no screen in this feature sets a role (`FR-029`, `OT-AUTHZ-011`).
 
@@ -132,7 +142,7 @@ no parameter and no screen in this feature sets a role (`FR-029`, `OT-AUTHZ-011`
 | **Predicate** | `isAdmin` — `FR-043` |
 | **Guard** | R1's `withLastAdminGuard(tx, accountId, apply)` — selects active admins `.for("update")` in the same transaction — `FR-049`, invariant 13 |
 | **Writes** | `user.deactivated_at = now` · `delete from session where user_id = ?` — `FR-045` |
-| **Refuses** | `LastAdminRefusal` → `{ status: "last_admin" }`, and **nothing is written** — `FR-049` |
+| **Refuses** | `LastAdminRefusal` → `{ status: "last_admin" }`, and **nothing is written** — `FR-049` · an account **already closed** → `{ status: "unchanged" }` — `FR-045b` |
 
 Removes nothing else (`FR-047`), writes no activity and notifies nobody (`FR-052`), records no prior
 state and no acting admin (`FR-053`).
@@ -146,15 +156,26 @@ only guard the source states. Their own sessions go with the rest, so their next
 | | |
 | --- | --- |
 | **Predicate** | `isAdmin` — `FR-043` |
+| **Guard** | `select … for update` on the target row inside the transaction, so a concurrent deactivation serialises against it — `FR-051a` |
 | **Writes** | `user.deactivated_at = null` — `FR-051` |
+| **Refuses** | an account **already active** → `{ status: "unchanged" }` — `FR-045b` |
 | **Issues** | no invitation, no token, no mail |
 
-Memberships are untouched because none are read or written (`FR-051`, `FR-052`).
+Memberships are untouched because none are read or written (`FR-051`, `FR-052`), and **sessions a
+deactivation deleted do not come back** — reopening restores access, and the holder signs in again
+with the password they already had (`FR-051a`, `SC-009`).
+
+**Why this one takes a row lock and `deactivateUser` does not need a second.** `withLastAdminGuard`
+already locks the active-admin rows, which is where two deactivations meet. Two *different*
+transitions on one account meet on that account's row instead, so `reactivateUser` locks it and
+`deactivateUser` reaches it through the same guard — one row, one order, never a state between the
+two (`FR-051a`).
 
 ```text
 type AccountState =
   | { status: "idle" } | { status: "done" }
-  | { status: "last_admin" }        FR-049, FR-050
+  | { status: "last_admin" }        FR-049, FR-050 — "The last active admin can't be deactivated."
+  | { status: "unchanged" }         FR-045b — the account already holds the state asked for
   | { status: "forbidden" }         FR-012's member calling directly
   | { status: "offline" }           FR-057
 ```
@@ -186,6 +207,8 @@ the server log through R1's `log.ts`.
 | No session | redirect to `/signin` | — |
 | Signed-in member calling any admin mutator | `{ status: "forbidden" }`, nothing written | — |
 | Last active admin | `{ status: "last_admin" }`, nothing written | — |
+| A state change the account already holds | `{ status: "unchanged" }`, nothing written | — |
+| Revoke or resend on a row that is gone or spent | the refusal, nothing written, no mail | — |
 | Constraint violation the flow expects (`23505`) | the domain answer — `has_invitation`, or `taken` | — |
 | Anything else | a generic failure, and `FR-058`'s toast naming what failed | `logUnhandledServerError` |
 

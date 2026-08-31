@@ -15,6 +15,7 @@ What an invitation is worth, for how long, and what a person is told when it is 
 | Lifetime | 7 days from issue or reissue | `FR-013`, `FR-020` |
 | Uses | one | `FR-013`, `FR-031` |
 | URL | `/invite/accept?token=<secret>` | `FR-024` |
+| In a query string | accepted, and bounded rather than assumed: single use, seven days, digest-only storage, **never logged**, never carried into an outgoing reference. R1's reset link has the same shape | `FR-024a` |
 | Reachable by | anyone; the fourth and last public route | `FR-024`, `OT-SEC-002` |
 | Readable from any endpoint | **never** — the digest is matched, never selected into a DTO | `FR-015`, `OT-DATA-006` |
 
@@ -90,6 +91,8 @@ One message, sent once, never retried.
 | --- | --- |
 | Transport | the operator's SMTP, `SMTP_URL` + `MAIL_FROM` — R1's, promoted to `src/lib/mail.ts` ([`../research.md`](../research.md) B-5) |
 | Link | `new URL("/invite/accept", APP_URL)` with `token` as its one parameter |
+| Carries | the installation, that an administrator issued the invitation, the link, and the instant it runs out — `FR-013a` |
+| Never carries | the issuing admin's name, any other account, or anything about the size or composition of the team. It reaches an address that may not belong to the person it was meant for — `FR-013a`, `OT-SEC-018` |
 | On failure | the invitation **stands**; the admin is told; Resend is the remedy — `FR-017` |
 | Retry | none. The in-process timer sweeps `auth_attempt` and is not extended | spec *Out of Scope* |
 
@@ -151,5 +154,6 @@ seeded first admin (`FR-030`, §5, §6).
 | A retention horizon | `FR-031a` — indefinite, or `SC-004` becomes conditional on a link's age |
 | A mail retry sweep | spec *Out of Scope*; an invitation is mailed once and resent by hand |
 | A throttle on `inviteUser` | §6 throttles sign-in and reset. The source states no third, and inventing one would widen scope |
+| An erasure path for a spent row | `FR-031b` — it retains no more than the account it created already holds, and no account is erased either (`OT-INV-017`) |
 | Bulk invitation, address lists, import | spec *Out of Scope* — the form takes one address |
 | Any project grant | `FR-016`, `OT-SCOPE-005` — an invitation grants a login and never membership |

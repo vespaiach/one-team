@@ -46,6 +46,10 @@ skeletons live below it, per panel ([`../research.md`](../research.md) E-3).
 client component; there is nothing to link to and a reload returns to Invitations. React Aria supplies
 the roving tabindex, arrow keys and `aria-controls` (`FR-030`, `OT-UX-018`).
 
+**No write moves the tab, and the outcome surfaces sit outside both panels** (`FR-003a`). The toast
+region and the connection banner render at page level, so a write completed on one tab is reported
+while the other is selected. Only the reader and `FR-008`'s control change `selectedKey`.
+
 ### The Invitations panel
 
 ```text
@@ -54,13 +58,18 @@ the roving tabindex, arrow keys and `aria-controls` (`FR-030`, `OT-UX-018`).
        TextField  name="email"                   one field, and nothing else         FR-005
        Button     type="submit"                  stays enabled; never goes dead      FR-006
        Cancel / Escape → close, discard, write nothing                               FR-011
+       a press outside the dialog → nothing; the modal stays open                    FR-011
 
 <table>                                          newest first                        FR-018
   address · invited by · sent · expires · [Resend] [Revoke]                          FR-018, FR-019
-  an expired row stays, marked expired, resend still offered                         FR-022
+  an expired row stays, marked expired **in text, never colour alone**, resend
+  still offered                                                                      FR-022
 </table>
 
 empty → one line, "No outstanding invitations"  no illustration                      FR-023
+read failed → an explanatory state in the panel's place, naming that the data
+  could not be loaded and offering a retry — never an empty list, and never
+  a skeleton left standing                                                           FR-055a
 ```
 
 **Validation is per field, on blur, and never a wall on submit** (`FR-006`, `OT-UX-011`). The shape
@@ -87,8 +96,12 @@ onPress:
   1. close the modal, discard the field                                   FR-011's discard rule
   2. setSelectedKey("accounts")                                           the tab moves as state
   3. setHighlightedAccountId(accountId)
-  4. the matching row scrollIntoView's and carries a transient marker
+  4. the matching row scrollIntoView's — a no-op where it is already in view —
+     and carries a transient marker perceivable by more than colour       FR-008b
+  5. focus moves to that row, and the outcome is announced, naming the
+     account whose row was reached                                        FR-008b
   ── no href · no router.push · no URL change · no history entry
+  ── steps 4 and 5 happen whether or not any scrolling was needed
 ```
 
 The marker clears after a short interval or on the next interaction, whichever is first
@@ -100,8 +113,13 @@ component, US1 scenarios 15 and 16 are assertable in jsdom with no router.
 ```text
 <table>                                          active first, then closed           FR-036
   avatar · display name · email · role · joined · projects · [one control]
+  inside each group: one fixed collation, never the reader's locale, with ties
+  broken by the address, which is unique                                             FR-036
 </table>
 ```
+
+No empty state is needed: the admin reading the roster is on it, and `FR-049` keeps one active
+account standing at every moment (`FR-036`).
 
 | Cell | Rule | Requirement |
 | --- | --- | --- |
@@ -115,10 +133,14 @@ component, US1 scenarios 15 and 16 are assertable in jsdom with no router.
 **The sole active admin's Deactivate renders disabled with its reason beside it, and is not hidden**
 (`FR-050`, `OT-UX-002`) — this is the first implementation of R2's disabled-with-inline-reason rule,
 which R2's contract assigns here by name. The reason is text next to the control, never a tooltip and
-never colour alone.
+never colour alone, and it reads **"The last active admin can't be deactivated."** The control stays
+reachable by keyboard and its reason is associated with it programmatically, so a reader who never
+sees that text still meets it (`FR-050`, `OT-UX-018`).
 
-Deactivation asks once and its confirmation **names what stays** — memberships, assignments, comments
-and activity (`FR-044`, `FR-047`).
+**Each confirmation names its own consequence** (`FR-044`). Deactivation's names what stays —
+memberships, assignments, comments and activity (`FR-047`). Reactivation's names what it restores —
+sign-in and picker eligibility, with the memberships the account already had — and says that no new
+link and no invitation is issued (`FR-051`).
 
 ---
 
@@ -152,7 +174,15 @@ valid    → first name · last name · one password field
            the invited address shown as a VALUE, not a control      FR-026, FR-033
 used | expired | unknown
          → its own explanatory state, each distinguishable          FR-032
+taken    → the address acquired an account; named, and pointed at
+           sign-in                                                  FR-034
+
+submitting → in-flight state on the control, and no second press    FR-028a
 ```
+
+**The route renders whatever session the caller holds** (`FR-024b`), as `/signin` does. Acceptance
+writes a new session and overwrites the cookie; a session already held is neither reused, extended
+nor deleted.
 
 **One password field, not two.** §3.1 gives the New/Confirm pair to Change password and describes
 acceptance as "a password the user chooses" (spec assumption).

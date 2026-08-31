@@ -89,8 +89,8 @@ here and `publicUser` everywhere else (`OT-DATA-005`) · at least one admin alwa
 lock shared with the CLI (`OT-INV-013`) · the project count is `0` until R5 (`OT-AUTHZ-006`) ·
 nothing optimistic on this screen (`FR-059`) · no dependency outside AGENTS.md's table (IV).
 
-**Scale/Scope**: one installation, one team under twenty people. 66 functional requirements, 4 user
-stories, 51 acceptance scenarios, 13 edge cases, 11 success criteria, 2 screens across 2 routes, 9
+**Scale/Scope**: one installation, one team under twenty people. 79 functional requirements, 4 user
+stories, 51 acceptance scenarios, 14 edge cases, 11 success criteria, 2 screens across 2 routes, 9
 components, 6 Server Actions and 1 Server Function, 1 new table.
 
 **Unknowns**: none outstanding. Six questions were closed across two `/speckit-clarify` sessions —
