@@ -149,8 +149,22 @@ Activity does not appear. Entry R7 (`Out of Scope`).
 No label picker. Entry R8.
 
 **The page renders identically for every user in structure** and differs only in which controls are
-enabled (`FR-047`, `SC-012`). Nothing is hidden for a permission reason: §2's hide-rather-than-disable
+enabled and in the reasons they carry (`FR-047`, `SC-012`). Identical in structure means the same
+elements in the same order for everyone: none absent for one user, and none changing kind between a
+control and plain text. Nothing is hidden for a permission reason: §2's hide-rather-than-disable
 exception is admin-only *navigation* and nothing else, and there is no navigation on this page.
+
+**Accessibility, on both screens** (`FR-068`, `SC-022`): each disabled control's inline reason is
+associated with its own control programmatically rather than placed adjacent to it, so it reaches
+assistive technology as that control's explanation; every control carries an accessible name and a
+visible focus indicator; and no state is distinguishable by colour alone — a column's colour, a
+priority's colour and every validation state each carry a text equivalent.
+
+**Loading** (`FR-067`, `SC-021`): each screen shows a skeleton matching the layout it replaces — the
+issue page its main column and rail, the create form its fields. The skeleton sits **inside** the
+page under a `Suspense` boundary, below the guards, never in a segment-level `loading.tsx`, which
+would stream a `200` over a route that meant to answer `403` or `404` — R2's own route-surface
+contract records that trap.
 
 ---
 
@@ -164,6 +178,8 @@ exception is admin-only *navigation* and nothing else, and there is no navigatio
 | Escape | reverts to the saved value, writes nothing |
 | Blur, or ⌘-enter | saves — exactly one `updateIssue` call, for that field alone |
 | Blur with nothing changed | no call at all (the spec's own assumption; the mutator's half is `FR-055`) |
+| Keyboard entry, and the accelerator off a Mac | the value is focusable and opens from the keyboard; the accelerator is the platform's command modifier with Enter (`FR-048`) |
+| Focus after save, revert or refusal | returns to the value, never lost to the document (`FR-048`) |
 
 Title is a single line, required and trimmed. Description is a multi-line area that grows with its
 content, showing **raw markdown source** while editing and rendered markdown on read (`FR-044`,

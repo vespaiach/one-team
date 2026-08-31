@@ -5,10 +5,14 @@
 
 `OT-DATA-015` fixes one markdown subset for issue **and** project descriptions in a single sentence.
 Roadmap §1.1 names R6 as where that bites, records that the subset is hand-written rather than
-bought, and leaves its design to this child spec. `FR-044` makes the extraction a requirement of this
-feature rather than an option left to its plan.
+bought, and leaves its design to this child spec. `FR-009` now carries the grammar itself — the
+concrete syntax, not only the list of constructs — and `FR-044` makes the extraction a requirement of
+this feature rather than an option left to its plan.
 
-This file is the grammar, the module boundary, and what R5 and every later reader inherit.
+**This file restates that grammar; it does not originate it.** Where this file and `FR-009` differ,
+`FR-009` wins and this file is corrected. What this file adds beyond the requirement is the module
+boundary, the reasoning behind two of the grammar's choices, and what R5 and every later reader
+inherit.
 
 ---
 

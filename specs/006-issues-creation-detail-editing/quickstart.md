@@ -3,8 +3,8 @@
 **Plan**: [`plan.md`](./plan.md) · **Spec**: [`spec.md`](./spec.md) · **Contracts**:
 [`contracts/`](./contracts/)
 
-Fourteen walkthroughs. Each names the requirements it demonstrates, so a reviewer can run the list
-and reach every acceptance scenario the spec states without reading the code. Five of the eighteen
+Fifteen walkthroughs. Each names the requirements it demonstrates, so a reviewer can run the list
+and reach every acceptance scenario the spec states without reading the code. Seven of the twenty-two
 success criteria are not observable from a browser at all — the counter race, the cascade, the no-op
 write, the length bounds at the database and the timezone rule — and each of those names the test
 that proves it instead.
@@ -227,14 +227,33 @@ or Space, choose with the arrow keys, submit. Then on an issue page, Tab to the 
 edit, Escape to revert.
 
 Expect: a visible focus indicator on every stop, no focus trap outside the confirmation dialog, and
-inside it a real trap that Escape releases. No state is conveyed by colour alone — every disabled
-control carries its reason as text.
+inside it a real trap that Escape releases, returning focus to the Delete control (`FR-061`). No
+state is conveyed by colour alone — column and priority each carry a text equivalent beside their
+swatch, and every disabled control carries its reason as text (`FR-068`).
+
+Then, with a screen reader or the accessibility inspector, focus one disabled rail control.
+
+Expect: the reason is announced as *that control's* explanation rather than as separate nearby text
+(`FR-068`, `SC-022`).
+
+## 15 · The screens load as themselves · `FR-067`, `SC-021`
+
+Throttle the network and open the issue page cold.
+
+Expect: a skeleton in the shape of the main column and the rail — never a full-screen spinner — and
+nothing already on the page moving when the data lands.
+
+Then open an issue address that matches nothing, and `/projects/WEB/issues/new` as a non-member,
+both throttled.
+
+Expect: "This doesn't exist" and the Forbidden screen respectively — **not** a skeleton that resolves
+into either. The skeleton sits below the guard, so a refusal answers as a refusal.
 
 ---
 
 ## What a browser cannot show you
 
-Five criteria have no walkthrough, by their nature. Each names the test that proves it.
+Seven criteria have no walkthrough, by their nature. Each names the test that proves it.
 
 | Criterion | Proved by |
 | --- | --- |
@@ -243,6 +262,8 @@ Five criteria have no walkthrough, by their nature. Each names the test that pro
 | `SC-016` — the server refuses an over-length value when the client's check is bypassed | the mutator tests, calling `createIssue` and `updateIssue` directly, plus the `CHECK` tests |
 | `SC-018` — a save that changes nothing writes nothing | `updated_at` byte-identical after a no-op `updateIssue` ([`research.md`](./research.md) B-7) |
 | `SC-015` — a due date means the same day for everyone | the column is `date` read in string mode, so no instant exists to shift ([`research.md`](./research.md) A-8) |
+| `SC-019` — concurrent saves both succeed and the later one stands | the two-connection `updateIssue` test, asserting neither call is refused and the committed value is the second ([`research.md`](./research.md) B-5) |
+| `SC-020` — no client message carries SQL or a constraint name | the mutator tests, forcing a constraint violation and asserting the returned reason is a closed-set code ([`contracts/mutators.md`](./contracts/mutators.md)) |
 
 ---
 

@@ -143,8 +143,8 @@ Any member may edit any issue in their project; there is no authorship check on 
 The row lock exists so step 4 is correct under concurrency: without it two concurrent saves both
 compute "changed from Todo to Done" against the same stale read, which would give R7 two activity
 rows for one transition and R11 two notifications for one assignment. It does not change who wins —
-the second write still applies and is still not refused, which is the spec's last-write-wins
-assumption unchanged.
+the second write still applies and is still not refused, which is `FR-064`'s last-write-wins
+requirement unchanged.
 
 **The delta is not returned.** `UpdateIssueResult` is `{ status: 'ok' }` and carries no change list.
 Nothing in R6 would read one, and a field shipped for a later entry to consume is dead code under
