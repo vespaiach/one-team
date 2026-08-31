@@ -323,8 +323,10 @@ avatar test calls the action directly, not through the component.
 ## D. The four cross-cutting conventions
 
 The spec settled that these are not one kind of thing (`FR-031`–`FR-034`, and the *Reconciliations*
-section). Two are per-screen work this entry authors for itself; two are single app-wide instances
-that live in R2's shell and that no entry owns. That split is what these four decisions implement.
+section). Two are per-screen work this entry authors for itself. Two are single app-wide instances
+that live in R2's shell and that `docs/ROADMAP.md` assigns to **entry R3**, which holds their first
+caller; this entry is their second caller, consumes both and builds neither. D-1, D-2 and D-5 are
+therefore this entry's own decisions; D-3 and D-4 record the shape of what it calls into.
 
 ### D-1. The skeleton is written here, for this layout, and is not shared
 
@@ -356,12 +358,14 @@ against the same user's own edit in another tab, and `SC-002` — the edit is pr
 next opens the screen — is about the stored row, which is unaffected. Recorded so a reviewer meets
 it here.
 
-### D-3. The message host is React Aria's Toast, adopted at its `UNSTABLE_` export
+### D-3. The message host is React Aria's Toast, built by entry R3 and consumed here
 
-**Decision.** `src/features/shell/components/message-host.tsx` renders `UNSTABLE_ToastRegion` from
-`react-aria-components/Toast`, fed by one module-level `UNSTABLE_ToastQueue` in
-`src/features/shell/messages.ts`. It is mounted once, in R2's `(app)/layout.tsx`. Any screen raises a
-message by calling `messages.add(…)`.
+**Decision.** The host is `src/features/shell/components/message-host.tsx`, rendering
+`UNSTABLE_ToastRegion` from `react-aria-components/Toast` and fed by one module-level
+`UNSTABLE_ToastQueue` in `src/features/shell/messages.ts`, mounted once in R2's `(app)/layout.tsx`.
+**Entry R3 builds and mounts it**, holding the first caller by `docs/ROADMAP.md`'s own attribution.
+This entry is its second caller and raises a message by calling `messages.add(…)`. What follows is
+recorded because R4 depends on the shape, not because R4 chooses it.
 
 **Rationale.** AGENTS.md permits a hand-built component "only where React Aria ships no equivalent".
 It ships one: the installed `react-aria-components@1.20.0` exports `UNSTABLE_Toast`,
@@ -376,7 +380,8 @@ shell would have to provide and every test would have to wrap.
 `package.json` carries `react-aria-components` as `^1.20.0`. The lockfile pins `1.20.0` exactly and
 `npm ci` is what CI runs, so the exports cannot move without a deliberate `npm update`. This is an
 adoption of an unstable API, not an unapproved dependency: gate 4 is untouched, and no version range
-is edited by this entry. Carried into the plan's Complexity Tracking.
+is edited by this entry — nor by this entry at all, since the adoption belongs to R3 and its
+Complexity Tracking. Recorded here so a reader of this plan knows what `messages.add(…)` resolves to.
 
 **Alternatives rejected.** *Hand-build the host.* It is what AGENTS.md permits only in the absence of
 an equivalent, and the equivalent exists; reproducing its focus behaviour and its live-region
@@ -388,7 +393,8 @@ roadmap waits on it, and `FR-033` is required now.
 **Decision.** `src/features/shell/components/connection-banner.tsx` reads `navigator.onLine` and
 subscribes to the `online` and `offline` events. It renders into R2's banner region, above the
 content, so it stacks with the must-change-password banner rather than replacing it. Like the message
-host it is mounted once, in `(app)/layout.tsx`.
+host, **entry R3 builds and mounts it**, once, in `(app)/layout.tsx`. This entry renders beneath it
+and stands up none of it; only the refusal of D-5 is R4's own.
 
 **Rationale.** `FR-034` requires one banner for the whole application. The Web platform answers this
 directly, so Principle IV settles it without a library. Placing it in the same banner region is what

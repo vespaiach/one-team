@@ -6,11 +6,14 @@ Entry R2 states four rules and writes no code for them, because the shell loads 
 write leaves the application. Entry R4 has both a load and a write, so it honours all four
 (`FR-031`–`FR-034`).
 
-**They are not one obligation of the same kind, and this entry does not treat them as a transferable
-bundle.** The spec's clarification split them by kind rather than by build order: two are per-screen
-work this screen authors for itself in either order, and two are single app-wide instances that live
-in the shell and that no entry owns. Nothing below depends on whether R3 or R4 is built first, and
-this entry adds no dependency on R3.
+**They are not one obligation of the same kind, and this entry authors only two of them.**
+[`docs/ROADMAP.md`](../../../docs/ROADMAP.md) settles ownership on the entry holding each first
+caller and names that entry as **R3** — its invitation create, its two account-state writes and its
+two list loads exercise all four, and this screen's one in-place field edit is their second caller.
+Two of the four are single app-wide instances R3 builds and mounts once, which this screen consumes
+and must not duplicate. The other two are per-screen work this screen authors for itself under any
+ownership, because a skeleton matches the layout it replaces and re-query is a fetching posture
+rather than a component.
 
 ---
 
@@ -52,28 +55,30 @@ narrowing an absolute.
 
 ---
 
-## App-wide singletons: one instance in the shell, owned by no entry
+## App-wide singletons: built by entry R3, consumed here
 
-Both are mounted once in R2's `src/app/(app)/layout.tsx`. Every screen consumes them; no screen
-stands up a second. Whether they already exist when this screen is built or arrive with it, no entry
-owns them — which is why this contract describes them as the shell's rather than as R4's.
+Both live in R2's `src/app/(app)/layout.tsx` and both are **entry R3's to build and to mount**. Every
+screen consumes them and no screen stands up a second. This contract describes them so that what this
+screen calls into is pinned; none of it is R4's to author, and R4's only obligation is to consume
+correctly and to add no duplicate. If R4 is built before R3, these two consumptions have nothing to
+consume until R3 lands.
 
 ### `FR-033` · The message host · `OT-UX-016`
 
 | | |
 | --- | --- |
 | What | four kinds — success, info, warning, error — shown top-right, newest nearest the origin, auto-dismissing after five seconds, at most three visible with the rest queued (`FR-033`) |
-| The host | `src/features/shell/components/message-host.tsx`, rendering `UNSTABLE_ToastRegion` from `react-aria-components/Toast` |
+| The host | `src/features/shell/components/message-host.tsx` — entry R3's — rendering `UNSTABLE_ToastRegion` from `react-aria-components/Toast` |
 | The queue | `src/features/shell/messages.ts`, one module-level `UNSTABLE_ToastQueue` configured `timeout: 5000` and `maxVisibleToasts: 3`. A screen raises a message by calling `messages.add(…)`; auto-dismiss is the queue's own `timeout`, whose five-second floor React Aria enforces for readability. Each `add` is its own entry — identical refusals are not coalesced (`FR-033`) |
-| Mounted | once, in `(app)/layout.tsx`. **A screen must not stand up a second host** (`FR-033`) |
+| Mounted | once, in `(app)/layout.tsx`, **by entry R3**. A screen must not stand up a second host (`FR-033`) |
 | This entry's callers | a refused save (`FR-014`), a refused write while offline (`FR-034`), the change-password confirmation (`FR-029`) and its throttle refusal (`FR-028`) |
 
 **Why React Aria's rather than a hand-built stack.** AGENTS.md permits a hand-built component only
 where React Aria ships no equivalent. The installed `react-aria-components@1.20.0` ships one, and its
 region carries the landmark and live-region semantics a hand-built stack would have to reproduce
-exactly. The exports are `UNSTABLE_`-prefixed; that adoption is recorded in the plan's Complexity
-Tracking, and it adds no dependency and edits no version range — the lockfile pins `1.20.0` and CI
-runs `npm ci` ([`../research.md`](../research.md) D-3).
+exactly. The exports are `UNSTABLE_`-prefixed; that adoption is entry R3's to record and to justify,
+and it adds no dependency and edits no version range — the lockfile pins `1.20.0` and CI runs
+`npm ci` ([`../research.md`](../research.md) D-3).
 
 ### `FR-034` · The connection banner · `OT-UX-017`
 
@@ -81,8 +86,8 @@ runs `npm ci` ([`../research.md`](../research.md) D-3).
 | --- | --- |
 | What | one banner reading **"You're offline. Changes can't be saved."** while the connection is lost, and writes refused with **"Changes need a connection"** — the banner's text and the refusal's are two strings, not one (`FR-034`) |
 | How | `navigator.onLine` plus the `online` and `offline` window events — the Web platform's own, so no dependency (Principle IV) |
-| Where | `src/features/shell/components/connection-banner.tsx`, rendered into R2's banner region so it stacks with the must-change-password banner rather than replacing it |
-| Mounted | once, in `(app)/layout.tsx`. One banner for the whole application, never one per screen (`FR-034`) |
+| Where | `src/features/shell/components/connection-banner.tsx` — entry R3's — rendered into R2's banner region so it stacks with the must-change-password banner rather than replacing it |
+| Mounted | once, in `(app)/layout.tsx`, **by entry R3**. One banner for the whole application, never one per screen (`FR-034`) |
 | Queueing | **none.** A save attempted while offline is refused *before* the action is dispatched, so there is no in-flight request to retry and no pending state to hold |
 
 The refusal takes the same rollback path as any other refusal ([`../research.md`](../research.md)

@@ -33,7 +33,7 @@
 - [x] CHK013 Is "the same rate limit as the forgotten-password request" specified by a reference a reviewer can follow to concrete numbers? [Traceability, Spec §FR-028, §SC-011]
 - [x] CHK014 Is "the screen that does enforce the policy" identified unambiguously enough to serve as an acceptance condition? [Measurability, Spec §FR-027]
 - [x] CHK015 Are the properties this entry observes end to end distinguishable from those it must implement, item by item? [Clarity, Spec §Inherited constraints, contracts/change-password-link.md]
-- [x] CHK016 Is "no entry owns them" operationally meaningful for the two singletons, or does it leave delivery unassigned? [Ambiguity, Spec §FR-033, §FR-034]
+- [x] CHK016 Is delivery of the two singletons assigned to a named entry rather than left unowned? [Ambiguity, Spec §FR-033, §FR-034 — `docs/ROADMAP.md` assigns both to R3, which holds their first caller]
 
 ## Scenario Coverage
 

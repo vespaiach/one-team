@@ -30,10 +30,10 @@ protection, and because `<>` is unknown against `NULL`, which would silently ski
 nullable columns. The action **returns a typed refusal and never throws for an expected failure**,
 because a Server Function that throws inside a transition goes to the nearest error boundary, and a
 rejected avatar scheme is an inline error on a field, not a replaced screen. And the four
-cross-cutting conventions are **split by kind, not by build order**: the skeleton and the re-query are
-per-screen work authored here, while the message host and the connection banner are single instances
-mounted once in R2's layout — which is why this entry adds no dependency on R3 and nothing here turns
-on which of the two lands first.
+cross-cutting conventions **divide two and two**, on the roadmap's own attribution rather than on
+build order: the skeleton and the re-query are per-screen work authored here, while the message host
+and the connection banner are single instances entry R3 builds and mounts as the entry holding their
+first caller — so this entry consumes both and builds neither.
 
 Full reasoning in [`research.md`](./research.md) — twenty-eight decisions, groups A–E. The screen in
 [`contracts/profile-screen.md`](./contracts/profile-screen.md), the write in
@@ -60,14 +60,14 @@ written against R2's plan and contracts, not against code.
 
 **Dependencies this feature installs**: **none.** Gate 4 is satisfied trivially. Every library it
 touches is already in AGENTS.md's approved table. The avatar's URL check is the Web platform's `URL`,
-the connection banner is `navigator.onLine` and two window events, and the optimistic write is React's
-own hook — three places a dependency would have been the obvious reach and a built-in answered
-instead (IV).
+and the optimistic write is React's own hook — two places a dependency would have been the obvious
+reach and a built-in answered instead (IV).
 
 **Configuration this feature changes**: **none.** `next.config.ts`, `vitest.config.mts`,
-`drizzle.config.ts`, `biome.json`, `tsconfig.json` and `package.json` are all untouched — including
-the version range of `react-aria-components`, whose `UNSTABLE_` Toast exports this entry adopts
-under the lockfile's exact pin rather than by editing the range ([`research.md`](./research.md) D-3).
+`drizzle.config.ts`, `biome.json`, `tsconfig.json` and `package.json` are all untouched — the version
+range of `react-aria-components` included. The `UNSTABLE_` Toast exports behind the message host are
+adopted by entry R3, not here; this entry calls the queue R3 stands up
+([`research.md`](./research.md) D-3).
 
 **Storage**: PostgreSQL 18 via Drizzle. **No table, no column, no migration** (`FR-037`).
 `src/db/schema.ts` is untouched and `drizzle/` gains no file. The feature's only writes are one
@@ -103,7 +103,7 @@ and no restatement of the password policy (`FR-027`, `OT-SEC-004`) · no new dep
 migration (`FR-037`).
 
 **Scale/Scope**: one installation, one team under twenty people. 40 functional requirements, 5 user
-stories, 42 acceptance scenarios, 16 edge cases, 12 success criteria, 12 modules created, 4 edited and 1
+stories, 42 acceptance scenarios, 16 edge cases, 12 success criteria, 9 modules created, 3 edited and 1
 moved, 1 Server Action added here and 1 added to R1's module, 0 tables.
 
 **Unknowns**: none outstanding. Four questions were closed across three `/speckit-clarify` sessions,
@@ -122,12 +122,12 @@ version record (v1.0.0).
 
 | | Principle | Assessment | Post-design |
 | --- | --- | --- | --- |
-| **I** | Component-Driven Architecture | Twelve modules, each with one concern — nine in `src/features/profile`, two added to R2's `shell/` and one promoted to `src/lib`. One in-place editing control serves all seven fields — seven call sites on day one, not a guess at a second. Nothing is promoted to `src/components/ui` or `src/lib` except `display-name.ts`, which R2 built with one caller and named this entry as its second. Two extractions were available and both were **declined**: a shared reset helper across the two request paths, and a shared write primitive with R3 — each would abstract over a difference rather than a shared shape. | pass, with two entries in Complexity Tracking |
+| **I** | Component-Driven Architecture | Nine modules, each with one concern, all in `src/features/profile`, plus one rule promoted to `src/lib`. One in-place editing control serves all seven fields — seven call sites on day one, not a guess at a second. Nothing is promoted to `src/components/ui` or `src/lib` except `display-name.ts`, which R2 built with one caller and named this entry as its second. Two extractions were available and both were **declined**: a shared reset helper across the two request paths, and a shared write primitive with R3 — each would abstract over a difference rather than a shared shape. | pass, with two entries in Complexity Tracking |
 | **II** | Validated Input Boundaries | Two server entry points, and each is checked. `updateOwnProfile` asserts the origin, derives the row from the session, rejects a field outside the seven, trims, then applies presence, the bound and the scheme — rejecting rather than coercing or truncating. `requestOwnPasswordReset` asserts the origin and reads its subject's address from the session-resolved row, never from an argument. The browser's own checks are affordances and are re-derived server-side, which `SC-010` makes explicit by requiring the avatar refusal to hold when the action is called directly. | pass |
 | **III** | Straightforward Over Clever | No metaprogramming, no dynamic dispatch, no generic machinery. The seven fields are a table of plain data, not a schema builder. The unchanged check is one SQL predicate rather than a diffing layer. The one place cleverness was available — folding the two reset request paths together behind a flag — was rejected for a second readable function. | pass |
-| **IV** | Built-In Features Over Third-Party Libraries | No dependency is added and no version range is edited. Three obvious reaches for a library are answered by built-ins: URL validation by the Web platform's `URL`, connection state by `navigator.onLine` and two window events, optimistic state by React's own `useOptimistic`. The message host is React Aria's, which AGENTS.md's table already approves. | pass |
+| **IV** | Built-In Features Over Third-Party Libraries | No dependency is added and no version range is edited. Two obvious reaches for a library are answered by built-ins: URL validation by the Web platform's `URL`, and optimistic state by React's own `useOptimistic`. The message host this screen raises into is React Aria's and is entry R3's to build. | pass |
 | **V** | Intention-Revealing Code Without Comments | No comments in the diff. The three places a reader will want an explanation — why the empty check runs before the scheme check, why the update carries `IS DISTINCT FROM`, and why the two reset actions are not one — are answered by the contracts, not by annotation. | pass |
-| **VI** | No Dead Code | Every module has a caller in this entry. The two shell singletons are mounted in `(app)/layout.tsx` on the same commit that adds them, and each has a caller on this screen. No field, refusal reason or component is added for a later entry. | pass |
+| **VI** | No Dead Code | Every module has a caller in this entry. No field, refusal reason or component is added for a later entry. | pass |
 | **VII** | Test-First (NON-NEGOTIABLE) | All 42 acceptance scenarios are Red steps written before their implementation, and every functional requirement carries at least one. Two are proved **negatively and structurally** rather than behaviourally — `FR-002`'s "no route exists" and `FR-027`'s "no control accepts a password" — in the idiom `src/features/auth/role-surface.test.ts` already established for `OT-AUTHZ-011`. `FR-027` deliberately does **not** re-assert the password policy: that test exists at `src/features/auth/server/password-policy.test.ts` and is R1's. | pass |
 
 ### Gates 1–8
@@ -137,18 +137,16 @@ version record (v1.0.0).
 | 1 | A test written first and observed failing | Each task in `tasks.md` pairs one scenario with one implementation; the commit order is the evidence. The runner cannot render async Server Components, so `page.tsx` stays a wrapper and every assertion lands on a synchronous component, a parser or the action ([`research.md`](./research.md) A-4, E-4) |
 | 2 | Minimal implementation, then refactor green | Scoped per task. The action does one column; the field control does one field; no component takes a prop its scenario does not require |
 | 3 | Server-side validation at every touched boundary | Principle II row above. Both server entry points check the origin, derive their subject from the session, and validate every value they receive |
-| 4 | No unapproved dependency | None installed, and no version range edited. The `UNSTABLE_` Toast exports belong to an already-approved package |
+| 4 | No unapproved dependency | None installed, and no version range edited |
 | 5 | `npm run style-check` clean | Run as part of `npm run verify` |
 | 6 | No comments, no commented-out code, no dead code | Principles V and VI rows above |
 | 7 | Every changed line traces to a requirement | Each file in the structure below names the FR that puts it there |
 | 8 | `npm test` passes with nothing failing or skipped | Run as part of `npm run verify`. `--passWithNoTests` means a green run is not by itself evidence of gate 1 |
 
 **Re-evaluation after Phase 1.** The design added no dependency, no configuration change, no
-migration and no comment. Two things it *settled* rather than added: `react-aria-components`'
-`UNSTABLE_` Toast exports are adopted for the message host, which is an unstable API of an approved
-package rather than a new one; and `display-name.ts` moves out of `src/features/shell` at its second
-caller, which is a reach-back into an R2 file that R2's own plan anticipates by name. Both are
-recorded below rather than left for the diff.
+migration and no comment. One thing it *settled* rather than added: `display-name.ts` moves out of
+`src/features/shell` at its second caller, which is a reach-back into an R2 file that R2's own plan
+anticipates by name. It is recorded below rather than left for the diff.
 
 ## Project Structure
 
@@ -165,7 +163,7 @@ specs/004-profile/
 │   ├── profile-screen.md            the route, the nine values, in-place editing, the skeleton
 │   ├── update-own-profile.md        the one mutator — order of operations, refusals, bounds
 │   ├── change-password-link.md      the press, the second reset action, and OT-SEC-004's two proofs
-│   └── ux-conventions.md            which of R2's four this entry authors and which it mounts once
+│   └── ux-conventions.md            which of R2's four this entry authors and which it consumes
 ├── checklists/
 │   └── requirements.md              existing
 └── tasks.md                         Phase 2 — created by /speckit-tasks, not by this command
@@ -179,8 +177,6 @@ Every path below is created or edited by this feature, and each names why it exi
 src/
 ├── app/
 │   └── (app)/
-│       ├── layout.tsx                          EDIT (R2's) — mount the two shell singletons
-│       │                                            FR-033, FR-034
 │       └── profile/page.tsx                    EDIT (R2's) — guard, query, header, Suspense
 │                                                    FR-001, FR-003, FR-005, FR-031
 ├── features/
@@ -205,10 +201,7 @@ src/
 │   │       └── change-password-link.tsx        NEW — "use client"; the one press
 │   │                                                FR-026, FR-028, FR-029
 │   ├── shell/
-│   │   ├── messages.ts                         NEW — one app-wide message queue          FR-033
 │   │   └── components/
-│   │       ├── message-host.tsx                NEW — "use client"; the one region        FR-033
-│   │       ├── connection-banner.tsx           NEW — "use client"; the one banner        FR-034
 │   │       └── user-chip.tsx                   EDIT (R2's) — import the join rule from
 │   │                                                its new address                      FR-004
 │   └── auth/
@@ -220,14 +213,15 @@ src/
 ```
 
 Untouched and named so: `src/db/schema.ts`, `drizzle/`, `src/features/auth/server/` in its entirety,
-`src/app/(auth)/`, `src/app/api/`, `src/app/layout.tsx`, `src/app/provider.tsx`, `src/app/globals.css`,
+`src/app/(auth)/`, `src/app/api/`, `src/app/layout.tsx`, `src/app/(app)/layout.tsx`, `src/app/provider.tsx`, `src/app/globals.css`,
 `proxy.ts`, `next.config.ts`, `vitest.config.mts`, `package.json`.
 
 **Structure Decision.** AGENTS.md's rules, followed exactly. `src/app` holds routing, layouts and
 pages only — the two files it touches are R2's and gain no domain logic. All behaviour lives under
-`src/features/`, split between the new `profile/` feature, two additions to R2's `shell/` feature
-which owns the frame these singletons live in, and one addition to R1's `auth/` feature which owns
-the reset mechanism.
+`src/features/`, split between the new `profile/` feature, one import fix in R2's `shell/` feature,
+and one addition to R1's `auth/` feature which owns the reset mechanism. The message host and the
+connection banner live in `shell/` too, but they are entry R3's to build and to mount; this entry
+imports the queue and renders beneath the banner.
 
 Server-only code sits under each feature's `server/` directory. `src/features/profile/actions.ts` is
 the only module a Client Component imports server behaviour from in this feature, and it carries
@@ -238,27 +232,26 @@ across the boundary. No barrel file mixes server and client exports.
 **Test files are not listed above.** Each is colocated beside the module it covers and named by it —
 `fields.test.ts` beside `fields.ts`, `editable-field.test.tsx` beside `editable-field.tsx`, and R2's
 own `user-chip` test extended where the join rule's address changes. Two cover a tree rather than a
-module and so have no neighbour: `src/features/profile/profile-surface.test.ts` and
-`src/features/shell/shell-surface.test.ts`, both structural, in the idiom
+module and so has no neighbour: `src/features/profile/profile-surface.test.ts`, structural, in the idiom
 `src/features/auth/role-surface.test.ts` established for `OT-AUTHZ-011`. [`tasks.md`](./tasks.md)
 names every one.
 
-Four modules carry `"use client"` — the field control, the change-password link, the message host and
-the connection banner. Each is the narrowest boundary that makes its interaction work. R2
+Two modules carry `"use client"` — the field control and the change-password link. Each is the
+narrowest boundary that makes its interaction work. R2
 established why the application has to draw that boundary itself: React Aria's exports import
 `client-only` without carrying their own `"use client"` directive, so a Server Component importing
 one fails the build rather than the boundary being inferred.
 
 ## Complexity Tracking
 
-Four items where the design does not sit cleanly inside a principle. Each is recorded so a reviewer
-meets it here rather than discovering it in the diff.
+Two items where the design does not sit cleanly inside a principle. Each is recorded so a reviewer
+meets it here rather than discovering it in the diff. Two more were recorded while this entry still
+built the message host and the connection banner; the roadmap gives both to entry R3, so they are
+that entry's to justify and are no longer listed here.
 
 | Violation | Why needed | Simpler alternative rejected because |
 | --- | --- | --- |
-| **The message host and the connection banner have one calling screen** (I) | `FR-033` requires the host to be "a single app-wide instance living in the shell" and forbids a screen standing up a second; `FR-034` requires "one banner for the whole application rather than one per screen". Both are singletons the requirement fixes, not primitives extracted at a guessed second call site — and the spec settled that no entry owns them. This entry is simply the first with a surface. | *Build them inside `src/features/profile`.* Then the second screen either imports across a feature boundary or stands up a second host, which `FR-033` forbids by name. *Wait for a second caller.* Every later entry raises messages; deferring means R5 builds it and R4 ships a screen whose refusals have nowhere to go. |
 | **The length bounds are stated twice** — in `fields.ts` and as `CHECK` constraints in `src/db/schema.ts` (VI, III) | The two do different jobs. The `CHECK` is the invariant against any writer, present or future. The parser is the boundary Principle II requires, and it is what turns a 201-character job title into the inline error `FR-017` asks for instead of a constraint violation surfacing as a generic failure. `FR-014`'s edge case names the pair directly: at the bound it saves, one past it the **server** refuses, whatever the browser allowed. | *Parse only, and drop the `CHECK`s.* They are R1's and this entry writes no migration; removing them would also make the bound only as good as the code path. *Constrain only, and let the database refuse.* Then every over-long value is a 500 with no field to attach an error to, and `FR-020`'s "reject rather than coerce" becomes a stack trace. |
-| **`react-aria-components`' `UNSTABLE_` Toast exports are adopted** (IV — an approved dependency, but not a stable API of it) | AGENTS.md permits a hand-built component only where React Aria ships no equivalent, and it ships one: `UNSTABLE_ToastRegion`, `UNSTABLE_ToastList`, `UNSTABLE_ToastQueue` and their types are all present in the installed 1.20.0. The queue carries the auto-dismiss `timeout` `FR-033` needs and the region carries the landmark and live-region semantics a hand-built stack would have to reproduce exactly. `package-lock.json` pins 1.20.0 and CI runs `npm ci`, so the exports cannot move without a deliberate `npm update`. | *Hand-build the host.* It is what the rule permits only in the absence of an equivalent, and reproducing focus behaviour and live-region announcements is the work the rule exists to avoid. *Pin the range in `package.json` to match `next`.* It would be a change no requirement asks for, failing gate 7; the lockfile already provides the reproducibility. |
 | **`display-name.ts` moves out of `src/features/shell` into `src/lib`** (a reach-back into an inherited module) | `FR-004` and `OT-UX-019` require the one join rule wherever a display name renders, and this screen is its second surface. R2's own plan names the moment: "`display-name.ts` has one call site today, and Principle I extracts at the second — R3's roster or R4's profile makes that promotion." Leaving it under `shell/` would have the profile feature import from another feature's internals. | *Copy the two-line rule into the profile feature.* Two implementations of "everywhere in the app" is the drift `OT-UX-019` exists to prevent. *Leave it where it is and import across features.* AGENTS.md promotes to `src/lib` at the real second use, which is exactly what this is. |
 
 **Not recorded as a violation:** one editing control serving seven fields. Principle I extracts at the
@@ -271,5 +264,5 @@ second call site, and this has seven on the day it lands — all inside the feat
 | 0 — Outline & research | [`research.md`](./research.md) | complete — 28 decisions, three assumptions carried forward, no unknown outstanding |
 | 1 — Design & contracts | [`data-model.md`](./data-model.md), [`contracts/`](./contracts/), [`quickstart.md`](./quickstart.md) | complete |
 | Constitution re-check | this file | complete — pass, four items in Complexity Tracking |
-| 2 — Tasks | [`tasks.md`](./tasks.md) | complete — 56 tasks in 8 phases, one per user story |
+| 2 — Tasks | [`tasks.md`](./tasks.md) | complete — 47 tasks in 8 phases, one per user story |
 | Implementation | — | **blocked on entry R2**, which is specified and planned but not built. Entry R1, the other dependency, has landed |
