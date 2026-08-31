@@ -56,7 +56,7 @@ Entry **R5** assigns twenty requirement IDs. Each is cited by at least one funct
 | `OT-INV-008` | FR-047 |
 | `OT-INV-016` | FR-002, FR-006, FR-026 |
 
-Fifteen further IDs are cited without being assigned, because the roadmap fixes them elsewhere and this
+Seventeen further IDs are cited without being assigned, because the roadmap fixes them elsewhere and this
 feature is their first or a material caller. Citing them is not a claim on them:
 
 - **Entry R1's conventions** — `OT-DATA-001`, `-002`, `-003` (FR-012), `OT-DATA-006` (FR-008),
@@ -66,6 +66,9 @@ feature is their first or a material caller. Citing them is not a claim on them:
   `OT-UX-004` (FR-040), `OT-UX-007` (FR-055).
 - **Entry R12's read rule** — `OT-AUTHZ-002` (FR-017), which this feature exercises on the first
   screen everyone can read but not everyone can write.
+- **Entry R6's issue numbering** — `OT-DATA-012` and `OT-INV-009` (FR-008). This feature creates the
+  counter row and fixes what it holds; the numbers themselves are drawn in R6, which is where both
+  are enforced.
 - **Entry R9's column invariant** — `OT-INV-015` (FR-006). This feature sets `kind` at seed time and
   offers no path that changes it; the invariant's enforcement belongs to `updateColumn`, which is R9's.
 - **The whole epic** — `OT-SCOPE-005` (FR-045), naming project-level invitations as the thing the
@@ -82,13 +85,13 @@ feature is their first or a material caller. Citing them is not a claim on them:
 - **FR-001 to FR-012 carry no user journey.** They are structural conventions later entries inherit,
   verified against the schema and against the writes the database refuses rather than through a
   screen; the spec states that verification basis inline under its own subheading.
-- **The markdown reconciliation is the most consequential item in this spec.** Roadmap §1.1 names
-  entry R6 as the first caller of `OT-DATA-015`, but R5 ships two project-description surfaces and
-  is built first. The spec records this under *Reconciliations* and resolves it under Principle I —
-  R5 implements the subset for its own single caller and R6 is where the shared renderer is settled.
-  It is the first thing worth confirming with the team.
-- **Delete's confirmation is the one requirement a later entry widens rather than extends.** FR-048
-  requires the size of what will be destroyed to be stated; what that size counts grows as R6 and R7
-  attach issues and comments to the cascade. `/speckit-clarify` should confirm the team is content
-  for the sentence to widen rather than for the count to be enumerated now.
+- **The markdown renderer is R5's, and the roadmap now says so.** The roadmap assigned
+  `OT-DATA-015` to both R5 and R6 while its §1.1 prose named R6 as the first caller. That prose was
+  corrected: R5 designs and implements the subset for its own single call site, and R6 is the second
+  caller, where §1.1's extraction rule decides whether it is promoted (I). Recorded under
+  *Clarifications* and in FR-010.
+- **Delete's confirmation counts the cascade, and later entries extend the count.** FR-048 now fixes
+  the size it states as the rows the cascade actually reaches when it is shown — columns and members
+  today — and puts the obligation to extend that count on each entry that attaches a table. Settled;
+  no enumeration of future entities is made now.
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`.
