@@ -4,9 +4,10 @@ import { eq, TransactionRollbackError } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { credential, user } from "@/db/schema";
+import { user } from "@/db/schema";
 import { touched } from "@/db/touched";
 import { clientIp } from "./server/client-ip";
+import { findResetCandidate, setCredentialPassword } from "./server/credentials";
 import { hashPassword } from "./server/crypto";
 import { parseEmail } from "./server/input";
 import { sendPasswordResetMail } from "./server/mail";
@@ -61,14 +62,10 @@ export async function requestPasswordReset(
 
     await recordFailure({ flow: "reset", email, ip });
 
-    const [row] = await db
-      .select({ userId: user.id, deactivatedAt: user.deactivatedAt, credentialId: credential.id })
-      .from(user)
-      .leftJoin(credential, eq(credential.userId, user.id))
-      .where(eq(user.email, email));
+    const candidate = await findResetCandidate(email);
 
-    if (row && row.deactivatedAt === null && row.credentialId !== null) {
-      const { token } = await issueResetToken({ userId: row.userId });
+    if (candidate && candidate.deactivatedAt === null && candidate.hasCredential) {
+      const { token } = await issueResetToken({ userId: candidate.userId });
       await sendPasswordResetMail({ to: email, token });
     }
   }
@@ -125,10 +122,7 @@ export async function completePasswordReset(
       }
 
       const hash = await hashPassword(password);
-      await tx
-        .update(credential)
-        .set(touched({ passwordHash: hash }))
-        .where(eq(credential.userId, ownerId));
+      await setCredentialPassword(tx, ownerId, hash);
       await tx
         .update(user)
         .set(touched({ mustChangePassword: false }))
