@@ -14,7 +14,7 @@ function requireAppOrigin(): string {
   return new URL(appUrl).origin;
 }
 
-export function assertSameOrigin(request: Request): void {
+export function assertSameOrigin(request: { headers: Pick<Headers, "get"> }): void {
   const origin = request.headers.get("origin");
   if (!origin || origin !== requireAppOrigin()) {
     throw new ForbiddenOriginError();
