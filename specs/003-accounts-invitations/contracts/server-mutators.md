@@ -20,7 +20,9 @@ a safe result.
 ```
 
 Steps 2 and 3 are skipped by `acceptInvitation` alone, which is the one action a stranger may call
-(`FR-024`). Step 1 is not.
+(`FR-024`). Step 1 is not. **Step 6 is also `acceptInvitation`'s exception**: it ends in
+`redirect("/home")`, which throws, so nothing placed after it runs — and the screen it would
+revalidate is one its caller may not read. The five admin mutators revalidate; acceptance does not.
 
 **Why step 3 needs no cache invalidation.** `loadActor()` reads `user.role` on every request and
 caches nothing across them (R1, `OT-SEC-008`). An admin demoted from the command line mid-session is

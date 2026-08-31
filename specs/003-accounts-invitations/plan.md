@@ -115,7 +115,7 @@ version record.
 | **IV** | Built-In Features Over Third-Party Libraries | **No dependency is added.** Randomness and hashing are `node:crypto`, the transaction is Drizzle's, the constraint is PostgreSQL's, the interrupt-free refusals are plain returns, and every interactive control is React Aria's. The one entry worth naming is that the toast API is `UNSTABLE_`-prefixed at this version — a built-in of an approved library, but not a stable one — so the version is pinned exactly. Recorded below. | pass, with one entry in Complexity Tracking |
 | **V** | Intention-Revealing Code Without Comments | No comments in the diff. The four places a reader will want an explanation — why the invite index is partial, why acceptance discovers a collision through a constraint instead of a lookup, why `sendMail` returns an outcome the reset ignores, and why `FR-008`'s control has no `href` — are answered by [`research.md`](./research.md) and the contracts, not by annotation. | pass |
 | **VI** | No Dead Code | Two things look like placeholders and are not: `projectCount` is a literal `0`, which is the figure the roadmap requires this screen to render until R5; and the toast type carries an `info` kind with no caller in this entry, because `FR-054` fixes the set at four. Both are declared below rather than discovered in the diff. Nothing is retained for future use. | pass, with two entries in Complexity Tracking |
-| **VII** | Test-First (NON-NEGOTIABLE) | All 51 acceptance scenarios are Red steps written before their implementation, and **every functional requirement has a test** — unlike R2, which by its own design shipped six without one. Five of the scenarios are concurrency races that must run against real PostgreSQL, because each is enforced by a constraint or a row lock. `FR-046` is the one requirement satisfied by code this feature does not write; it is held by an end-to-end assertion against R1's existing deactivated response rather than by a second implementation ([`research.md`](./research.md) C-5). | pass |
+| **VII** | Test-First (NON-NEGOTIABLE) | All 51 acceptance scenarios are Red steps written before their implementation, and **every functional requirement is exercised by a task** — unlike R2, which by its own design shipped six untested. Two qualifications, both stated rather than buried. First, five assertions cannot be Red, because what they watch is code this feature does not write: `FR-046` against R1's sign-in route ([`research.md`](./research.md) C-5), `FR-031a` against R1's sweep (B-4), `FR-002`'s guard against R2's, `FR-062`'s per-request role read, and the structural read-surface test. `tasks.md` marks these **🛡 Guard** and they are recorded below rather than passed off as Red steps. Second, `FR-048` has no test at all and is not this feature's to build — it delivers no picker; entries R5, R6 and R7 each hold the exclusion as their picker lands. Five of the scenarios are concurrency races that must run against real PostgreSQL, and their Red tasks are sequenced **ahead of** the implementations that defeat them, because a race test written afterwards passes on its first run. | pass, with one entry in Complexity Tracking |
 
 ### Gates 1–8
 
@@ -134,7 +134,7 @@ version record.
 second call site, and no comment. Three things it *changed* beyond the feature's own files, each
 recorded below: five edits reach back into entry R1's delivered code, all of them promotions or
 optional parameters that leave existing behaviour identical; `src/proxy.ts`'s matcher gains the
-fourth public route; and `package.json` pins `react-aria-components` exactly. One thing it
+fourth public route; and `package.json` pins `react-aria-components` exactly. The five reach-backs touch six files, `reset/page.tsx` being the second F-1 reaches. One thing it
 deliberately did **not** change: R1's `withLastAdminGuard` is used as it stands, because the sharing
 is what `OT-INV-013` depends on.
 
@@ -155,8 +155,12 @@ specs/003-accounts-invitations/
 │   ├── accounts-screen.md      /settings/accounts and /invite/accept
 │   └── ux-conventions.md       the four conventions R3 now owns, and what R4 inherits
 ├── checklists/
-│   └── requirements.md         existing
-└── tasks.md                    Phase 2 — not created by /speckit-plan
+│   ├── requirements.md         spec quality
+│   ├── security.md             the token, the boundary, what is disclosed
+│   ├── concurrency.md          the five races and what holds each
+│   ├── ux.md                   the four conventions and the screen's states
+│   └── lifecycle.md            the two lifecycles, end to end
+└── tasks.md                    Phase 2 — 87 tasks, seven phases
 ```
 
 ### Source code (repository root)
@@ -173,13 +177,15 @@ src/
 │   └── mail.ts                              NEW  — the SMTP transport, promoted (F-3)     FR-017
 ├── proxy.ts                                 EDIT — the fourth public route               FR-024
 ├── app/
-│   ├── (auth)/invite/accept/page.tsx        NEW  — resolve, then form or dead-link state
+│   ├── (auth)/invite/accept/page.tsx        NEW  — shape-gate, resolve, then form or dead-link
 │   │                                              FR-024, FR-025, FR-026, FR-032, FR-033
+│   ├── (auth)/reset/page.tsx                EDIT — imports the promoted TOKEN_SHAPE (F-1)
 │   └── (app)/settings/accounts/page.tsx     EDIT (R2's) — guard kept, body replaced
 │                                                  FR-001, FR-002, FR-003
 └── features/
     ├── auth/                                five reach-back edits, none behavioural
-    │   ├── server/token-state.ts            NEW  — classifyToken, shared (F-1)            FR-032
+    │   ├── server/token-state.ts            NEW  — classifyToken + TOKEN_SHAPE, shared (F-1)
+    │   │                                                                                  FR-032
     │   ├── server/reset-tokens.ts           EDIT — calls classifyToken (F-1)
     │   ├── server/bootstrap.ts              EDIT — imports the promoted helper (F-2)
     │   ├── server/mail.ts                   EDIT — composes only; transport moved (F-3)
@@ -235,15 +241,16 @@ data all arrives on the server. No barrel file mixes server and client exports.
 
 ## Complexity Tracking
 
-Five items where the design does not sit cleanly inside a principle. Each is recorded so a reviewer
+Six items where the design does not sit cleanly inside a principle. Each is recorded so a reviewer
 meets it here rather than discovering it in the diff.
 
 | Violation | Why needed | Simpler alternative rejected because |
 | --- | --- | --- |
-| **Five edits reach back into entry R1's delivered code** — `token-state.ts` extracted and `reset-tokens.ts` refactored onto it; `isUniqueViolation` promoted out of `bootstrap.ts`; the SMTP transport promoted to `src/lib/mail.ts`; `issueSession` given an optional executor; `SESSION_COOKIE_OPTIONS` extracted (I, and gate 7's "adjacent code is left untouched") | Each is Principle I's second call site arriving exactly as the principle describes, and one is a correctness argument rather than a tidiness one: §3.1 requires Accept invite and Change password to resolve tokens by "the same convention", and **used-beats-expired living in two places is how that stops being true**. `isUniqueViolation` unwraps `error.cause` because the `postgres` driver wraps its errors — a detail a copy gets wrong silently. `issueSession`'s parameter matches `deleteAllSessionsForUser`'s existing signature exactly. | *Duplicate each in `features/accounts`.* It buys a smaller diff and pays with two token-ordering rules, two `23505` detectors of differing correctness, and two SMTP configurations for one operator-supplied host. *Leave the transport in `auth/` and import across features.* A feature reaching into another feature's `server/` for infrastructure is the coupling the structure rules exist to prevent; `src/lib` is where AGENTS.md says a real second use goes. |
+| **Five edits reach back into entry R1's delivered code, across six files** — `token-state.ts` extracted carrying both `classifyToken` and `TOKEN_SHAPE`, with `reset-tokens.ts` and `reset/page.tsx` refactored onto them; `isUniqueViolation` promoted out of `bootstrap.ts`; the SMTP transport promoted to `src/lib/mail.ts`; `issueSession` given an optional executor; `SESSION_COOKIE_OPTIONS` extracted (I, and gate 7's "adjacent code is left untouched") | Each is Principle I's second call site arriving exactly as the principle describes, and one is a correctness argument rather than a tidiness one: §3.1 requires Accept invite and Change password to resolve tokens by "the same convention", and **used-beats-expired living in two places is how that stops being true**. `TOKEN_SHAPE` travels with it for the same reason and is the same size of mistake: R1 gates the token's shape in `reset/page.tsx` before it queries, and a regex copied into the second route is a convention that drifts silently. `isUniqueViolation` unwraps `error.cause` because the `postgres` driver wraps its errors — a detail a copy gets wrong silently. `issueSession`'s parameter matches `deleteAllSessionsForUser`'s existing signature exactly. | *Duplicate each in `features/accounts`.* It buys a smaller diff and pays with two token-ordering rules, two `23505` detectors of differing correctness, and two SMTP configurations for one operator-supplied host. *Leave the transport in `auth/` and import across features.* A feature reaching into another feature's `server/` for infrastructure is the coupling the structure rules exist to prevent; `src/lib` is where AGENTS.md says a real second use goes. |
 | **`accounts-screen.tsx` holds two concerns** — the selected tab **and** the highlighted account row (I) | `FR-008`'s control, as clarified, moves both at once: it closes the modal, switches the tab and marks a row, with no URL and no history entry. Both pieces of state are read by both panels, so they cannot be split without lifting them somewhere that is the same component by another name. | *An `href` to `/settings/accounts`.* §3.9 says the tab is "local page state, not a route — there is nothing to link to", and `FR-003` sends a reload back to Invitations, so the link would never reach the row it promised. *A query parameter carrying the row.* It gives the tab a route, contradicting §3.9, and puts an account id in a URL. |
 | **`projectCount` is a literal `0`** (VI — it reads as a placeholder) | `FR-040` requires the column to be **rendered**, and the roadmap says the roster "reads `project_member` rows and reads zero until then". `project_member` is entry R5's table. The figure is required output, and this feature's test asserts that zero — R5 replaces the expression with a subquery without changing the DTO or this screen's contract. | *Omit the column until R5.* `FR-037` lists it among what each row must show, and omitting it means R5 decides the roster's shape rather than inheriting it. *Create `project_member` here.* It is R5's table, and creating it empty to count nothing widens R3's boundary. |
 | **`react-aria-components` is pinned exactly, and the toast API is `UNSTABLE_`-prefixed** (IV — a built-in of an approved library, but not a stable one) | R2's `FR-034` requires toasts be "announced to assistive technology, which under `FR-030` means React Aria's toast region rather than a hand-rolled live region" — the component is required by the requirement, not chosen. At 1.20.0 those exports exist only as `UNSTABLE_ToastRegion`, `UNSTABLE_ToastQueue`, `UNSTABLE_Toast` and `UNSTABLE_ToastContent`. Pinning exactly means the API cannot move under the feature without a deliberate upgrade — the same move R2 made for `next@16.3.2` and `authInterrupts`. | *A hand-rolled `aria-live` region.* Contradicts `FR-034` and `FR-030` by name, and would reimplement queueing, focus management and the timer React Aria ships. *Keep the caret range.* A minor release renaming or stabilising the export breaks the build of a convention eleven later entries inherit. |
+| **Five assertions cannot be Red, and are marked 🛡 Guard in `tasks.md`** (VII, gate 1) | Each watches code this feature does not write, so no implementation follows it and it passes the moment it is written: `FR-046` against R1's sign-in route (C-5), `FR-031a` against R1's sweep (B-4), `FR-002`'s route guard against R2's, `FR-062`'s per-request role read, and the structural read-surface test. Their value is entirely in failing **later** — the sweep guard in particular exists because the sibling table's rule is the opposite one, `reset_token` being swept precisely when it is used. | *Write them as ordinary Red/Green pairs.* The Green would be empty: there is nothing to implement, so the "Red" would go green on its first run, which is the thing VII forbids and which recording them here is meant to prevent anyone quietly doing. *Drop them.* `FR-046`, `FR-031a` and `FR-002` are then requirements with no assertion anywhere, and `SC-004` depends on the sweep guard specifically. |
 | **The toast type carries an `info` kind with no caller in this entry** (VI) | `FR-054` and R2's `FR-034` fix the set at four — success, info, warning and error — and R2 explicitly leaves info and warning "to the implementing entry's" assignment. This entry assigns warning to `FR-017`'s ungone mail and finds no honest use for info; shipping three kinds would make R4 or R5 invent the fourth's appearance. | *Ship three kinds and add info when something needs it.* The convention exists so eleven entries do not each decide what a toast looks like; two-thirds of a convention is the drift it was written to prevent. |
 
 **Not recorded as a violation:** the two `<table>` elements built by hand rather than with React
@@ -258,5 +265,5 @@ Reaching for `Table` would import selection, sorting, resizing and cell navigati
 | 0 — Outline & research | [`research.md`](./research.md) | complete — 26 decisions, three assumptions carried forward, no unknown outstanding |
 | 1 — Design & contracts | [`data-model.md`](./data-model.md), [`contracts/`](./contracts/), [`quickstart.md`](./quickstart.md) | complete |
 | Constitution re-check | this file | complete — pass, five items in Complexity Tracking |
-| 2 — Tasks | [`tasks.md`](./tasks.md) | not started — run `/speckit-tasks` |
+| 2 — Tasks | [`tasks.md`](./tasks.md) | complete — 87 tasks in seven phases; 25 wait on entry R2, 62 are buildable today |
 | Implementation | — | server side buildable now; **the screen is blocked on entry R2**, which is specified and planned but not built |

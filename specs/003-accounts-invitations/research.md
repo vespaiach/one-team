@@ -155,6 +155,10 @@ export function classifyToken(row: { spentAt: Date | null; expiresAt: Date } | n
 `resolveResetTokenState` is refactored to call it; `resolveInvitationState` calls it too. Each keeps
 its own `select`, because they select from different tables.
 
+The module also exports `TOKEN_SHAPE`, the regex R1 applies in `reset/page.tsx` before it queries at
+all. It stays a **page-level** gate at both routes rather than moving into either server module, so
+the two pages match; what changes is that there is one regex instead of two.
+
 **Rationale.** This is Principle I's second call site, arriving exactly as the principle describes.
 What is shared is not the query but the **ordering rule** — used beats expired, absent beats both —
 and §3.1 requires the two screens to behave identically ("the same convention as Accept invite").
@@ -479,12 +483,12 @@ is R4.
 
 ## F. Reach-back into entry R1
 
-Four edits to delivered code. Each is a promotion or a parameter, none changes existing behaviour,
-and all four are recorded again in [`plan.md`](./plan.md)'s *Complexity Tracking*.
+Five edits to delivered code, across six files. Each is a promotion or a parameter, none changes
+existing behaviour, and all five are recorded again in [`plan.md`](./plan.md)'s *Complexity Tracking*.
 
 | # | Edit | Why | Requirement |
 | --- | --- | --- | --- |
-| **F-1** | `token-state.ts` extracted; `resolveResetTokenState` refactored to use it | Principle I's second call site; the used-beats-expired ordering must not drift between two screens §3.1 says match | `FR-032`, B-1 |
+| **F-1** | `token-state.ts` extracted, carrying `classifyToken` **and `TOKEN_SHAPE`**; `resolveResetTokenState` refactored onto the first and `src/app/(auth)/reset/page.tsx` onto the second | Principle I's second call site; the used-beats-expired ordering must not drift between two screens §3.1 says match, and neither must the shape gate that runs before either query — it is a page-level gate at both routes, unexported today at `reset/page.tsx:9` | `FR-032`, `FR-060`, B-1 |
 | **F-2** | `isUniqueViolation` promoted out of `bootstrap.ts` into `src/db/unique-violation.ts` | Second call site — first-run seeding, now `inviteUser` and `acceptInvitation`. It unwraps `error.cause`, which a copy would get wrong | `FR-009a`, `FR-034`, A-2 |
 | **F-3** | The SMTP transport promoted to `src/lib/mail.ts`; `sendMail` returns an outcome | Second message over one transport; `FR-017` needs the outcome that `OT-SEC-011` requires the reset to swallow | `FR-017`, B-5, B-6 |
 | **F-4** | `issueSession` gains an optional executor, matching `deleteAllSessionsForUser`'s existing signature | Acceptance writes the session in the same transaction as the account, so a failure leaves no orphan account | `FR-028`, A-3 |
