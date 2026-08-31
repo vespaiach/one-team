@@ -172,7 +172,7 @@ specs/006-issues-creation-detail-editing/
 │   └── markdown.md             the closed grammar, its two guarantees, and the extraction
 ├── checklists/
 │   └── requirements.md         existing — 16/16
-└── tasks.md                    Phase 2 — not created by /speckit-plan
+└── tasks.md                    Phase 2 — 100 tasks, one phase per user story
 ```
 
 ### Source code (repository root)
@@ -279,5 +279,5 @@ R11's cascade work joins this transaction rather than introducing it, which is t
 | 0 — Outline & research | [`research.md`](./research.md) | complete — 43 decisions in five groups, three assumptions carried forward, no unknown outstanding |
 | 1 — Design & contracts | [`data-model.md`](./data-model.md), [`contracts/`](./contracts/), [`quickstart.md`](./quickstart.md) | complete |
 | Constitution re-check | this file | complete — pass, five items in Complexity Tracking |
-| 2 — Tasks | `tasks.md` | not started — `/speckit-tasks` |
+| 2 — Tasks | [`tasks.md`](./tasks.md) | complete — 100 tasks across eight phases, every acceptance scenario carried by a Red step |
 | Implementation | — | **blocked on entries R2 and R5**, both specified, R2 planned, neither built |
