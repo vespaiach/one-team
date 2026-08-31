@@ -81,13 +81,14 @@ this feature is a caller rather than their owner. Citing them is not a claim on 
   ORM, the runtime, the mutator shape — appears only under *Assumptions → Inherited constraints*,
   where it is labelled as inherited.
 
-- **`OT-UX-005`, `-006`, `-016` and `-017` are the one genuinely contingent block.** Entry R2 defers
-  them to "R3 or R4, whichever is built first". This spec takes R3 as first — it is on the critical
-  path and R5 depends on it, while R4 is explicitly parallel and off it — and carries FR-054 to
-  FR-059 accordingly. If the team builds R4 first, those six requirements move there and this
-  feature simply consumes them. **This is the first question `/speckit-clarify` should put to the
-  team**, because it is the only assumption in the document that changes what is built rather than
-  how a detail behaves.
+- **`OT-UX-005`, `-006`, `-016` and `-017` are no longer contingent on build order.** Entry R2 defers
+  them to "R3 or R4, whichever is built first", and this block was once carried here on the argument
+  that R3 is on the critical path. That framing treated four unlike rules as one transferable bundle.
+  They are split by kind instead: `OT-UX-016`'s toast host and `OT-UX-017`'s connection banner are
+  single app-wide shell instances that no entry owns, and `OT-UX-005`'s skeleton and `OT-UX-006`'s
+  re-query are per-screen work each feature authors for its own screens. FR-054 to FR-059 stay
+  obligations on these screens under every build order, and entry R4 states the same split for its
+  own.
 
 - **Two source tensions are reconciled rather than assumed.** §3.9 offers "a link to it" beside an
   address that already has an account while §3.12 states no route exists to view another user's
