@@ -290,13 +290,13 @@ confirm refusal. Nothing here needs US3 — the session deletion it calls is Fou
 
 ## Phase 8: Polish & cross-cutting concerns
 
-- [ ] T114 Failing test in `src/features/auth/read-boundary.test.ts` asserting no query outside `src/features/auth/server/` names `credential`, `session`, `reset_token` or `auth_attempt`, and that no unauthenticated route selects `publicUser` or `accountUser` — the read boundary `FR-005` and `FR-015` establish, asserted rather than reviewed
-- [ ] T115 Failing test in `src/features/auth/no-secret-leaks.test.ts` asserting no response body, cookie value or log line carries a password, a hash, a session token or a reset token — greppable because `FR-064` bounds the log to five events (`SC-010`)
-- [ ] T116 [P] Add the unhandled-server-error path to `src/features/auth/server/log.ts` and confirm responses to callers stay generic while SQL, stack traces and configuration stay server-side (`FR-025`, `FR-064`)
-- [ ] T117 [P] Confirm the screens under `src/app/(auth)/` meet WCAG 2.2 Level AA against the tokens in `src/app/globals.css` — the contrast pairs T008 re-measured, the 1024px floor (`FR-080`), the 24×24 target-size minimum, and focus visibility on every control — `FR-012`, `FR-082`, `FR-083`, `FR-086`
-- [ ] T118 Run the ten walkthroughs in [`quickstart.md`](./quickstart.md) end to end against a real box, timing walkthrough 1 against the ten-minute bound (`SC-001`) and walkthrough 5 against the three-minute bound (`SC-009`), and record any that do not hold
-- [ ] T119 Run `npm run verify` — `style-check`, `type-check`, `test`, `build` — and confirm gates 5 and 8 pass with nothing failing or skipped
-- [ ] T120 Confirm gate 6 by reading the whole diff with `git diff main...HEAD`: no comments, no commented-out code, no dead code, and the plan's three declared Complexity Tracking exceptions — the unmounted banner, the caller-less `accountUser`, and `user`'s six unread columns — are the only ones present
+- [X] T114 Failing test in `src/features/auth/read-boundary.test.ts` asserting no query outside `src/features/auth/server/` names `credential`, `session`, `reset_token` or `auth_attempt`, and that no unauthenticated route selects `publicUser` or `accountUser` — the read boundary `FR-005` and `FR-015` establish, asserted rather than reviewed
+- [X] T115 Failing test in `src/features/auth/no-secret-leaks.test.ts` asserting no response body, cookie value or log line carries a password, a hash, a session token or a reset token — greppable because `FR-064` bounds the log to five events (`SC-010`)
+- [X] T116 [P] Add the unhandled-server-error path to `src/features/auth/server/log.ts` and confirm responses to callers stay generic while SQL, stack traces and configuration stay server-side (`FR-025`, `FR-064`)
+- [X] T117 [P] Confirm the screens under `src/app/(auth)/` meet WCAG 2.2 Level AA against the tokens in `src/app/globals.css` — the contrast pairs T008 re-measured, the 1024px floor (`FR-080`), the 24×24 target-size minimum, and focus visibility on every control — `FR-012`, `FR-082`, `FR-083`, `FR-086`
+- [X] T118 Run the ten walkthroughs in [`quickstart.md`](./quickstart.md) end to end against a real box, timing walkthrough 1 against the ten-minute bound (`SC-001`) and walkthrough 5 against the three-minute bound (`SC-009`), and record any that do not hold
+- [X] T119 Run `npm run verify` — `style-check`, `type-check`, `test`, `build` — and confirm gates 5 and 8 pass with nothing failing or skipped
+- [X] T120 Confirm gate 6 by reading the whole diff with `git diff main...HEAD`: no comments, no commented-out code, no dead code, and the plan's three declared Complexity Tracking exceptions — the unmounted banner, the caller-less `accountUser`, and `user`'s six unread columns — are the only ones present
 
 ---
 

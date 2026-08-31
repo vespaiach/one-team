@@ -70,12 +70,13 @@ profile edit has no feed to write to. Citing them is not a claim on them.
   this feature is its only writer, so the rule had to be decided here. Clarification fixed it at
   `http` and `https` only — `mailto`, which the repository's markdown link rule allows, is excluded as
   unresolvable for an image source — and the comparison is case-insensitive (FR-011).
-- **The cross-cutting UX conventions are split by kind, not assigned by build order.** Entry R2 leaves
-  toasts, skeletons, re-query and the connection-lost banner to whichever of R3 or R4 is built first.
-  Clarification removed that conditional: the message host and the connection banner are single
-  app-wide shell instances no entry owns, and the skeleton and re-query are per-screen work this
-  screen authors for itself. FR-031 to FR-034 are obligations on this screen under every build order,
-  this entry adds no dependency on R3, and R3's spec states the same split for its own screens. No
-  shared primitive is extracted for them, because two of the four are singletons rather than
-  primitives and the other two are per-screen by definition.
+- **Who lands the cross-cutting UX conventions is settled by the roadmap, not by build order.** Entry
+  R2 leaves toasts, skeletons, re-query and the connection-lost banner to the entry holding their
+  first caller, and `docs/ROADMAP.md` names that entry as R3 outright, so this screen is their second
+  caller. Two of the four are app-wide singletons this screen consumes and does not build — it raises
+  messages into R3's host and renders inside R3's banner. The other two stay per-screen work it
+  authors for itself under any ownership: a skeleton matches the layout it replaces, and re-query is a
+  fetching posture rather than a component. FR-031 to FR-034 are obligations on this screen either
+  way, and under Principle I this is the entry at which extracting a shared primitive for them becomes
+  legitimate.
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`.

@@ -18,7 +18,7 @@ fields to it.
 ```text
 Actor
   id                    the user's identifier
-  role                  'admin' | 'member'
+  role                  string                 R1's type, not a union — compared, never widened
   firstName             required, trimmed
   lastName              required, trimmed
   avatarUrl             string | null          ← added by this feature
@@ -37,6 +37,13 @@ Actor
 `loadActor()` already joins to the session row in its single query (R1, *one query* guarantee), so
 this is two more selected columns and no second round trip. See [`research.md`](./research.md) B-7.
 
+**`role` stays `string`.** R1 declares it that way in `src/features/auth/server/actor.ts`, and the
+two fields below are the only reach-back into `Actor` this feature makes — narrowing the type to
+`'admin' | 'member'` would be a third, changing a shape R1's own callers already depend on. Every
+consumer here compares it (`actor.role !== 'admin'`) and hands components the `isAdmin` boolean §3
+fixes, so the union buys nothing this feature needs. The entry that wants it amends R1's contract
+deliberately and records it.
+
 **`Actor` is not a `user` row and not a projection.** §5's read boundary is enforced by `publicUser`
 and `accountUser` for records *about other people*; the actor is the caller's own record reaching
 only the caller, so neither projection applies and neither is widened. No endpoint in this feature
@@ -54,7 +61,7 @@ selects from `user` at all.
 
 ---
 
-## 2. What is written: one row deleted
+## 2. What is written: one row deleted, and one refreshed by inheritance
 
 ```text
 signOut(): deletes the one `session` row whose digest the request's cookie resolves to
@@ -71,6 +78,12 @@ signOut(): deletes the one `session` row whose digest the request's cookie resol
 | Cascades | none. `session` is a leaf; §4's "nothing cascades" is unaffected |
 | Activity | none. Activity attaches only to a project or an issue (§5, invariant 10) |
 | Notification | none |
+
+**One other statement, and it is R1's.** `loadActor()` selects the actor and then updates that
+session's `last_seen_at` and `expires_at` for the sliding cookie §6 defines. The shell layout calls it
+on every authenticated render, so an authenticated render both reads and writes — but the write is
+R1's, unchanged and un-extended here. `signOut` is the only write this feature *originates*, and the
+only one whose behaviour it specifies.
 
 ---
 

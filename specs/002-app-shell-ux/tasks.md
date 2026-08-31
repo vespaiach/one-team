@@ -14,18 +14,27 @@ against the *Independent Test* its phase states.
 
 ---
 
-## Blocking precondition — entry R1
+## Inherited from entry R1
 
-**No task below can start until entry R1 is implemented.** The tree today holds `src/app` and
-`src/db` and nothing else. This feature consumes, and does not build: `loadActor()`, `requireActor()`,
-`Actor`, `assertSameOrigin()`, the `session` table and its deletion, `MustChangePasswordBanner`,
-`proxy.ts`, the token set in `src/app/globals.css`, and the two Vitest projects.
+**Entry R1 has landed.** This feature consumes, and does not build: `loadActor()` and `requireActor()`
+with the `Actor` type (`src/features/auth/server/actor.ts`), `assertSameOrigin()`
+(`src/features/auth/server/origin.ts`), the `session` table and `src/features/auth/server/sessions.ts`,
+`MustChangePasswordBanner`, `src/proxy.ts`, the token set in `src/app/globals.css`, and the two Vitest
+projects — `server` (node, `**/*.test.ts`, real PostgreSQL) and `ui` (jsdom, `**/*.test.tsx`).
+
+Two properties of R1's implementation are load-bearing here and are asserted by R1's own suite, not
+re-asserted by this feature:
+
+- `loadActor` is `cache(loadActorImpl)`, so a request's guard and its render read one and the same
+  actor — `FR-016`'s second sentence, satisfied by inheritance.
+- `loadActorImpl` refreshes the session's sliding expiry, so an authenticated render both reads and
+  writes. Sign-out is the only write this feature *originates*.
 
 ```bash
 git log --oneline -1 -- src/features/auth/server/actor.ts
 ```
 
-An empty result means R1 has not landed. `T001` is that check.
+`T001` re-runs that check before the phases below, because every path they name assumes it.
 
 ---
 
@@ -39,19 +48,19 @@ An empty result means R1 has not landed. `T001` is that check.
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-**Purpose**: the two configuration flags and the one token every later phase assumes.
+**Purpose**: the two configuration flags every later phase assumes, and the palette check that shows no third change is needed.
 
 - [ ] T001 Confirm entry R1 has landed by running the precondition check in [`quickstart.md`](./quickstart.md); stop here if it returns nothing
 - [ ] T002 [P] Add `experimental: { authInterrupts: true }` to `next.config.ts`, leaving `reactCompiler` and `logging` untouched (FR-019, research A-4)
 - [ ] T003 [P] Set `__NEXT_EXPERIMENTAL_AUTH_INTERRUPTS=true` for both Vitest projects in `vitest.config.mts`; without it every `forbidden()` test throws `E488` and looks like a Red step passing for the wrong reason (research D-2)
-- [ ] T004 [P] Add the `--color-text-muted-on-page` token (`neutral-700` `#4d525a`) to the `@theme inline` block in `src/app/globals.css`; its one caller is T026 (contracts/app-shell.md, *Token contract*)
+- [ ] T004 [P] Confirm no token is added: run `src/app/globals.test.ts` and read the `--color-text-muted` / `--color-page` pair it already asserts. R1's warm ramp clears AA there (`#6e6a66` on `#f4f2f0` is 4.80:1), so the empty line uses `--color-text-muted` and `src/app/globals.css` stays untouched (contracts/app-shell.md, *Token contract*; R1 research A-4, *the warm ramp clears 4.5:1 for muted text on the page background*)
 
-**On gate 1 for this phase.** T002–T004 add no behaviour of their own — a flag, an environment
-variable and a custom property. Each is proved by a later Red step: T002 and T003 by T035 and T036,
-T004 by T022. No test is written for them here and none is skipped.
+**On gate 1 for this phase.** T002 and T003 add no behaviour of their own — a flag and an environment
+variable — and each is proved by a later Red step: T035 and T036. T004 adds nothing at all; it is a
+read of an assertion R1 already ships. No test is written for them here and none is skipped.
 
-**Checkpoint**: the runner can execute an interrupt-throwing test, and the palette has the one
-contrast-safe muted colour the empty line needs.
+**Checkpoint**: the runner can execute an interrupt-throwing test, and the empty line has a
+contrast-safe muted colour without a new token.
 
 ---
 
@@ -88,14 +97,14 @@ without it, and no later entry can start without it.
 
 - [ ] T009 [P] [US1] Write the failing frame tests in `src/features/shell/components/app-shell.test.tsx`: 262px nav first in DOM order with the content region filling the remainder (s1), the frame identical across two renders with identical props (s2), no collapse, stack or hide and no media query at any width (s8), `min-w-[1280px]` on the shell root so the document scrolls horizontally instead of reflowing (s9), the sidebar still first in DOM order under a right-to-left direction with nothing else changed (s10), the `nav` and `main` landmarks with the bypass anchor as the first focusable element resolving to `#main-content` (s11), and no chrome beyond sidebar, header slot and banner slot (FR-001, FR-002, FR-009, FR-010, FR-031, SC-001, SC-011, SC-012)
 - [ ] T010 [P] [US1] Write the failing header tests in `src/features/shell/components/screen-header.test.tsx`: title block with a name and an optional context line, the second line omitted entirely rather than left empty when absent (edge case), the header rendering with a title block, exactly one control slot and the New issue slot (s4), the New issue slot rendering no control on a screen not scoped to a project (s5), the control slot rendering nothing rather than a placeholder when a screen has none (s6), height derived from content so a context line makes it taller, and a name too long for its width truncating on one line rather than wrapping or widening (FR-007, FR-008, FR-017)
-- [ ] T011 [P] [US1] Write the failing sidebar-geometry tests in `src/features/shell/components/sidebar.test.tsx`: a `nav` landmark carrying its own accessible name, `w-[262px]` with `shrink-0`, the full viewport height, the chip pinned to the bottom edge rather than following the entries in flow, and the project-list region as the only part that scrolls within itself (FR-005, FR-031)
-- [ ] T012 [P] [US1] Write the failing layout tests in `src/app/(app)/layout.test.ts`: with an actor the layout hands `AppShell` exactly `displayName`, `avatarUrl`, `isAdmin` and `showPasswordBanner` and no more; with no actor it renders its `children` and no frame; and it performs no authorization check of its own (FR-002, FR-015, contracts/app-shell.md)
+- [ ] T011 [P] [US1] Write the failing sidebar-geometry tests in `src/features/shell/components/sidebar.test.tsx`: a `nav` landmark carrying its own accessible name, `w-[262px]` with `shrink-0`, the full viewport height, the chip pinned to the bottom edge rather than following the entries in flow, the project-list region as the only part that scrolls within itself, and `sticky` with `start-0` so the horizontal scrolling FR-010 produces below 1280px does not carry the sidebar off-screen — an inline-start inset, not a `left`, so the pin follows the resolved direction like the 262px does (FR-005, FR-031)
+- [ ] T012 [P] [US1] Write the failing layout tests in `src/app/(app)/layout.test.ts`: with an actor the layout hands `AppShell` exactly `displayName`, `avatarUrl`, `isAdmin` and `showPasswordBanner` and no more; with no actor it renders its `children` and no frame; and it performs no authorization check of its own (FR-002, FR-015, contracts/app-shell.md). The no-actor branch is reached at execution and never at the browser: the framework renders a layout concurrently with the page beneath it, so the layout resolves `null` while the page's `requireActor()` redirects, and the output is discarded. It exists so the layout cannot throw on a request that is already leaving — not as a screen anyone sees, which `src/proxy.ts` and FR-021 between them rule out
 - [ ] T013 [P] [US1] Write the failing route test in `src/app/(app)/home/page.test.ts`: `requireActor()` runs first, and the page renders no header — no title block, no control slot, no New issue slot (s3, FR-003)
-- [ ] T014 [P] [US1] Write the failing structural test in `src/app/route-groups.test.ts`: no module under `src/app/(auth)` imports from `@/features/shell`, and `src/app/(app)/layout.tsx` is the only layout carrying the shell — which is what makes FR-004 structural rather than a rule three pages must remember (s7, FR-004, SC-003). The same test enumerates every `page.tsx` under `src/app/(app)/` and asserts the set equals the surface table's authenticated routes exactly, with `/home` the only one rendering no header — the route group contributes no URL segment, so nothing outside that table answers (FR-028, SC-002)
+- [ ] T014 [P] [US1] Write the failing structural test in `src/app/route-groups.test.ts`: no module under `src/app/(auth)` imports from `@/features/shell`, and `src/app/(app)/layout.tsx` is the only layout carrying the shell — which is what makes FR-004 structural rather than a rule three pages must remember (s7, FR-004, SC-003). The same test enumerates every `page.tsx` and `route.ts` under `src/app/` — not only under `(app)/` — and asserts the set equals the surface table's authenticated routes, plus `(auth)/`'s three public screens and the two R1-owned responders the table records beneath it (`src/app/page.tsx`, which only redirects `/` to `/home`, and `src/app/api/auth/signin/route.ts`, which §6 pins). Enumerating `(app)/` alone would prove the group adds nothing, not that nothing outside the table answers, which is what FR-028 and SC-002 actually claim. `/home` is the only route rendering no header (FR-028, SC-002). The same test asserts no `loading.tsx` exists anywhere under `src/app/(app)/`: the frame renders from an actor already resolved and has no pending state of its own, and a skeleton above a guard would turn a 403 or a 404 into a streamed 200 (FR-002, contracts/route-surface.md)
 
 ### Implementation for User Story 1
 
-- [ ] T015 [P] [US1] Implement the sidebar's geometry in `src/features/shell/components/sidebar.tsx` — the `nav` landmark, its accessible name, `w-[262px] shrink-0`, `border-e` not `border-r`, `--color-page` fill, full height, the internally scrolling project-list region and the chip pinned to the foot with `mt-auto` (FR-005, FR-031) — makes T011 green
+- [ ] T015 [P] [US1] Implement the sidebar's geometry in `src/features/shell/components/sidebar.tsx` — the `nav` landmark, its accessible name, `w-[262px] shrink-0`, `sticky start-0` so document-level horizontal scrolling leaves it in place, `border-e` not `border-r`, `--color-page` fill, full height, the internally scrolling project-list region and the chip pinned to the foot with `mt-auto` (FR-005, FR-031) — makes T011 green
 - [ ] T016 [US1] Implement `src/features/shell/components/app-shell.tsx` — the `min-w-[1280px]` flex row, the bypass anchor as the first focusable element, `<Sidebar>` first in DOM order, `<main id="main-content">` filling the remainder on `--color-surface`, and the banner slot placeholder above `children` (FR-001, FR-002, FR-009, FR-010, FR-031) — depends on T015, makes T009 green
 - [ ] T017 [P] [US1] Implement `src/features/shell/components/screen-header.tsx` — title block, optional context line, one control slot, the New issue slot pinned to the far inline end, every slot rendering nothing when empty (FR-007, FR-008) — makes T010 green
 - [ ] T018 [US1] Implement `src/app/(app)/layout.tsx` — `loadActor()` for presentation only, `displayName()` from T007, and the four props handed to `AppShell`; no authorization check lives here (FR-002, FR-015, research A-3) — depends on T007, T008, T016, makes T012 green
@@ -117,8 +126,8 @@ render, with no sign-out in between. Then use the sign-out control and confirm t
 
 ### Tests for User Story 2 (write first, observe failing) ⚠️
 
-- [ ] T021 [P] [US2] Append the failing entry tests to `src/features/shell/components/sidebar.test.tsx`: Accounts, Labels and the `+` present under `isAdmin` (s1); all three absent under a member, with no element for them at all and none rendered disabled (s2); Home, the project-list region, Notifications and the chip present regardless of role (s6); no team switcher and no control that changes which team is in view (s10); the entries flipping between two renders when `isAdmin` changes, with no remount and no row touched (s4, s5); and focus travelling the entries in visual order, each with a visible focus indicator distinguishable without colour, each followable without a pointer (s9) (FR-005, FR-006, FR-011, FR-012, FR-016, FR-031, SC-004, SC-005)
-- [ ] T022 [P] [US2] Write the failing empty-surface test in `src/features/shell/components/project-list-region.test.tsx`: one quiet line reading exactly `"No projects yet."`, no illustration and no empty-state marketing, rendered in `--color-text-muted-on-page` (s8, FR-024, `OT-UX-007`)
+- [ ] T021 [P] [US2] Append the failing entry tests to `src/features/shell/components/sidebar.test.tsx`: Accounts, Labels and the `+` present under `isAdmin` (s1); all three absent under a member, with no element for them at all and none rendered disabled (s2); Home, the project-list region, Notifications and the chip present regardless of role (s6); the seven items in FR-005's order — app mark, Home, project-list region, Notifications, Accounts, Labels, chip — read from the rendered DOM under an admin, and the same order with the three admin items removed under a member, so the order is asserted and not only the membership of the set; no team switcher and no control that changes which team is in view (s10); the entries flipping between two renders when `isAdmin` changes, with no remount and no row touched (s4, s5); and focus travelling the entries in visual order, each with a visible focus indicator distinguishable without colour, each followable without a pointer (s9) (FR-005, FR-006, FR-011, FR-012, FR-016, FR-031, SC-004, SC-005)
+- [ ] T022 [P] [US2] Write the failing empty-surface test in `src/features/shell/components/project-list-region.test.tsx`: one quiet line reading exactly `"No projects yet."`, no illustration and no empty-state marketing, rendered in `--color-text-muted` — R1's own token, which its warm ramp clears AA against `--color-page` with and `src/app/globals.test.ts` already asserts (s8, FR-024, `OT-UX-007`)
 - [ ] T023 [P] [US2] Write the failing chip tests in `src/features/shell/components/user-chip.test.tsx`: first and last joined by one space (s7); no `avatarUrl` renders the name alone with no substitute image; an `avatarUrl` that fails to load renders the same; two 200-character names truncate on one line without widening or wrapping the 262px sidebar while the untruncated name stays the accessible name; and the sign-out control is a sibling of the `/profile` link, never nested inside it (FR-017, FR-018, research B-5)
 - [ ] T024 [P] [US2] Write the failing control tests in `src/features/shell/components/sign-out-control.test.tsx`: a form submission targeting `signOut` rather than an `onPress` handler, so it works before hydration; a `react-aria-components` `Button`; an accessible name; and a visible focus indicator (FR-018, FR-030, contracts/sign-out.md)
 - [ ] T025 [P] [US2] Write the failing sign-out tests in `src/features/auth/actions.test.ts`, against the real PostgreSQL instance: a live session's row is gone, the cookie is cleared and the redirect is `/signin` (s11); the same call twice succeeds and reports nothing; a cookie naming no row succeeds, clears and redirects; a foreign `Origin` and a missing one are refused before anything is read or written, deleting no row and leaving the caller signed in; another live session for the same user is still present afterwards (s12); and a request replaying the old cookie resolves no actor (SC-013) (FR-018, `OT-SEC-009`, `OT-AUTHZ-004`)
@@ -128,9 +137,9 @@ render, with no sign-out in between. Then use the sign-out control and confirm t
 - [ ] T026 [P] [US2] Implement `src/features/shell/components/project-list-region.tsx` — the region, the `+` rendered only under `isAdmin`, and the one quiet line; it reads no projects, because R5 owns those (FR-011, FR-024) — makes T022 green
 - [ ] T027 [P] [US2] Implement `src/features/shell/components/user-chip.tsx` — the `/profile` link carrying the avatar or nothing plus the display name, with the sign-out control beside it (FR-017, FR-018) — makes T023 green
 - [ ] T028 [P] [US2] Implement `src/features/shell/components/sign-out-control.tsx` with top-level `"use client"` — the feature's only client module and its only React Aria component (FR-018, FR-030) — makes T024 green
-- [ ] T029 [US2] Add the single-session delete to `src/features/auth/server/sessions.ts`, R1's module, if R1's implementation has not already — exactly one row, never the user's other sessions (FR-018, contracts/sign-out.md, research C-2)
+- [ ] T029 [US2] Add the single-session delete to `src/features/auth/server/sessions.ts`, R1's module — exactly one row, never the user's other sessions. R1 ships `issueSession`, `resolveSession` and `deleteAllSessionsForUser` and no single-row delete, so this is unconditional: the one it needs does not exist (FR-018, contracts/sign-out.md, research C-2)
 - [ ] T030 [US2] Implement `signOut` in `src/features/auth/actions.ts`, R1's `"use server"` module, in the contract's order: `assertSameOrigin()`, read the cookie, delete the one row, clear the cookie, `redirect('/signin')` (FR-018) — depends on T029, makes T025 green
-- [ ] T031 [US2] Add the entries to `src/features/shell/components/sidebar.tsx` in FR-005's order — app mark, Home, project-list region, Notifications, Accounts, Labels, chip — each a `next/link` anchor, the three admin entries rendered only under `isAdmin` (FR-005, FR-006, FR-011, FR-012, research B-4) — depends on T026, T027, T028, makes T021 green
+- [ ] T031 [US2] Add the entries to `src/features/shell/components/sidebar.tsx` in FR-005's order — app mark, Home, project-list region, Notifications, Accounts, Labels, chip — following the structural tree in [`contracts/app-shell.md`](./contracts/app-shell.md): the four routes (Home, Notifications, Accounts, Labels) are `next/link` anchors, Accounts and Labels rendered only under `isAdmin`; the app mark is presentational and is not a second route to `/home`; the project-list region is the `section` T026 builds; and the chip is T027's, a link with the sign-out control as its sibling (FR-005, FR-006, FR-011, FR-012, research B-4, B-5) — depends on T026, T027, T028, makes T021 green
 - [ ] T032 [US2] Thread `displayName`, `avatarUrl` and `isAdmin` from `AppShell` into `Sidebar` in `src/features/shell/components/app-shell.tsx`, keeping the layout's props exactly the four `data-model.md` §3 fixes — depends on T031
 
 **Checkpoint**: US1 and US2 both work independently. An admin and a member get different sidebars, and either can sign out.
@@ -166,7 +175,7 @@ is `/signin`. As an admin, request it again: the answer is "This doesn't exist".
 
 **No `loading.tsx` above any guard in this phase.** A `403` or `404` is a real status only while the
 response has not begun streaming; a skeleton above one of these checks turns the refusal into a
-streamed `200`. When R3 or R4 implements FR-032, the skeleton goes *below* the guard
+streamed `200`. When R3 implements FR-032, the skeleton goes *below* the guard
 ([`contracts/route-surface.md`](./contracts/route-surface.md)).
 
 **Checkpoint**: all three stories work independently. Every route in the surface table answers, and answers in the right order.
@@ -202,7 +211,7 @@ stays operable. Clear the flag with `admin:grant` and confirm the notice stops r
 - [ ] T050 [P] Confirm the six requirements with no test are still exactly six — FR-013, FR-023, FR-032, FR-033, FR-034, FR-035 — and that every inline deferral marker in [`spec.md`](./spec.md) is intact; a seventh would mean a route or a slot was quietly dropped (research D-4)
 - [ ] T051 [P] Sweep the diff for gates 4, 6 and 7: no dependency added to `package.json`, no comment and no commented-out code, no dead code, and every changed line traceable to a requirement named in a task above
 - [ ] T052 Run `npm run verify` from the repository root — the `style-check`, `type-check`, `test` and `build` chain `package.json` defines, which is exactly what CI runs
-- [ ] T053 Confirm the untouched files named in [`plan.md`](./plan.md) are still untouched: `src/db/schema.ts`, `drizzle/`, `src/app/layout.tsx`, `src/app/page.tsx`, `src/app/provider.tsx`, `src/app/(auth)/`, `proxy.ts`, `src/instrumentation.ts`, `package.json`
+- [ ] T053 Confirm the untouched files named in [`plan.md`](./plan.md) are still untouched: `src/db/schema.ts`, `drizzle/`, `src/app/layout.tsx`, `src/app/page.tsx`, `src/app/provider.tsx`, `src/app/globals.css`, `src/app/(auth)/`, `src/proxy.ts`, `src/instrumentation.ts`, `package.json`
 
 ---
 

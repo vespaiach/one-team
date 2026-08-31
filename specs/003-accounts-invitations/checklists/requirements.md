@@ -46,6 +46,18 @@ Entry **R3** assigns ten requirement IDs. Each is cited by at least one function
 | `OT-UX-011` | FR-006 |
 | `OT-INV-013` | FR-049 |
 
+Each of the ten is **discharged** rather than merely cited — the requirement named carries the whole
+of the index row, not a part of it. `OT-SEC-002`'s count is stated and closed (FR-024). `OT-SEC-003`
+is in three parts and each has its own requirement: no public sign-up and only two origins (FR-035),
+the seven-day single-use link (FR-013), and members refused on the server (FR-012). `OT-SEC-013`'s
+session deletion is FR-045, its sign-in revocation FR-046, its retention FR-047, and the membership
+half FR-051 — vacuously true until entry R5 creates a membership row, which the *Reconciliations*
+note records. `OT-SEC-016` is completed by FR-032, entry R1 having delivered the same three states
+for Change password. `OT-AUTHZ-006` is FR-040 for this screen's count only, the other two lists
+being R5's. `OT-AUTHZ-011` is in two parts — no UI sets a role (FR-029, FR-042) and invitation and
+deactivation do have one (FR-001, FR-042). `OT-AUTHZ-014` is FR-047 in full. `OT-DATA-005` is
+FR-039, `OT-UX-011` is FR-006, and `OT-INV-013` is FR-049 with the lock it shares with entry R1.
+
 Twenty-one further IDs are cited without being assigned, because the roadmap fixes them elsewhere and
 this feature is a caller rather than their owner. Citing them is not a claim on them.
 
@@ -79,24 +91,30 @@ this feature is a caller rather than their owner. Citing them is not a claim on 
   (`OT-SEC-006`, `OT-SEC-005`, `OT-DATA-005`). Restating them is traceability to a decision already
   taken upstream, not a technical choice this document makes. Everything that *is* a choice — the
   ORM, the runtime, the mutator shape — appears only under *Assumptions → Inherited constraints*,
-  where it is labelled as inherited.
+  where it is labelled as inherited. Two requirements name an enforcement mechanism rather than only
+  an outcome — FR-049's active-admin row lock and FR-009a's unique index over unspent invitations —
+  because each states an invariant that holds only under concurrency, which `AGENTS.md` requires be
+  carried by a constraint or a lock rather than by a read followed by a write. Naming the mechanism
+  is what makes the invariant testable; the shape of the migration remains the plan's.
 
-- **`OT-UX-005`, `-006`, `-016` and `-017` are no longer contingent on build order.** Entry R2 defers
-  them to "R3 or R4, whichever is built first", and this block was once carried here on the argument
-  that R3 is on the critical path. That framing treated four unlike rules as one transferable bundle.
-  They are split by kind instead: `OT-UX-016`'s toast host and `OT-UX-017`'s connection banner are
-  single app-wide shell instances that no entry owns, and `OT-UX-005`'s skeleton and `OT-UX-006`'s
-  re-query are per-screen work each feature authors for its own screens. FR-054 to FR-059 stay
-  obligations on these screens under every build order, and entry R4 states the same split for its
-  own.
+- **`OT-UX-005`, `-006`, `-016` and `-017` are settled on this entry, and no longer contingent.**
+  Entry R2 originally deferred them to whichever of R3 and R4 was built first. Ownership now follows
+  the first caller instead: R3 holds it for all four, R2 had already broken the same tie the same way
+  for `OT-UX-002`, and R4's spec already consumes them as their second caller. `docs/ROADMAP.md` is
+  amended under §5 and entry R2 is reconciled to it, so FR-054 to FR-059 stay here whatever order the
+  team builds in and no scenario above depends on a scheduling decision.
 
-- **Two source tensions are reconciled rather than assumed.** §3.9 offers "a link to it" beside an
-  address that already has an account while §3.12 states no route exists to view another user's
-  profile — the link is resolved to that account's row on the Accounts tab, the only surface that
-  shows another user's account. And §3.9's "revoke ... drops the row" against §3.1's requirement
-  that a used token be distinguishable from an unknown one forces acceptance to *retain* the
-  invitation while revoke deletes it; that asymmetry is stated in FR-031 and FR-032 rather than left
-  to the plan.
+- **Two source tensions are reconciled rather than assumed, and each is now closed to its mechanism.**
+  §3.9 offers "a link to it" beside an address that already has an account while the same section
+  states the tab is "local page state, not a route — there is nothing to link to", and §3.12 adds
+  that no route exists to view another user's profile. The affordance is therefore an in-page control
+  that moves the page's own tab state and brings the row into view, not an anchor (FR-008), and it
+  names Reactivate where the account is closed (FR-008a). And §3.9's "revoke ... drops the row"
+  against §3.1's requirement that a used token be distinguishable from an unknown one forces
+  acceptance to *retain* the invitation while revoke deletes it (FR-031, FR-032); retention is
+  indefinite, since any sweep horizon would collapse that distinction (FR-031a), and the "one live
+  offer per address" rule that the asymmetry leaves standing is held by a unique index over unspent
+  rows rather than by a read-then-write (FR-009a). None of the four is left to the plan.
 
 - **FR-040's project count is verified as zero.** The roadmap has the roster read `project_member`
   rows, which entry R5 creates, "and reads zero until then". The assertion this feature's tests make

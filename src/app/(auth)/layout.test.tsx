@@ -18,6 +18,24 @@ describe("(auth) layout (research A-1, A-2, OT-UX-001)", () => {
     expect(screen.getByText("page content")).not.toBeNull();
   });
 
+  it("renders the app mark as a two-block lockup per the visual identity (Visual Logo, turn 3)", () => {
+    render(
+      <AuthLayout>
+        <p>page content</p>
+      </AuthLayout>,
+    );
+
+    const one = screen.getByText("One");
+    const team = screen.getByText("Team");
+
+    expect(one.className).toContain("bg-[var(--color-text)]");
+    expect(one.className).toContain("text-white");
+    expect(team.className).toContain("bg-[var(--color-accent)]");
+    expect(team.className).toContain("text-white");
+    expect(one.parentElement?.className).toContain("uppercase");
+    expect(one.parentElement?.className).toContain("font-black");
+  });
+
   it("is a Server Component holding no state, and imports nothing from react-aria-components", () => {
     const source = readFileSync(join(process.cwd(), "src/app/(auth)/layout.tsx"), "utf8");
 

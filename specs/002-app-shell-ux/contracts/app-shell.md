@@ -43,7 +43,11 @@ screen table assigns (`FR-028`). The two groups cannot leak into each other, whi
 **The layout reads the actor; it does not check it.** `loadActor()` for presentation, and every page
 below repeats the check that actually protects the route
 ([`../research.md`](../research.md) A-3, and R1's `loadActor` contract). With no actor the layout
-renders its `children` and no frame.
+renders its `children` and no frame — a branch that runs and is never seen. The framework renders a
+layout concurrently with the page beneath it, so on a request carrying no session the layout resolves
+`null` while the page's `requireActor()` redirects, and the output is discarded. It exists so the
+layout cannot throw on a request already leaving; `src/proxy.ts` redirects most such requests before
+they match anything, and `FR-021` covers the rest.
 
 **The header is the page's.** A layout cannot receive the page's title, and `FR-019` requires the
 refusing route's header to name Forbidden rather than the screen that refused — both point the same
@@ -57,8 +61,10 @@ way ([`../research.md`](../research.md) A-2).
 div                              min-w-[1280px], flex, min-h-full          ← inline start = DOM order
 ├── a  #main-content             the keyboard bypass — first focusable on the page,     FR-031
 │                                visually hidden until focused, never display:none
-├── nav  aria-label              w-[262px], shrink-0, border-e --color-border,           FR-031
-│                                --color-page fill, flex-col, h-full, overflow-y-auto
+├── nav  aria-label              w-[262px], shrink-0, sticky start-0, border-e            FR-031
+│                                --color-border, --color-page fill, flex-col, h-full,
+│                                overflow-y-auto — sticky so the document's own horizontal
+│                                scroll below 1280px leaves the sidebar in place          FR-005
 │   ├── p / span                 the app mark — presentational, not a second route to /home
 │   ├── a  /home                 Home
 │   ├── section                  the project-list region — overflow-y-auto: this is the  FR-005
@@ -105,6 +111,7 @@ as itself, with both slots empty (`FR-019`).
 | 262px is a width, not an edge | `w-[262px]`; the divider is `border-e`, not `border-r` | `FR-001` |
 | No collapse, stack or hide at any width | `shrink-0`, and no media query anywhere in the feature | `FR-010` |
 | Below 1280px the page scrolls horizontally | `min-w-[1280px]` on the shell root; the document scrolls itself | `FR-010` |
+| That scrolling does not carry the sidebar away | `sticky` with `start-0` on the nav — an inline-start inset, so the pin follows the resolved direction as the width does | `FR-005` |
 | No responsive layout, no mobile breakpoint | none is written; not deferred, out of v1 | `OT-SCOPE-004` |
 
 The content region needs no `min-width`: `262 + 1018 = 1280` is the spec's own arithmetic.
@@ -115,14 +122,19 @@ The content region needs no `min-width`: `262 + 1018 = 1280` is the spec's own a
 
 ### Added by this feature
 
-| Token | Value | Why |
-| --- | --- | --- |
-| `--color-text-muted-on-page` | `neutral-700` `#4d525a` | R1 measured `--color-text-muted` at 4.36:1 on `--color-page` — below AA — and prescribed this exact remedy (R1 research A-4). Its one caller is the project-list region's empty line |
+**None.** `src/app/globals.css` is untouched.
+
+R1's `-on-page` remedy was written against the cool ramp it then replaced. The warm ramp that shipped
+puts `--color-text-muted` at `neutral-600` `#6e6a66`, which is **4.80:1** on `--color-page`
+`#f4f2f0` — over AA — and `src/app/globals.test.ts` already asserts that pair. The project-list
+region's empty line, the only muted text this feature puts on the page background, uses it directly
+([`../research.md`](../research.md) B-3).
 
 ### Used unchanged, from R1
 
 `--color-page` (the sidebar fill), `--color-surface` (the content region fill), `--color-border` (the
-divider), `--color-text`, `--color-text-muted`, `--color-focus`, and the neutral ramp beneath them.
+divider), `--color-text`, `--color-text-muted` (the empty line), `--color-focus`, and the neutral ramp
+beneath them.
 
 ### Still deliberately not added
 
@@ -145,7 +157,7 @@ reasons that have not changed, and the roadmap's §1.1 says R2 ships no componen
 | Every control carries an accessible name; the chip's full display name reaches assistive technology even when the visible text is truncated | `FR-031`, spec edge case |
 | No state is conveyed by colour alone | AGENTS.md |
 | No active-entry indicator, no `aria-current` | spec *Assumptions*, [`../research.md`](../research.md) B-6 |
-| Toasts, skeletons, the connection banner and disabled-with-reason appear nowhere in this contract — they are stated by `FR-013`, `FR-023` and `FR-032`…`FR-035` and built by R3 or R4 | spec *Conventions fixed here* |
+| Toasts, skeletons, the connection banner and disabled-with-reason appear nowhere in this contract — they are stated by `FR-013`, `FR-023` and `FR-032`…`FR-035` and built by R3 | spec *Conventions fixed here* |
 | No breakpoints | §3, `FR-010` |
 
 ---
