@@ -480,7 +480,7 @@ precisely so that `FR-019`, `FR-020` and their four scenarios do not silently jo
 
 ## Assumptions carried forward
 
-Three, none blocking. Each is a candidate for `/speckit-clarify` before `/speckit-implement`.
+Two, none blocking. Each is a candidate for `/speckit-clarify` before `/speckit-implement`.
 
 1. **`/home` renders nothing until R12.** The route exists, the sidebar renders, the header does not,
    and the content region is empty — which means the page has no heading. The spec is explicit that
@@ -489,6 +489,3 @@ Three, none blocking. Each is a candidate for `/speckit-clarify` before `/specki
 2. **The not-found screen renders no header.** `FR-019` gives Forbidden a header because Forbidden is
    screen 11 in §3's table and has a name; a path that matches nothing is not a screen and has no
    name to put in a title block. Both not-found mounts therefore render the notice alone.
-3. **The sidebar is 262px wide and full height, and scrolls internally if its content outgrows it.**
-   §3's "262px fixed" and `FR-001`'s "fixed 262px sidebar" fix the width; nothing fixes the scroll
-   behaviour, and the project-list region is the part that will grow (R5).

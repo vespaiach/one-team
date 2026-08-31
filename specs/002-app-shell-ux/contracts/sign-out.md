@@ -22,7 +22,7 @@ sign-in as the only mutation that is not a Server Action.
 
 | # | Step | Requirement |
 | --- | --- | --- |
-| 1 | `assertSameOrigin()` — a missing `Origin` counts as foreign | `FR-018`, `OT-SEC-009` |
+| 1 | `assertSameOrigin()` — a missing `Origin` counts as foreign. A foreign origin deletes no row and leaves the caller signed in | `FR-018`, `OT-SEC-009` |
 | 2 | Read the session cookie from the request. Nothing is read from arguments | `FR-018`, `OT-AUTHZ-004` |
 | 3 | Delete the one `session` row that cookie's digest resolves to. Zero rows deleted is success | `FR-018` |
 | 4 | Clear the cookie | `FR-018` |
@@ -36,7 +36,7 @@ report".
 
 | | |
 | --- | --- |
-| Scope | the caller's session only; never the user's other sessions ([`../research.md`](../research.md) C-2) |
+| Scope | the caller's session only; never the user's other sessions. `FR-018` now states this outright, and the spec's *Reconciliations* records why §6's "deletes the rows … including other devices" is read as a propagation promise rather than a global sign-out | `FR-018`, spec *Reconciliations*, [`../research.md`](../research.md) C-2 |
 | Input | none. There is no form field, no identifier and nothing to validate beyond the origin, which is why gate 3 reduces to step 1 here |
 | Output | none. It redirects; it returns no result to the client |
 | Errors | none are surfaced. A caller with no cookie, an unknown digest or an expired session is redirected exactly like one that was signed in |

@@ -85,7 +85,7 @@ while the member-only case is the opposite rule (`OT-UX-021`) · hiding is never
 AGENTS.md's table (IV) · no component library (I, roadmap §1.1).
 
 **Scale/Scope**: one installation, one team under twenty people. 35 functional requirements, 4 user
-stories, 35 acceptance scenarios, 14 success criteria, 13 screens across 10 routes registered here, 8 components, 1 Server Action,
+stories, 37 acceptance scenarios, 14 success criteria, 13 screens across 10 routes registered here, 8 components, 1 Server Action,
 0 tables.
 
 **Unknowns**: none outstanding. The specification's silences are settled in the spec's own
@@ -110,7 +110,7 @@ version record (v1.0.0).
 | **IV** | Built-In Features Over Third-Party Libraries | No dependency is added. Links are `next/link`, the refusals are `forbidden()` and `notFound()`, the frame is a route group, and the sign-out control is a form post — all built-ins. React Aria supplies the one control that is not a link, per `FR-030`. | pass |
 | **V** | Intention-Revealing Code Without Comments | No comments in the diff. The two places a reader will want an explanation — why the layout reads an actor it does not check, and why nine routes contain only a guard — are answered by the contracts, not by annotation. | pass |
 | **VI** | No Dead Code | The nine guard-only routes are `FR-029`'s implementation, not placeholders, and each carries a test. The layout's no-actor branch is reachable and asserted. Three header props have no occupant in this entry and their absent behaviour is required and tested — declared below rather than hidden. | pass, with two entries in Complexity Tracking |
-| **VII** | Test-First (NON-NEGOTIABLE) | All 35 acceptance scenarios are Red steps written before their implementation. Six functional requirements carry no test **by the spec's own design** — `FR-013`, `FR-023`, `FR-032`…`FR-035` — because this entry has no surface or caller for them; each says so inline, the roadmap records the same reconciliation, and gate 1 asks for no test the entry cannot write. The count is six and not eight because the route guards ship here, which is what gives `FR-019` and `FR-020` a reachable caller. | pass |
+| **VII** | Test-First (NON-NEGOTIABLE) | All 37 acceptance scenarios are Red steps written before their implementation. Six functional requirements carry no test **by the spec's own design** — `FR-013`, `FR-023`, `FR-032`…`FR-035` — because this entry has no surface or caller for them; each says so inline, the roadmap records the same reconciliation, and gate 1 asks for no test the entry cannot write. The count is six and not eight because the route guards ship here, which is what gives `FR-019` and `FR-020` a reachable caller. | pass |
 
 ### Gates 1–8
 

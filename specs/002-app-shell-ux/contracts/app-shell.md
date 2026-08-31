@@ -55,21 +55,25 @@ way ([`../research.md`](../research.md) A-2).
 
 ```text
 div                              min-w-[1280px], flex, min-h-full          ← inline start = DOM order
-├── nav                          w-[262px], shrink-0, border-e --color-border,
+├── a  #main-content             the keyboard bypass — first focusable on the page,     FR-031
+│                                visually hidden until focused, never display:none
+├── nav  aria-label              w-[262px], shrink-0, border-e --color-border,           FR-031
 │                                --color-page fill, flex-col, h-full, overflow-y-auto
 │   ├── p / span                 the app mark — presentational, not a second route to /home
 │   ├── a  /home                 Home
-│   ├── section                  the project-list region
+│   ├── section                  the project-list region — overflow-y-auto: this is the  FR-005
+│   │   │                        part that grows, and the only part that scrolls
 │   │   ├── header + a /projects/new       the `+` — rendered only when isAdmin
-│   │   └── p                    the quiet empty line — --color-text-muted-on-page
+│   │   └── p                    the quiet empty line, "No projects yet."               FR-024
 │   ├── a  /notifications        Notifications — no count until R11
 │   ├── a  /settings/accounts    rendered only when isAdmin
 │   ├── a  /settings/labels      rendered only when isAdmin
-│   └── div                      the chip, pushed to the foot (mt-auto)
-│       ├── a  /profile          avatar (or none) + display name
+│   └── div                      the chip, pinned to the foot (mt-auto)                  FR-005
+│       ├── a  /profile          avatar (or none, or one that failed to load) + name     FR-017
 │       └── form → signOut       the sign-out control, a sibling of the link
-└── div                          flex-1, --color-surface fill, flex-col
-    ├── {banner}                 the banner slot — above the header, so /home still has one
+└── main id="main-content"       flex-1, --color-surface fill, flex-col                  FR-031
+    ├── {banner}                 the banner slot — above the header, so /home still has  FR-025
+    │                            one; occupies no space when there is nothing to render
     └── {children}               the page, whose first child is its own header
 ```
 
@@ -133,11 +137,15 @@ reasons that have not changed, and the roadmap's §1.1 says R2 ships no componen
 | --- | --- |
 | Sidebar entries are `next/link` anchors; their keyboard, focus and ARIA behaviour is the platform's | `FR-030`, [`../research.md`](../research.md) B-4 |
 | The sign-out control is a `react-aria-components` `Button`, and is this feature's only React Aria component and only `"use client"` module | `FR-030`, §7 |
-| Focus travels through the sidebar in visual order, which is DOM order | `FR-031` |
+| Focus travels through the sidebar in visual order, which is DOM order — and in a right-to-left locale that order still begins at the sidebar, now on the right | `FR-031`, `FR-001` |
+| The bypass link is the first focusable element and moves focus to `main`, so the sidebar is never a 9-stop toll gate on every screen | `FR-031` |
+| The sidebar is a `nav` landmark carrying its own `aria-label`; the content region is the `main` landmark. The page's header is not a landmark — it is composed inside `main` | `FR-031` |
+| The focus ring is an outline, not a colour change, so it survives a viewer who cannot separate the two | `FR-031` |
 | One focus-ring declaration, R1's: `outline: 2px solid var(--color-focus); outline-offset: 2px`, on `data-focus-visible` only | R1 research A-8 |
 | Every control carries an accessible name; the chip's full display name reaches assistive technology even when the visible text is truncated | `FR-031`, spec edge case |
 | No state is conveyed by colour alone | AGENTS.md |
-| No active-entry indicator, no `aria-current` | [`../research.md`](../research.md) B-6 |
+| No active-entry indicator, no `aria-current` | spec *Assumptions*, [`../research.md`](../research.md) B-6 |
+| Toasts, skeletons, the connection banner and disabled-with-reason appear nowhere in this contract — they are stated by `FR-013`, `FR-023` and `FR-032`…`FR-035` and built by R3 or R4 | spec *Conventions fixed here* |
 | No breakpoints | §3, `FR-010` |
 
 ---
