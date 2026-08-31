@@ -10,8 +10,9 @@
 R2 builds a frame, not a feature. One route group, `src/app/(app)/`, whose layout is a 262px sidebar,
 a banner slot and a content region; a header each page composes for itself; the Forbidden screen and
 the "This doesn't exist" wording; the surface table's ten authenticated routes, each registered with
-the authorization guard its Access column implies; and one write — the sign-out control R1 delivered
-the session deletion for. Eleven of the twelve remaining entries render inside what this one produces.
+the authorization guard its Access column implies; and one write — the sign-out control R1 defers here
+by name, having delivered the `session` table and the multi-row `deleteAllSessionsForUser` but not
+the single-row delete sign-out needs. Eleven of the twelve remaining entries render inside what this one produces.
 
 The technical approach is mostly the framework's own, because Next.js 16 answers three of the
 requirements directly and better than anything written by hand. `forbidden()` with a segment-level
@@ -39,12 +40,22 @@ Full reasoning in [`research.md`](./research.md) — twenty-four decisions, grou
 
 ## Technical Context
 
-**Precondition — entry R1 is not implemented yet.** The tree today holds `src/app` and `src/db` and
-nothing else; every module this feature consumes is R1's and does not exist: `loadActor()`,
-`requireActor()`, `Actor`, `assertSameOrigin()`, the `session` table and its deletion,
-`MustChangePasswordBanner`, `proxy.ts`, the token set in `globals.css`, and the two Vitest projects.
-This plan is complete and `/speckit-tasks` can be run against it, but **implementation is blocked
-until R1 lands**. Nothing below assumes otherwise.
+**Precondition — entry R1 has landed.** Every module this feature consumes is R1's and exists today:
+`loadActor()`, `requireActor()` and `Actor` (`src/features/auth/server/actor.ts`), `assertSameOrigin()`
+(`src/features/auth/server/origin.ts`), the `session` table and `src/features/auth/server/sessions.ts`,
+`MustChangePasswordBanner`, `src/proxy.ts`, the token set in `src/app/globals.css`, and the two Vitest
+projects — `server` (node, `**/*.test.ts`, real PostgreSQL) and `ui` (jsdom, `**/*.test.tsx`).
+Implementation is unblocked.
+
+Three details of what shipped, each of which this plan depends on:
+
+- `loadActor` is `cache(loadActorImpl)`. A request's guard and its render therefore read one and the
+  same actor, which is `FR-016`'s second sentence satisfied by inheritance rather than by new code.
+- `loadActorImpl` refreshes the session's sliding expiry on every call, so an authenticated render
+  both reads and writes. See *Storage* below.
+- R1's palette is the **warm** ramp, whose `--color-text-muted` clears AA on `--color-page` at
+  4.80:1. The `-on-page` remedy R1 wrote down applied to the cool ramp it then replaced, so this
+  feature adds no token (`research.md` B-3).
 
 **Language/Version**: TypeScript 7.0.2, `strict`. No `any`, no non-null assertions, no `@ts-ignore`.
 
@@ -61,7 +72,11 @@ runtime, without which every Forbidden test fails for the wrong reason
 ([`research.md`](./research.md) A-4, D-2).
 
 **Storage**: PostgreSQL 18 via Drizzle. **No table, no column, no migration.** `src/db/schema.ts` is
-untouched. The only database operation in the feature is sign-out deleting one `session` row.
+untouched. Sign-out deleting one `session` row is the only database write this feature *originates*.
+It is not the only statement it causes: the shell layout calls R1's `loadActor()` on every
+authenticated render, which selects the actor and then updates that session's `last_seen_at` and
+`expires_at` for the sliding cookie §6 defines. That write is R1's behaviour, unchanged and
+un-extended here, and it is why `data-model.md` describes two boundaries rather than one query.
 
 **Testing**: Vitest 4.1.11 in R1's two projects — `node` for route guards and the one action, `jsdom`
 with `@testing-library/react` for every component. The single persistence test runs against the real
@@ -109,7 +124,7 @@ version record (v1.0.0).
 | **III** | Straightforward Over Clever | No metaprogramming, no dynamic dispatch, no generic machinery. Direction is handled by DOM order under a flex row rather than logical-property utilities; horizontal scroll is a `min-width` rather than an overflow rule; the parallel-route header and the catch-all not-found route were both rejected as indirection twelve entries would pay for. | pass |
 | **IV** | Built-In Features Over Third-Party Libraries | No dependency is added. Links are `next/link`, the refusals are `forbidden()` and `notFound()`, the frame is a route group, and the sign-out control is a form post — all built-ins. React Aria supplies the one control that is not a link, per `FR-030`. | pass |
 | **V** | Intention-Revealing Code Without Comments | No comments in the diff. The two places a reader will want an explanation — why the layout reads an actor it does not check, and why nine routes contain only a guard — are answered by the contracts, not by annotation. | pass |
-| **VI** | No Dead Code | The nine guard-only routes are `FR-029`'s implementation, not placeholders, and each carries a test. The layout's no-actor branch is reachable and asserted. Three header props have no occupant in this entry and their absent behaviour is required and tested — declared below rather than hidden. | pass, with two entries in Complexity Tracking |
+| **VI** | No Dead Code | The nine guard-only routes are `FR-029`'s implementation, not placeholders, and each carries a test. The layout's no-actor branch is reached at execution and never at the browser — the framework renders a layout concurrently with the page beneath it, so the layout resolves `null` while the page's `requireActor()` redirects and the output is discarded. It is the branch that keeps the layout from throwing on a request already leaving, not a screen anyone sees; `src/proxy.ts` and `FR-021` between them rule the latter out. Asserted by `T012`. Three header props have no occupant in this entry and their absent behaviour is required and tested — declared below rather than hidden. | pass, with two entries in Complexity Tracking |
 | **VII** | Test-First (NON-NEGOTIABLE) | All 37 acceptance scenarios are Red steps written before their implementation. Six functional requirements carry no test **by the spec's own design** — `FR-013`, `FR-023`, `FR-032`…`FR-035` — because this entry has no surface or caller for them; each says so inline, the roadmap records the same reconciliation, and gate 1 asks for no test the entry cannot write. The count is six and not eight because the route guards ship here, which is what gives `FR-019` and `FR-020` a reachable caller. | pass |
 
 ### Gates 1–8
@@ -161,7 +176,6 @@ Every path below is created or edited by this feature, and each names why it exi
 src/
 ├── app/
 │   ├── not-found.tsx                       NEW — unmatched URL, root layout only     FR-022
-│   ├── globals.css                         EDIT — one token, --color-text-muted-on-page
 │   └── (app)/
 │       ├── layout.tsx                      THE SHELL — sidebar, banner slot, content
 │       │                                        FR-001…FR-003, FR-009, FR-010, FR-025…FR-027
@@ -205,7 +219,8 @@ vitest.config.mts                           EDIT — __NEXT_EXPERIMENTAL_AUTH_IN
 ```
 
 Untouched and named so: `src/db/schema.ts`, `drizzle/`, `src/app/layout.tsx`, `src/app/page.tsx`,
-`src/app/provider.tsx`, `src/app/(auth)/`, `proxy.ts`, `src/instrumentation.ts`, `package.json`.
+`src/app/provider.tsx`, `src/app/globals.css`, `src/app/(auth)/`, `src/proxy.ts`,
+`src/instrumentation.ts`, `package.json`.
 
 **Structure Decision.** AGENTS.md's rules, followed exactly. `src/app` holds routing, layouts, pages
 and the two interrupt files **only** — no domain module lives there. All behaviour lives under
@@ -244,4 +259,4 @@ server check is the enforcement — and every page below repeats the check that 
 | 1 — Design & contracts | [`data-model.md`](./data-model.md), [`contracts/`](./contracts/), [`quickstart.md`](./quickstart.md) | complete |
 | Constitution re-check | this file | complete — pass, four items in Complexity Tracking |
 | 2 — Tasks | [`tasks.md`](./tasks.md) | complete — 53 tasks across seven phases, every acceptance scenario carried by a Red step |
-| Implementation | — | **blocked on entry R1**, which is specified and planned but not built |
+| Implementation | — | **unblocked** — entry R1 has landed; `tasks.md` T001 re-runs the check before Phase 1 |
