@@ -12,7 +12,8 @@ import { TextField } from "react-aria-components/TextField";
 type SignInResponse =
   | { result: "ok" }
   | { result: "rejected" }
-  | { result: "deactivated"; contact: string | null };
+  | { result: "deactivated"; contact: string | null }
+  | { result: "throttled"; retryAfterSeconds: number };
 
 type Outcome = { message: string } | null;
 
@@ -80,6 +81,13 @@ export function SignInForm() {
         }
         if (body.result === "rejected") {
           setOutcome({ message: "That email and password don't match." });
+          return;
+        }
+        if (body.result === "throttled") {
+          const minutes = Math.ceil(body.retryAfterSeconds / 60);
+          setOutcome({
+            message: `Too many attempts. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`,
+          });
           return;
         }
         setOutcome({

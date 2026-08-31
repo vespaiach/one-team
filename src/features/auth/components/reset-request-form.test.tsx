@@ -40,6 +40,17 @@ describe("ResetRequestForm (FR-030)", () => {
     expect(screen.queryByLabelText(/email/i)).toBeNull();
   });
 
+  it("renders its own throttled state with the remaining time as whole minutes rounded up", async () => {
+    vi.mocked(requestPasswordReset).mockResolvedValue({ status: "throttled", retryAfterSeconds: 61 });
+
+    render(<ResetRequestForm />);
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "ada@example.com" } });
+    submit();
+
+    const outcome = await screen.findByRole("alert");
+    expect(outcome.textContent).toContain("2 minutes");
+  });
+
   it("shows an in-flight state while the action is pending, then the confirmation", async () => {
     let resolveAction: (value: { status: "sent" }) => void = () => undefined;
     vi.mocked(requestPasswordReset).mockImplementation(

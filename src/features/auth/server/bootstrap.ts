@@ -7,6 +7,7 @@ import { hashPassword } from "./crypto";
 import { parseEmail } from "./input";
 import { logRefusedFirstRunSeed } from "./log";
 import { assertPasswordPolicy, type PasswordPolicyFailure } from "./password-policy";
+import { startSweep } from "./sweep";
 
 export type BootstrapFailureReason =
   | "missing_app_url"
@@ -131,11 +132,15 @@ export async function seedFirstAdmin(params: {
   }
 }
 
-export async function bootstrap(env: BootstrapEnv): Promise<void> {
+export async function bootstrap(
+  env: BootstrapEnv,
+  deps: { startSweep?: typeof startSweep } = {},
+): Promise<void> {
   try {
     assertAppUrl(env.appUrl);
     await assertDatabaseReachable(env.databaseUrl);
     await seedFirstAdmin({ adminEmail: env.adminEmail, adminPassword: env.adminPassword });
+    (deps.startSweep ?? startSweep)();
   } catch (error) {
     if (!(error instanceof BootstrapRefusalError)) {
       throw error;
