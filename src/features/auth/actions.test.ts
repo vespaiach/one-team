@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import nodemailer from "nodemailer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { credential, resetToken, session, user } from "@/db/schema";
+import { authAttempt, credential, resetToken, session, user } from "@/db/schema";
 import { testDb, truncateTestDatabase } from "@/db/test-database";
 import { completePasswordReset, requestPasswordReset } from "./actions";
 import { hashPassword, verifyPassword } from "./server/crypto";
@@ -172,6 +172,60 @@ describe("requestPasswordReset (FR-031, FR-033, SC-003)", () => {
     expect(sendMail).toHaveBeenCalledTimes(1);
     const call = sendMail.mock.calls[0]?.[0];
     expect(call.to).toBe(owner.email);
+  });
+});
+
+describe("requestPasswordReset — throttle (FR-032, FR-039, FR-040, scenario 8)", () => {
+  it("records one reset/email and one reset/ip attempt row on every request, known address or not", async () => {
+    const owner = await insertUser();
+    await insertCredential(owner.id);
+    mockTransport();
+
+    await requestPasswordReset({ status: "idle" }, formData({ email: owner.email }));
+
+    const rows = await testDb.select().from(authAttempt).where(eq(authAttempt.flow, "reset"));
+    expect(rows).toHaveLength(2);
+    expect(rows.map((row) => row.kind).sort()).toEqual(["email", "ip"]);
+  });
+
+  it("records an attempt row every time for an address that has never had an account", async () => {
+    mockTransport();
+    const email = "never-had-an-account@example.com";
+
+    for (let i = 0; i < 5; i += 1) {
+      await requestPasswordReset({ status: "idle" }, formData({ email }));
+    }
+
+    const rows = await testDb.select().from(authAttempt).where(eq(authAttempt.flow, "reset"));
+    expect(rows.filter((row) => row.kind === "email")).toHaveLength(5);
+  });
+
+  it("refuses the sixth request for one address with throttled and retryAfterSeconds", async () => {
+    mockTransport();
+    const email = "repeat-requester@example.com";
+
+    for (let i = 0; i < 5; i += 1) {
+      await requestPasswordReset({ status: "idle" }, formData({ email }));
+    }
+    const result = await requestPasswordReset({ status: "idle" }, formData({ email }));
+
+    expect(result.status).toBe("throttled");
+    expect((result as { status: "throttled"; retryAfterSeconds: number }).retryAfterSeconds).toBeGreaterThan(
+      0,
+    );
+  });
+
+  it("does not record an additional row for a throttled request", async () => {
+    mockTransport();
+    const email = "repeat-requester@example.com";
+
+    for (let i = 0; i < 5; i += 1) {
+      await requestPasswordReset({ status: "idle" }, formData({ email }));
+    }
+    await requestPasswordReset({ status: "idle" }, formData({ email }));
+
+    const rows = await testDb.select().from(authAttempt).where(eq(authAttempt.flow, "reset"));
+    expect(rows.filter((row) => row.kind === "email")).toHaveLength(5);
   });
 });
 

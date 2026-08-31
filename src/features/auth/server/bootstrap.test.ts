@@ -7,6 +7,12 @@ import { type BootstrapEnv, bootstrap, seedFirstAdmin } from "./bootstrap";
 const VALID_ADMIN_EMAIL = "admin@example.com";
 const VALID_ADMIN_PASSWORD = "correct horse battery";
 
+const noopStartSweep = () => () => undefined;
+
+async function runBootstrap(env: BootstrapEnv) {
+  return bootstrap(env, { startSweep: noopStartSweep });
+}
+
 function validEnv(overrides: Partial<BootstrapEnv> = {}): BootstrapEnv {
   return {
     appUrl: "https://example.com",
@@ -37,7 +43,7 @@ afterEach(() => {
 
 describe("bootstrap seeding (FR-045, FR-047, FR-048, SC-002)", () => {
   it("a first start on an empty database creates exactly one admin carrying must_change_password", async () => {
-    await bootstrap(validEnv());
+    await runBootstrap(validEnv());
 
     const rows = await allUsers();
     expect(rows).toHaveLength(1);
@@ -53,7 +59,7 @@ describe("bootstrap seeding (FR-045, FR-047, FR-048, SC-002)", () => {
   });
 
   it("a second start creates nothing whatever the environment says", async () => {
-    await bootstrap(validEnv());
+    await runBootstrap(validEnv());
     await bootstrap(
       validEnv({ adminEmail: "someone-else@example.com", adminPassword: "another compliant password" }),
     );
@@ -76,7 +82,7 @@ describe("bootstrap refusals (FR-046, FR-058, FR-072, FR-073, OT-SEC-019)", () =
   });
 
   it("a short ADMIN_PASSWORD names too_short on stderr, writes nothing, and exits non-zero", async () => {
-    await expect(bootstrap(validEnv({ adminPassword: "short12345" }))).rejects.toThrow("process.exit(1)");
+    await expect(runBootstrap(validEnv({ adminPassword: "short12345" }))).rejects.toThrow("process.exit(1)");
 
     expect(exitSpy).toHaveBeenCalledWith(1);
     expect(stderrSpy.mock.calls.flat().join("\n")).toContain("too_short");
@@ -85,7 +91,9 @@ describe("bootstrap refusals (FR-046, FR-058, FR-072, FR-073, OT-SEC-019)", () =
   });
 
   it("a blocklisted ADMIN_PASSWORD names blocklisted on stderr, writes nothing, and exits non-zero", async () => {
-    await expect(bootstrap(validEnv({ adminPassword: "unbelievable" }))).rejects.toThrow("process.exit(1)");
+    await expect(runBootstrap(validEnv({ adminPassword: "unbelievable" }))).rejects.toThrow(
+      "process.exit(1)",
+    );
 
     expect(exitSpy).toHaveBeenCalledWith(1);
     expect(stderrSpy.mock.calls.flat().join("\n")).toContain("blocklisted");
@@ -93,7 +101,7 @@ describe("bootstrap refusals (FR-046, FR-058, FR-072, FR-073, OT-SEC-019)", () =
   });
 
   it("an invalid ADMIN_EMAIL ends the process the same way, writing nothing", async () => {
-    await expect(bootstrap(validEnv({ adminEmail: "not-an-email" }))).rejects.toThrow("process.exit(1)");
+    await expect(runBootstrap(validEnv({ adminEmail: "not-an-email" }))).rejects.toThrow("process.exit(1)");
 
     expect(exitSpy).toHaveBeenCalledWith(1);
     expect(stderrSpy.mock.calls.flat().join("\n")).toContain("invalid_admin_email");
@@ -102,7 +110,7 @@ describe("bootstrap refusals (FR-046, FR-058, FR-072, FR-073, OT-SEC-019)", () =
 
   it("an unreachable database ends the process the same way", async () => {
     await expect(
-      bootstrap(validEnv({ databaseUrl: "postgres://127.0.0.1:1/does-not-exist" })),
+      runBootstrap(validEnv({ databaseUrl: "postgres://127.0.0.1:1/does-not-exist" })),
     ).rejects.toThrow("process.exit(1)");
 
     expect(exitSpy).toHaveBeenCalledWith(1);
@@ -110,7 +118,7 @@ describe("bootstrap refusals (FR-046, FR-058, FR-072, FR-073, OT-SEC-019)", () =
   });
 
   it("a missing APP_URL ends the process the same way", async () => {
-    await expect(bootstrap(validEnv({ appUrl: undefined }))).rejects.toThrow("process.exit(1)");
+    await expect(runBootstrap(validEnv({ appUrl: undefined }))).rejects.toThrow("process.exit(1)");
 
     expect(exitSpy).toHaveBeenCalledWith(1);
     expect(stderrSpy.mock.calls.flat().join("\n")).toContain("missing_app_url");
@@ -118,7 +126,7 @@ describe("bootstrap refusals (FR-046, FR-058, FR-072, FR-073, OT-SEC-019)", () =
   });
 
   it("an absent ADMIN_EMAIL skips seeding and serves normally", async () => {
-    await expect(bootstrap(validEnv({ adminEmail: undefined }))).resolves.toBeUndefined();
+    await expect(runBootstrap(validEnv({ adminEmail: undefined }))).resolves.toBeUndefined();
 
     expect(exitSpy).not.toHaveBeenCalled();
     expect(await allUsers()).toHaveLength(0);
@@ -155,7 +163,7 @@ describe("must_change_password is set only by seeding (FR-048, FR-050)", () => {
   });
 
   it("is true only on the row seeding creates", async () => {
-    await bootstrap(validEnv());
+    await runBootstrap(validEnv());
 
     const rows = await allUsers();
     expect(rows[0]?.mustChangePassword).toBe(true);

@@ -103,6 +103,17 @@ describe("SignInForm — states (FR-012, SC-003)", () => {
     expect(rejectedPosition).toBe(deactivatedPosition);
   });
 
+  it("renders the throttled remaining time as whole minutes rounded up", async () => {
+    vi.mocked(fetch).mockReturnValue(jsonResponse({ result: "throttled", retryAfterSeconds: 61 }));
+    render(<SignInForm />);
+    fillValidForm();
+
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+
+    const outcome = await screen.findByRole("alert");
+    expect(outcome.textContent).toContain("2 minutes");
+  });
+
   it("shows an in-flight state while the request is outstanding", async () => {
     let resolveFetch: (value: Response) => void = () => {};
     vi.mocked(fetch).mockReturnValue(

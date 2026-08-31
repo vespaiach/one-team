@@ -20,6 +20,20 @@ export function ResetRequestForm() {
     );
   }
 
+  if (state.status === "throttled") {
+    const minutes = Math.ceil(state.retryAfterSeconds / 60);
+    return (
+      <div
+        role="alert"
+        className="flex flex-col gap-2 border-t-2 border-[var(--color-border-strong)] bg-[var(--color-surface-sunken)] p-4">
+        <p className="font-semibold">Too many requests</p>
+        <p>
+          Try again in {minutes} minute{minutes === 1 ? "" : "s"}.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <Form
       action={formAction}

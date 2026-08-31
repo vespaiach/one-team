@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { credential, session, user } from "@/db/schema";
+import { authAttempt, credential, session, user } from "@/db/schema";
 import { testDb, truncateTestDatabase } from "@/db/test-database";
 import * as cryptoModule from "@/features/auth/server/crypto";
 import { hashPassword } from "@/features/auth/server/crypto";
@@ -210,6 +210,88 @@ describe("POST /api/auth/signin — refusals outside the union (FR-023, FR-063)"
     expect(longPassword.status).toBe(400);
     await expect(longPassword.json()).resolves.toEqual({ error: "invalid_request" });
     expect(findSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/auth/signin — throttled (FR-039, FR-041, FR-068)", () => {
+  it("refuses with throttled and retryAfterSeconds, performing no credential check", async () => {
+    const owner = await insertUser();
+    await insertCredential(owner.id, "correct horse battery staple 12");
+    for (let i = 0; i < 5; i += 1) {
+      await testDb
+        .insert(authAttempt)
+        .values({ flow: "signin", kind: "email", subject: owner.email, attemptedAt: new Date() });
+    }
+    const verifySpy = vi.spyOn(cryptoModule, "verifyPassword");
+
+    const response = await POST(
+      signInRequest({ email: owner.email, password: "correct horse battery staple 12" }),
+    );
+
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { result: string; retryAfterSeconds: number };
+    expect(body.result).toBe("throttled");
+    expect(body.retryAfterSeconds).toBeGreaterThan(0);
+    expect(verifySpy).not.toHaveBeenCalled();
+  });
+
+  it("records no attempt row for a throttled refusal", async () => {
+    const owner = await insertUser();
+    for (let i = 0; i < 5; i += 1) {
+      await testDb
+        .insert(authAttempt)
+        .values({ flow: "signin", kind: "email", subject: owner.email, attemptedAt: new Date() });
+    }
+
+    await POST(signInRequest({ email: owner.email, password: "whatever-password-12" }));
+
+    const rows = await testDb.select().from(authAttempt).where(eq(authAttempt.subject, owner.email));
+    expect(rows).toHaveLength(5);
+  });
+});
+
+describe("POST /api/auth/signin — throttle recording and clearing (FR-018, FR-041)", () => {
+  it("records one email and one ip attempt row on a rejected sign-in", async () => {
+    const owner = await insertUser();
+    await insertCredential(owner.id, "correct horse battery staple 12");
+
+    await POST(signInRequest({ email: owner.email, password: "the-wrong-password!" }));
+
+    const rows = await testDb.select().from(authAttempt).where(eq(authAttempt.subject, owner.email));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.flow).toBe("signin");
+    expect(rows[0]?.kind).toBe("email");
+  });
+
+  it("clears that address's signin/email attempt rows on a successful sign-in", async () => {
+    const owner = await insertUser();
+    await insertCredential(owner.id, "correct horse battery staple 12");
+    await testDb
+      .insert(authAttempt)
+      .values({ flow: "signin", kind: "email", subject: owner.email, attemptedAt: new Date() });
+    await testDb
+      .insert(authAttempt)
+      .values({ flow: "reset", kind: "email", subject: owner.email, attemptedAt: new Date() });
+
+    await POST(signInRequest({ email: owner.email, password: "correct horse battery staple 12" }));
+
+    const signinEmailRows = await testDb
+      .select()
+      .from(authAttempt)
+      .where(
+        and(
+          eq(authAttempt.subject, owner.email),
+          eq(authAttempt.flow, "signin"),
+          eq(authAttempt.kind, "email"),
+        ),
+      );
+    expect(signinEmailRows).toHaveLength(0);
+
+    const resetRows = await testDb
+      .select()
+      .from(authAttempt)
+      .where(and(eq(authAttempt.subject, owner.email), eq(authAttempt.flow, "reset")));
+    expect(resetRows).toHaveLength(1);
   });
 });
 

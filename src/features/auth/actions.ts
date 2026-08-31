@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { credential, user } from "@/db/schema";
 import { touched } from "@/db/touched";
+import { clientIp } from "./server/client-ip";
 import { hashPassword } from "./server/crypto";
 import { parseEmail } from "./server/input";
 import { sendPasswordResetMail } from "./server/mail";
@@ -13,8 +14,12 @@ import { assertSameOrigin } from "./server/origin";
 import { assertPasswordPolicy, type PasswordPolicyFailure } from "./server/password-policy";
 import { issueResetToken, resolveResetTokenState, spendResetToken } from "./server/reset-tokens";
 import { deleteAllSessionsForUser } from "./server/sessions";
+import { assertNotThrottled, recordFailure, ThrottledError } from "./server/throttle";
 
-export type RequestPasswordResetState = { status: "idle" } | { status: "sent" };
+export type RequestPasswordResetState =
+  | { status: "idle" }
+  | { status: "sent" }
+  | { status: "throttled"; retryAfterSeconds: number };
 
 export type CompletePasswordResetState =
   | { status: "idle" }
@@ -38,10 +43,24 @@ export async function requestPasswordReset(
   _prevState: RequestPasswordResetState,
   formData: FormData,
 ): Promise<RequestPasswordResetState> {
-  assertSameOrigin({ headers: await headers() });
+  const requestHeaders = await headers();
+  assertSameOrigin({ headers: requestHeaders });
 
   const email = parseEmail(formData.get("email"));
   if (email !== null) {
+    const ip = clientIp(requestHeaders);
+
+    try {
+      await assertNotThrottled({ flow: "reset", email, ip });
+    } catch (error) {
+      if (error instanceof ThrottledError) {
+        return { status: "throttled", retryAfterSeconds: error.retryAfterSeconds };
+      }
+      throw error;
+    }
+
+    await recordFailure({ flow: "reset", email, ip });
+
     const [row] = await db
       .select({ userId: user.id, deactivatedAt: user.deactivatedAt, credentialId: credential.id })
       .from(user)

@@ -232,28 +232,28 @@ sign-in handler and the reset action those stories delivered.
 
 ### Tests for User Story 4
 
-- [ ] T085 [P] [US4] Failing test in `src/features/auth/server/throttle.test.ts` asserting refusal at five for `kind = 'email'` and twenty for `kind = 'ip'`, counted over fifteen minutes for one `(flow, kind, subject)` taken together, each refusal stating the remaining time — scenarios 1 and 2 (`FR-039`, `FR-042`, `SC-005`)
-- [ ] T086 [US4] Extend `src/features/auth/server/throttle.test.ts`: `retryAfterSeconds` derives from the **oldest** attempt still inside the window, and where both limits hold the **later** of the two clearing instants is reported (`FR-039`, `FR-068`)
-- [ ] T087 [US4] Extend `src/features/auth/server/throttle.test.ts`: the `signin` and `reset` flows never share a counter, in both directions — scenarios 3 and 4 (`FR-040`, `SC-007`)
-- [ ] T088 [US4] Extend `src/features/auth/server/throttle.test.ts`: a refused attempt records **no** row, so a refusal cannot extend the window that produced it (`FR-041`)
-- [ ] T089 [US4] Extend `src/features/auth/server/throttle.test.ts`: a successful sign-in clears that address's `('signin','email')` rows only, leaving its reset rows and the originating IP's rows — scenario 5 (`FR-018`)
-- [ ] T090 [US4] Extend `src/features/auth/server/throttle.test.ts`: two transactions racing the fifth failure serialize on `pg_advisory_xact_lock` and cannot both pass — the spec's edge case, run against real PostgreSQL (research C-5)
-- [ ] T091 [US4] Extend `src/features/auth/server/throttle.test.ts`: counters survive a restart, since they are rows — scenario 6 (`FR-043`, `SC-006`)
-- [ ] T092 [P] [US4] Failing test in `src/features/auth/server/sweep.test.ts` asserting the three deletes match only rows already dead, that the sweep and a live sign-in touching `auth_attempt` at once cannot remove a row inside the live window, and that no live behaviour changes when it runs — scenario 7 (`FR-044`, research C-6)
-- [ ] T093 [US4] Extend `src/features/auth/server/sweep.test.ts`: the interval is five minutes and not configurable, a sweep that throws is logged and does **not** stop the timer, and `SIGTERM` clears the timer while letting a running sweep finish (`FR-069`, `FR-070`, `FR-071`)
-- [ ] T094 [US4] Extend `src/app/api/auth/signin/route.test.ts`: a refused attempt returns `throttled` with `retryAfterSeconds` and performs **no** credential check, and a reset request for an address that never had an account still records a row — scenario 8 (`FR-032`, `FR-039`)
-- [ ] T095 [P] [US4] Failing test asserting the sign-in screen renders `retryAfterSeconds` as whole minutes **rounded up**, so a refusal in force never reads as no wait at all, in `src/features/auth/components/sign-in-form.test.tsx` (`FR-039`, research A-10)
-- [ ] T096 [P] [US4] Failing test asserting the reset-request screen renders its own throttled state, in `src/features/auth/components/reset-request-form.test.tsx` (`FR-087`)
+- [X] T085 [P] [US4] Failing test in `src/features/auth/server/throttle.test.ts` asserting refusal at five for `kind = 'email'` and twenty for `kind = 'ip'`, counted over fifteen minutes for one `(flow, kind, subject)` taken together, each refusal stating the remaining time — scenarios 1 and 2 (`FR-039`, `FR-042`, `SC-005`)
+- [X] T086 [US4] Extend `src/features/auth/server/throttle.test.ts`: `retryAfterSeconds` derives from the **oldest** attempt still inside the window, and where both limits hold the **later** of the two clearing instants is reported (`FR-039`, `FR-068`)
+- [X] T087 [US4] Extend `src/features/auth/server/throttle.test.ts`: the `signin` and `reset` flows never share a counter, in both directions — scenarios 3 and 4 (`FR-040`, `SC-007`)
+- [X] T088 [US4] Extend `src/features/auth/server/throttle.test.ts`: a refused attempt records **no** row, so a refusal cannot extend the window that produced it (`FR-041`)
+- [X] T089 [US4] Extend `src/features/auth/server/throttle.test.ts`: a successful sign-in clears that address's `('signin','email')` rows only, leaving its reset rows and the originating IP's rows — scenario 5 (`FR-018`)
+- [X] T090 [US4] Extend `src/features/auth/server/throttle.test.ts`: two transactions racing the fifth failure serialize on `pg_advisory_xact_lock` and cannot both pass — the spec's edge case, run against real PostgreSQL (research C-5)
+- [X] T091 [US4] Extend `src/features/auth/server/throttle.test.ts`: counters survive a restart, since they are rows — scenario 6 (`FR-043`, `SC-006`)
+- [X] T092 [P] [US4] Failing test in `src/features/auth/server/sweep.test.ts` asserting the three deletes match only rows already dead, that the sweep and a live sign-in touching `auth_attempt` at once cannot remove a row inside the live window, and that no live behaviour changes when it runs — scenario 7 (`FR-044`, research C-6)
+- [X] T093 [US4] Extend `src/features/auth/server/sweep.test.ts`: the interval is five minutes and not configurable, a sweep that throws is logged and does **not** stop the timer, and `SIGTERM` clears the timer while letting a running sweep finish (`FR-069`, `FR-070`, `FR-071`)
+- [X] T094 [US4] Extend `src/app/api/auth/signin/route.test.ts`: a refused attempt returns `throttled` with `retryAfterSeconds` and performs **no** credential check, and a reset request for an address that never had an account still records a row — scenario 8 (`FR-032`, `FR-039`)
+- [X] T095 [P] [US4] Failing test asserting the sign-in screen renders `retryAfterSeconds` as whole minutes **rounded up**, so a refusal in force never reads as no wait at all, in `src/features/auth/components/sign-in-form.test.tsx` (`FR-039`, research A-10)
+- [X] T096 [P] [US4] Failing test asserting the reset-request screen renders its own throttled state, in `src/features/auth/components/reset-request-form.test.tsx` (`FR-087`)
 
 ### Implementation for User Story 4
 
-- [ ] T097 [US4] Implement `src/features/auth/server/throttle.ts` — `assertNotThrottled`, `recordFailure` and `clearSignInAttempts`, with count, decision and insert in one transaction under the advisory lock
-- [ ] T098 [US4] Wire the throttle into `src/app/api/auth/signin/route.ts` between address validation and the credential check, recording one `('signin','email')` and one `('signin','ip')` row on rejection and clearing on success
-- [ ] T099 [US4] Wire the throttle into `requestPasswordReset` in `src/features/auth/actions.ts`, recording one `('reset','email')` and one `('reset','ip')` row on **every** request without exception (`FR-032`)
-- [ ] T100 [US4] Wire the throttle-refusal event from `src/features/auth/server/throttle.ts` into `src/features/auth/server/log.ts` (`FR-064`)
-- [ ] T101 [US4] Implement `src/features/auth/server/sweep.ts` — the three deletes — and start it from bootstrap as the installation's **only** `setInterval`, `unref()`d and cleared on `SIGTERM`
-- [ ] T102 [P] [US4] Render the rounded-up minutes in `src/features/auth/components/sign-in-form.tsx`
-- [ ] T103 [P] [US4] Render the throttled state in `src/features/auth/components/reset-request-form.tsx`
+- [X] T097 [US4] Implement `src/features/auth/server/throttle.ts` — `assertNotThrottled`, `recordFailure` and `clearSignInAttempts`, with count, decision and insert in one transaction under the advisory lock
+- [X] T098 [US4] Wire the throttle into `src/app/api/auth/signin/route.ts` between address validation and the credential check, recording one `('signin','email')` and one `('signin','ip')` row on rejection and clearing on success
+- [X] T099 [US4] Wire the throttle into `requestPasswordReset` in `src/features/auth/actions.ts`, recording one `('reset','email')` and one `('reset','ip')` row on **every** request without exception (`FR-032`)
+- [X] T100 [US4] Wire the throttle-refusal event from `src/features/auth/server/throttle.ts` into `src/features/auth/server/log.ts` (`FR-064`)
+- [X] T101 [US4] Implement `src/features/auth/server/sweep.ts` — the three deletes — and start it from bootstrap as the installation's **only** `setInterval`, `unref()`d and cleared on `SIGTERM`
+- [X] T102 [P] [US4] Render the rounded-up minutes in `src/features/auth/components/sign-in-form.tsx`
+- [X] T103 [P] [US4] Render the throttled state in `src/features/auth/components/reset-request-form.tsx`
 
 **Checkpoint**: both limits hold in both flows, survive a restart, and the tables stay bounded.
 
