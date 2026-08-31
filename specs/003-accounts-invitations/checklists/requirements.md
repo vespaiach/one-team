@@ -79,23 +79,30 @@ this feature is a caller rather than their owner. Citing them is not a claim on 
   (`OT-SEC-006`, `OT-SEC-005`, `OT-DATA-005`). Restating them is traceability to a decision already
   taken upstream, not a technical choice this document makes. Everything that *is* a choice — the
   ORM, the runtime, the mutator shape — appears only under *Assumptions → Inherited constraints*,
-  where it is labelled as inherited.
+  where it is labelled as inherited. Two requirements name an enforcement mechanism rather than only
+  an outcome — FR-049's active-admin row lock and FR-009a's unique index over unspent invitations —
+  because each states an invariant that holds only under concurrency, which `AGENTS.md` requires be
+  carried by a constraint or a lock rather than by a read followed by a write. Naming the mechanism
+  is what makes the invariant testable; the shape of the migration remains the plan's.
 
-- **`OT-UX-005`, `-006`, `-016` and `-017` are the one genuinely contingent block.** Entry R2 defers
-  them to "R3 or R4, whichever is built first". This spec takes R3 as first — it is on the critical
-  path and R5 depends on it, while R4 is explicitly parallel and off it — and carries FR-054 to
-  FR-059 accordingly. If the team builds R4 first, those six requirements move there and this
-  feature simply consumes them. **This is the first question `/speckit-clarify` should put to the
-  team**, because it is the only assumption in the document that changes what is built rather than
-  how a detail behaves.
+- **`OT-UX-005`, `-006`, `-016` and `-017` are settled on this entry, and no longer contingent.**
+  Entry R2 originally deferred them to whichever of R3 and R4 was built first. Ownership now follows
+  the first caller instead: R3 holds it for all four, R2 had already broken the same tie the same way
+  for `OT-UX-002`, and R4's spec already consumes them as their second caller. `docs/ROADMAP.md` is
+  amended under §5 and entry R2 is reconciled to it, so FR-054 to FR-059 stay here whatever order the
+  team builds in and no scenario above depends on a scheduling decision.
 
-- **Two source tensions are reconciled rather than assumed.** §3.9 offers "a link to it" beside an
-  address that already has an account while §3.12 states no route exists to view another user's
-  profile — the link is resolved to that account's row on the Accounts tab, the only surface that
-  shows another user's account. And §3.9's "revoke ... drops the row" against §3.1's requirement
-  that a used token be distinguishable from an unknown one forces acceptance to *retain* the
-  invitation while revoke deletes it; that asymmetry is stated in FR-031 and FR-032 rather than left
-  to the plan.
+- **Two source tensions are reconciled rather than assumed, and each is now closed to its mechanism.**
+  §3.9 offers "a link to it" beside an address that already has an account while the same section
+  states the tab is "local page state, not a route — there is nothing to link to", and §3.12 adds
+  that no route exists to view another user's profile. The affordance is therefore an in-page control
+  that moves the page's own tab state and brings the row into view, not an anchor (FR-008), and it
+  names Reactivate where the account is closed (FR-008a). And §3.9's "revoke ... drops the row"
+  against §3.1's requirement that a used token be distinguishable from an unknown one forces
+  acceptance to *retain* the invitation while revoke deletes it (FR-031, FR-032); retention is
+  indefinite, since any sweep horizon would collapse that distinction (FR-031a), and the "one live
+  offer per address" rule that the asymmetry leaves standing is held by a unique index over unspent
+  rows rather than by a read-then-write (FR-009a). None of the four is left to the plan.
 
 - **FR-040's project count is verified as zero.** The roadmap has the roster read `project_member`
   rows, which entry R5 creates, "and reads zero until then". The assertion this feature's tests make
