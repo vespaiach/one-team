@@ -36,13 +36,14 @@ An empty result from **either** means that entry has not landed and this checkli
 ### Then reconcile the four contracts this feature assumed
 
 The spec's *Obligations this feature places on entries built before it* names four things R2 and R5
-own that were not fully fixed when this feature was planned. Each was assumed in a shape; each is now
-knowable. Read the shipped code and correct this feature's plan where it diverges — the point is to
+own that were not fully fixed when this feature was planned. **R5's plan has since landed and matches
+all four**, so what remains is confirming that its shipped code did too — a plan agreeing is not a
+migration agreeing. Read the code and correct this feature's plan where it diverges; the point is to
 catch a divergence by reading, not by a failing migration.
 
 | Assumed | Where to look | If it diverges |
 | --- | --- | --- |
-| `issue_counter(project_id, last_number)`, `last_number` starting at `0` and holding the highest number yet issued | `src/db/schema.ts`, R5's `createProject` | `createIssue`'s draw is the one statement that changes ([`data-model.md`](./data-model.md) §3). A counter meaning *next* number rather than *highest* changes the draw's arithmetic, not just its column name |
+| `issue_counter(project_id, last_number)`, `last_number` starting at `0` and holding the highest number yet issued — matching [R5's data-model](../005-projects-membership-lifecycle/data-model.md) §4 | `src/db/schema.ts`, R5's `createProject` | `createIssue`'s draw is the one statement that changes ([`data-model.md`](./data-model.md) §3). A counter meaning *next* number rather than *highest* changes the draw's arithmetic, not just its column name |
 | R5's `board_column` carries **no** uniqueness over `(project_id, id)` | `src/db/schema.ts` | If R5 added it anyway, drop that half of `T008` — the constraint exists and this feature must not declare it twice |
 | R5's markdown implementation still sits inside `src/features/projects/` | `git ls-files 'src/features/projects/**/*markdown*' 'src/components/shared/**'` | If R5 pre-placed it in `src/components/shared`, `T040` becomes a no-op and `FR-044`'s extraction is already done; if R5 split it differently, `T040` follows the shape that exists |
 | Project details renders the header's New issue slot, awaiting a destination | R5's project details screen | If the slot is absent, `T080` adds it rather than filling it, and that is a larger edit than Complexity Tracking records |

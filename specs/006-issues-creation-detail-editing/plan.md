@@ -112,10 +112,16 @@ stories, 30 acceptance scenarios, 26 edge cases, 22 success criteria, 2 screens 
 8 components, 3 Server Actions, 1 table added and 1 altered.
 
 **Unknowns**: none outstanding. Twelve questions were closed across three `/speckit-clarify` sessions
-and are recorded in the spec's *Clarifications*. Research adds three assumptions carried forward
-([`research.md`](./research.md), *Assumptions carried forward*): `issue_counter`'s column name, the
-completeness of R5's markdown implementation, and whether the team amends the dependency table for
-`@internationalized/date`. None blocks implementation; each names the one place it would change.
+and are recorded in the spec's *Clarifications*. Research adds two assumptions carried forward
+([`research.md`](./research.md), *Assumptions carried forward*): the completeness of R5's markdown
+implementation, and whether the team amends the dependency table for `@internationalized/date`.
+Neither blocks implementation; each names the one place it would change. A third — `issue_counter`'s
+column name — closed when R5's plan landed and confirmed it. All four contracts in the spec's
+*Obligations* now match what R5 plans: the counter's column and meaning, `board_column` carrying
+`UNIQUE (project_id, lower(name))` and **not** the `(project_id, id)` this feature must add itself,
+the markdown implementation staying inside R5's feature, and the header's New issue slot recorded in
+R5's own shell reach-back contract as "R2's contract, R6's occupant". `T001` still runs its
+reconciliation, because none of that is a shipped schema.
 
 ## Constitution Check
 
@@ -282,7 +288,7 @@ R11's cascade work joins this transaction rather than introducing it, which is t
 
 | Phase | Output | Status |
 | --- | --- | --- |
-| 0 — Outline & research | [`research.md`](./research.md) | complete — 43 decisions in five groups, three assumptions carried forward, no unknown outstanding |
+| 0 — Outline & research | [`research.md`](./research.md) | complete — 43 decisions in five groups, two assumptions carried forward, no unknown outstanding |
 | 1 — Design & contracts | [`data-model.md`](./data-model.md), [`contracts/`](./contracts/), [`quickstart.md`](./quickstart.md) | complete |
 | Constitution re-check | this file | complete — pass, five items in Complexity Tracking |
 | 2 — Tasks | [`tasks.md`](./tasks.md) | complete — 100 tasks across eight phases, every acceptance scenario carried by a Red step, and the one non-Red test labelled as such |

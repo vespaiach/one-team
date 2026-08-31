@@ -141,8 +141,9 @@ would not.
 
 R5 creates the `issue_counter` row (`FR-008` of R5's spec) and R6 is the only code that ever reads
 it; `OT-DATA-012` and §5's *Read boundary* keep it off every read endpoint. R5's spec does not name
-its columns and R5 has no plan yet, so this plan pins the contract rather than leaving two entries to
-guess at each other:
+its columns, so this plan pinned the contract rather than leaving two entries to guess at each other.
+R5's plan has since landed and confirms every part of it — same column, same `0` default, same
+"holds the last number issued" meaning, and the same `UPDATE … RETURNING` in its own research A-3:
 
 ```
 issue_counter(project_id uuid PRIMARY KEY REFERENCES project(id) ON DELETE CASCADE,
@@ -639,11 +640,12 @@ the migration is the second check gate 1 asks for.
 
 ## Assumptions carried forward
 
-Three, none blocking, each surfaced rather than buried.
+Two, none blocking, each surfaced rather than buried. A third — `issue_counter`'s column name — was
+carried here until R5's plan landed and **confirmed it**: `last_number`, seeded at `0`, holding the
+last number issued, drawn by the same statement A-6 writes. It is recorded as closed rather than
+deleted, because the reconciliation `T001` runs is against R5's *shipped schema*, which still does
+not exist; a plan agreeing is not a migration agreeing.
 
-- **`issue_counter`'s column is `last_number`, starting at `0`** (A-7). Pinned by this plan because
-  R6 is its only reader and R5 has no plan yet. If R5's plan names it differently, A-6's statement is
-  the one line that changes.
 - **R5's markdown implementation will match C-1's grammar** where it overlaps. If it does not, C-8
   and C-9 make that an R5 defect rather than a widening of this feature's diff — but the size of the
   move cannot be known until R5 exists.

@@ -85,8 +85,11 @@ inherited table and is recorded in [`plan.md`](./plan.md)'s *Complexity Tracking
 ## 3. The table this feature reads under a lock: `issue_counter` (R5's)
 
 R5 creates the row; this feature is its only reader, and §5's *Read boundary* keeps it off every read
-endpoint permanently. R5's spec does not name its columns and R5 has no plan yet, so **this plan pins
-the contract** ([`research.md`](./research.md) A-7):
+endpoint permanently. R5's spec does not name its columns, so this plan pinned the contract rather than leaving two entries
+to guess at each other ([`research.md`](./research.md) A-7). **R5's plan has since landed and matches
+it** — [`specs/005-projects-membership-lifecycle/data-model.md`](../005-projects-membership-lifecycle/data-model.md) §4
+carries the same column, the same default and the same meaning, and R5's research A-3 carries the
+same draw statement byte for byte. What follows is now a confirmed contract rather than a pin:
 
 ```
 issue_counter(project_id uuid PRIMARY KEY REFERENCES project(id) ON DELETE CASCADE,

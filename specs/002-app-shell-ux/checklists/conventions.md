@@ -8,7 +8,7 @@
 **Review Ownership**: This checklist is a reviewer-owned requirements-quality review artifact. Mark an item `[x]` only when the reviewer determines the requirements-quality criterion is satisfied.
 **Marker Semantics**: `[x]` means the criterion has been reviewed and satisfied for requirements quality. It does not mean implementation work is complete.
 
-**Scope**: The six requirements stated here and implemented elsewhere — FR-013 and FR-023 by entry R3, FR-032 to FR-035 by the first of R3 or R4 — together with every other rule this feature fixes for entries R3 through R12. A rule that is ambiguous here is ambiguous in ten later entries.
+**Scope**: The six requirements stated here and implemented elsewhere — FR-013 and FR-023 by entry R3, FR-032 to FR-035 by entry R3 — together with every other rule this feature fixes for entries R3 through R12. A rule that is ambiguous here is ambiguous in ten later entries.
 
 ## Requirement Consistency — hide versus disable
 
@@ -34,7 +34,7 @@
 
 ## Ownership & Traceability of the Handoff
 
-- [x] CHK017 Is ownership unambiguous if entries R3 and R4 are built concurrently rather than in sequence, given "whichever is built first"? [Ambiguity, Spec §FR-032–FR-035]
+- [x] CHK017 Is ownership unambiguous if entries R3 and R4 are built concurrently rather than in sequence? [Ambiguity, Spec §FR-032–FR-035]
 - [x] CHK018 Must the implementing entry satisfy all four conventions together, or may it implement the ones its surface exercises and leave the rest? [Clarity, Spec §FR-032–FR-035]
 - [x] CHK019 Is the implementing entry required to cite these requirement IDs, so the handoff is traceable from the later spec back to this one? [Traceability, Gap]
 - [x] CHK020 Is removal or update of the inline deferral marker required once a convention is implemented, so the marker does not outlive its truth? [Gap, Spec §FR-013, §FR-023, §FR-032–FR-035]
