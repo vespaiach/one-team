@@ -46,6 +46,18 @@ Entry **R3** assigns ten requirement IDs. Each is cited by at least one function
 | `OT-UX-011` | FR-006 |
 | `OT-INV-013` | FR-049 |
 
+Each of the ten is **discharged** rather than merely cited — the requirement named carries the whole
+of the index row, not a part of it. `OT-SEC-002`'s count is stated and closed (FR-024). `OT-SEC-003`
+is in three parts and each has its own requirement: no public sign-up and only two origins (FR-035),
+the seven-day single-use link (FR-013), and members refused on the server (FR-012). `OT-SEC-013`'s
+session deletion is FR-045, its sign-in revocation FR-046, its retention FR-047, and the membership
+half FR-051 — vacuously true until entry R5 creates a membership row, which the *Reconciliations*
+note records. `OT-SEC-016` is completed by FR-032, entry R1 having delivered the same three states
+for Change password. `OT-AUTHZ-006` is FR-040 for this screen's count only, the other two lists
+being R5's. `OT-AUTHZ-011` is in two parts — no UI sets a role (FR-029, FR-042) and invitation and
+deactivation do have one (FR-001, FR-042). `OT-AUTHZ-014` is FR-047 in full. `OT-DATA-005` is
+FR-039, `OT-UX-011` is FR-006, and `OT-INV-013` is FR-049 with the lock it shares with entry R1.
+
 Twenty-one further IDs are cited without being assigned, because the roadmap fixes them elsewhere and
 this feature is a caller rather than their owner. Citing them is not a claim on them.
 
