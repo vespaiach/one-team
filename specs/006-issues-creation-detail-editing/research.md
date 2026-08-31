@@ -4,8 +4,8 @@
 
 **Spec**: [`spec.md`](./spec.md) · **Plan**: [`plan.md`](./plan.md)
 
-Forty-one decisions in five groups — nine on the schema, ten on the mutators, nine on the
-markdown subset, nine on the screens and four on testability. Each names what was chosen, why, and what was rejected. Nothing
+Forty-three decisions in five groups — nine on the schema, ten on the mutators, nine on the
+markdown subset, eleven on the screens and four on testability. Each names what was chosen, why, and what was rejected. Nothing
 here widens the spec's scope; where a decision settles something the specification left open, it says
 so and cites the sentence that left it open.
 
@@ -248,12 +248,12 @@ which would give R7 two activity rows for one transition and R11 two notificatio
 assignment.
 
 `SELECT … FOR UPDATE` on the issue row serializes them. The second still applies and is still not
-refused, so the spec's last-write-wins assumption is untouched: the lock changes who computes their
+refused, so `FR-064`'s last-write-wins requirement is untouched: the lock changes who computes their
 delta against which value, not who wins. The cost is one row lock held for the length of one small
 update at a team size under twenty.
 
 **Rejected**: an optimistic-concurrency version column. It would make the second write fail, which
-the spec's own assumption forbids — "neither write is rejected and neither client is told it lost".
+`FR-064` forbids — "neither MUST be refused for the conflict, neither caller MUST be told it lost".
 
 ### B-6. The delta is computed and consumed inside the mutator, and is not returned
 
@@ -563,6 +563,34 @@ built from an array that happens to have no elements, and the array is read on e
 `FR-042`. A small Client Component wrapping a React Aria `Button` that writes `location.href` to the
 clipboard. It is the one piece of the main column that is interactive for every user regardless of
 membership — copying a link is not a write.
+
+### D-10. The skeleton goes inside the page under `Suspense`, never in a `loading.tsx`
+
+`FR-067` requires a per-screen skeleton and requires it **below** each route's authorization
+decision. A segment-level `loading.tsx` sits *above* the page: Next.js streams it as a `200` the
+moment the segment is entered, before the page body has run its guards. A route that meant to answer
+`403` or `404` would then answer `200` with a skeleton that resolves into a refusal.
+
+R2's own route-surface contract records this trap, and this feature is the first with a skeleton to
+fall into it. So each page runs `requireActor()`, resolves its row and runs its predicate first, then
+wraps only the data-dependent subtree in `Suspense` with the skeleton as the fallback.
+
+**Rejected**: `loading.tsx` at each segment. It is the framework's shortest path to a skeleton and it
+inverts the answer on exactly the two routes where the answer matters most.
+
+### D-11. The disabled reason is the control's own accessible description
+
+`FR-068` requires each disabled control's inline reason to reach assistive technology as *that
+control's* explanation rather than as adjacent text. Visually the two are identical; to a screen
+reader they are not — loose text near a control is encountered separately from it, or skipped.
+
+React Aria's collections associate a description with its control when the description is passed as
+the component's own slot rather than rendered beside it, which is the mechanism used here. The same
+association carries the length-bound errors on both write surfaces, so `FR-037` and `FR-049`'s inline
+errors are announced with the field rather than after it.
+
+**Rejected**: a `title` attribute. `AGENTS.md` and `OT-UX-002` both refuse tooltip-only explanations,
+and a `title` is not announced reliably by any screen reader.
 
 ---
 

@@ -40,7 +40,7 @@ approved table, which gate 4 refuses. This is flagged for the team rather than s
 reaches the same fork first, and if the amendment is wanted it should be made once, before R5 is
 built.
 
-Full reasoning in [`research.md`](./research.md) — forty-one decisions, groups A–E. The three
+Full reasoning in [`research.md`](./research.md) — forty-three decisions, groups A–E. The three
 mutators in [`contracts/mutators.md`](./contracts/mutators.md), the two screens in
 [`contracts/screens.md`](./contracts/screens.md), the extracted subset in
 [`contracts/markdown.md`](./contracts/markdown.md).
@@ -107,9 +107,9 @@ carries an inline reason and nothing is hidden for a permission reason (`OT-UX-0
 no breakpoint (`OT-SCOPE-004`) · no dependency outside `AGENTS.md`'s table (IV) · no seam built for a
 later entry (I, III, VI).
 
-**Scale/Scope**: one installation, one team under twenty people. 62 functional requirements, 5 user
-stories, 30 acceptance scenarios, 18 edge cases, 18 success criteria, 2 screens across 2 routes,
-6 components, 3 Server Actions, 1 table added and 1 altered.
+**Scale/Scope**: one installation, one team under twenty people. 68 functional requirements, 5 user
+stories, 30 acceptance scenarios, 26 edge cases, 22 success criteria, 2 screens across 2 routes,
+7 components, 3 Server Actions, 1 table added and 1 altered.
 
 **Unknowns**: none outstanding. Twelve questions were closed across three `/speckit-clarify` sessions
 and are recorded in the spec's *Clarifications*. Research adds three assumptions carried forward
@@ -163,9 +163,9 @@ work, and all three are required by requirements this feature owns.
 specs/006-issues-creation-detail-editing/
 ├── spec.md                     the feature specification
 ├── plan.md                     this file
-├── research.md                 Phase 0 — 41 decisions, groups A–E
+├── research.md                 Phase 0 — 43 decisions, groups A–E
 ├── data-model.md               Phase 1 — one table added, one altered, one read under a lock, one DTO
-├── quickstart.md               Phase 1 — fourteen walkthroughs, and five criteria a browser cannot show
+├── quickstart.md               Phase 1 — fifteen walkthroughs, and seven criteria a browser cannot show
 ├── contracts/
 │   ├── mutators.md             createIssue, updateIssue, deleteIssue — and what four entries attach to
 │   ├── screens.md              the two routes, their guards, their components and their controls
@@ -186,10 +186,11 @@ src/
 │   │                                              on R5's board_column      FR-001…FR-008, A-3
 │   └── test-database.ts                    EDIT — "issue" into TRUNCATED_TABLES         E-3
 ├── app/(app)/projects/[projectKey]/issues/
-│   ├── new/page.tsx                        FILL (R2's guard) — actor · project · isMember
-│   │                                              FR-027, FR-029, FR-032, FR-034, FR-036
-│   └── [issueNumber]/details/page.tsx      FILL (R2's guard) — actor · issue
-│                                                  FR-041, FR-046, FR-047
+│   ├── new/page.tsx                        FILL (R2's guard) — actor · project · isMember;
+│   │                                              Suspense over the queries, skeleton below
+│   │                                              the guard   FR-027, FR-029, FR-032…FR-036, FR-067
+│   └── [issueNumber]/details/page.tsx      FILL (R2's guard) — actor · issue; same Suspense
+│                                                  placement          FR-041, FR-046, FR-047, FR-067
 ├── components/shared/markdown/
 │   ├── parse.ts                            MOVED from R5 — the closed grammar     FR-009, FR-010
 │   └── markdown.tsx                        MOVED from R5 — blocks to React elements      FR-044
@@ -205,7 +206,8 @@ src/
 │   │   │   ├── editable-text.tsx           "use client" — title and description
 │   │   │   │                                              FR-048…FR-050, FR-054
 │   │   │   ├── issue-rail.tsx              "use client" — column, priority, assignee, due date
-│   │   │   │                                              FR-045, FR-051, FR-052
+│   │   │   │                                              FR-045, FR-051, FR-052, FR-068
+│   │   │   ├── issue-skeletons.tsx          synchronous — both screens' loading shapes    FR-067
 │   │   │   └── delete-issue-control.tsx    "use client" — control + confirmation  FR-061, FR-062
 │   │   └── server/
 │   │       ├── create-issue.ts             one transaction: draw, append, insert   FR-039, FR-040
@@ -241,6 +243,12 @@ own in-place fields, and if the two prove identical the promotion happens then, 
 visible. `src/components/ui` is still not created: nothing here is a reusable accessible primitive
 with two callers, and R2 and R5 made the same call.
 
+**Skeletons go inside the page, under a `Suspense` boundary, not in a `loading.tsx`.** `FR-067`
+requires the skeleton below each route's authorization decision, and a segment-level `loading.tsx`
+sits *above* the page — it would turn a `403` or a `404` into a streamed `200`, which is the trap R2
+recorded in its own route-surface contract. So each page runs its guards first and wraps only the
+data-dependent subtree.
+
 Two helpers deliberately do **not** get their own modules. The counter draw is one statement and the
 order append is one call, each with exactly one caller, and both live inside `create-issue.ts`.
 Extracting either would be a file created for symmetry, which is the "many trivial files" half of
@@ -268,7 +276,7 @@ R11's cascade work joins this transaction rather than introducing it, which is t
 
 | Phase | Output | Status |
 | --- | --- | --- |
-| 0 — Outline & research | [`research.md`](./research.md) | complete — 41 decisions in five groups, three assumptions carried forward, no unknown outstanding |
+| 0 — Outline & research | [`research.md`](./research.md) | complete — 43 decisions in five groups, three assumptions carried forward, no unknown outstanding |
 | 1 — Design & contracts | [`data-model.md`](./data-model.md), [`contracts/`](./contracts/), [`quickstart.md`](./quickstart.md) | complete |
 | Constitution re-check | this file | complete — pass, five items in Complexity Tracking |
 | 2 — Tasks | `tasks.md` | not started — `/speckit-tasks` |
