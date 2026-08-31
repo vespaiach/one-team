@@ -9,9 +9,9 @@
 
 R2 builds a frame, not a feature. One route group, `src/app/(app)/`, whose layout is a 262px sidebar,
 a banner slot and a content region; a header each page composes for itself; the Forbidden screen and
-the "This doesn't exist" wording; thirteen routes registered with the authorization guard §3's Access
-column implies; and one write — the sign-out control R1 delivered the session deletion for. Eleven of
-the twelve remaining entries render inside what this one produces.
+the "This doesn't exist" wording; the surface table's ten authenticated routes, each registered with
+the authorization guard its Access column implies; and one write — the sign-out control R1 delivered
+the session deletion for. Eleven of the twelve remaining entries render inside what this one produces.
 
 The technical approach is mostly the framework's own, because Next.js 16 answers three of the
 requirements directly and better than anything written by hand. `forbidden()` with a segment-level
@@ -90,9 +90,9 @@ stories, 37 acceptance scenarios, 14 success criteria, 13 screens across 10 rout
 
 **Unknowns**: none outstanding. The specification's silences are settled in the spec's own
 *Assumptions*, and ten questions were closed across two `/speckit-clarify` sessions. Research adds
-three of its own ([`research.md`](./research.md), *Assumptions carried forward*): `/home` has no
-heading until R12 supplies its content, the not-found screen renders no header, and the sidebar
-scrolls internally when the project list outgrows it. None blocks implementation.
+two of its own ([`research.md`](./research.md), *Assumptions carried forward*): `/home` has no
+heading until R12 supplies its content, and the not-found screen renders no header. Neither blocks
+implementation.
 
 ## Constitution Check
 
@@ -150,7 +150,7 @@ specs/002-app-shell-ux/
 │   └── ux-conventions.md       what R3–R12 inherit, implemented and stated alike
 ├── checklists/
 │   └── requirements.md         existing
-└── tasks.md                    Phase 2 — created by /speckit-tasks, not by this command
+└── tasks.md                    Phase 2 — 53 tasks, one phase per user story
 ```
 
 ### Source code (repository root)
@@ -243,5 +243,5 @@ server check is the enforcement — and every page below repeats the check that 
 | 0 — Outline & research | [`research.md`](./research.md) | complete — 24 decisions, three assumptions carried forward, no unknown outstanding |
 | 1 — Design & contracts | [`data-model.md`](./data-model.md), [`contracts/`](./contracts/), [`quickstart.md`](./quickstart.md) | complete |
 | Constitution re-check | this file | complete — pass, four items in Complexity Tracking |
-| 2 — Tasks | `tasks.md` | **not created by this command** — run `/speckit-tasks` |
+| 2 — Tasks | [`tasks.md`](./tasks.md) | complete — 53 tasks across seven phases, every acceptance scenario carried by a Red step |
 | Implementation | — | **blocked on entry R1**, which is specified and planned but not built |
