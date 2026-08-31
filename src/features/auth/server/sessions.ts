@@ -4,7 +4,8 @@ import { db } from "@/db";
 import { session } from "@/db/schema";
 import { digestToken, issueToken } from "./crypto";
 
-const SESSION_LIFETIME_MS = 30 * 24 * 60 * 60 * 1000;
+export const SESSION_COOKIE_NAME = "one_team_session";
+export const SESSION_LIFETIME_MS = 30 * 24 * 60 * 60 * 1000;
 
 export type SessionRecord = typeof session.$inferSelect;
 
