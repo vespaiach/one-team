@@ -1,8 +1,8 @@
 import "server-only";
 import { and, eq, gt } from "drizzle-orm";
-import { db } from "@/db";
-import { session } from "@/db/schema";
-import { digestToken, issueToken } from "./crypto";
+import { db } from "../../../db/index.ts";
+import { session } from "../../../db/schema.ts";
+import { digestToken, issueToken } from "./crypto.ts";
 
 export const SESSION_COOKIE_NAME = "one_team_session";
 export const SESSION_LIFETIME_MS = 30 * 24 * 60 * 60 * 1000;

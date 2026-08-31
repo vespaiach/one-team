@@ -270,19 +270,19 @@ confirm refusal. Nothing here needs US3 — the session deletion it calls is Fou
 
 ### Tests for User Story 5
 
-- [ ] T104 [P] [US5] Failing test in `src/features/auth/server/admin-guard.test.ts` asserting `withLastAdminGuard` locks the active-admin set with `SELECT … FOR UPDATE` inside the caller's transaction and refuses a change that would empty it, and that two concurrent attempts to close the last admin leave at least one active — scenarios 6 and 7 (`FR-056`, `SC-012`)
-- [ ] T105 [P] [US5] Failing test in `scripts/admin-grant.test.ts` asserting a fresh address creates an admin, a member is promoted with its password replaced and `deactivated_at` and `must_change_password` cleared, a deactivated account is reopened, and an address that is already an active admin has its password replaced without error — scenarios 1, 2 and 8 (`FR-051`, `FR-077`)
-- [ ] T106 [US5] Extend `scripts/admin-grant.test.ts`: the password is read from the terminal and never accepted as an argument, `--password=…` is an unrecognised flag that writes nothing and exits `2`, and a terminal that cannot suppress echo makes the command refuse to prompt — scenario 4 (`FR-052`, `FR-075`, `FR-076`)
-- [ ] T107 [US5] Extend `scripts/admin-grant.test.ts`: a short or blocklisted password is refused naming the one rule that failed, with nothing written — no partial user row, no credential — scenario 3 (`FR-053`)
-- [ ] T108 [P] [US5] Failing test in `scripts/admin-deactivate.test.ts` asserting the command sets `deactivated_at`, deletes every session for that user, never deletes the `user` row, and refuses an address with no account while naming it — scenario 5 (`FR-007`, `FR-054`, `FR-057`, `FR-078`, `SC-013`)
-- [ ] T109 [US5] Extend `scripts/admin-grant.test.ts` and `scripts/admin-deactivate.test.ts`: exit `0` with one line on stdout on success, `1` with one line on stderr on an actionable refusal, `2` on a usage error, and nothing written to the database on `1` or `2` (`FR-074`)
+- [X] T104 [P] [US5] Failing test in `src/features/auth/server/admin-guard.test.ts` asserting `withLastAdminGuard` locks the active-admin set with `SELECT … FOR UPDATE` inside the caller's transaction and refuses a change that would empty it, and that two concurrent attempts to close the last admin leave at least one active — scenarios 6 and 7 (`FR-056`, `SC-012`)
+- [X] T105 [P] [US5] Failing test in `scripts/admin-grant.test.ts` asserting a fresh address creates an admin, a member is promoted with its password replaced and `deactivated_at` and `must_change_password` cleared, a deactivated account is reopened, and an address that is already an active admin has its password replaced without error — scenarios 1, 2 and 8 (`FR-051`, `FR-077`)
+- [X] T106 [US5] Extend `scripts/admin-grant.test.ts`: the password is read from the terminal and never accepted as an argument, `--password=…` is an unrecognised flag that writes nothing and exits `2`, and a terminal that cannot suppress echo makes the command refuse to prompt — scenario 4 (`FR-052`, `FR-075`, `FR-076`)
+- [X] T107 [US5] Extend `scripts/admin-grant.test.ts`: a short or blocklisted password is refused naming the one rule that failed, with nothing written — no partial user row, no credential — scenario 3 (`FR-053`)
+- [X] T108 [P] [US5] Failing test in `scripts/admin-deactivate.test.ts` asserting the command sets `deactivated_at`, deletes every session for that user, never deletes the `user` row, and refuses an address with no account while naming it — scenario 5 (`FR-007`, `FR-054`, `FR-057`, `FR-078`, `SC-013`)
+- [X] T109 [US5] Extend `scripts/admin-grant.test.ts` and `scripts/admin-deactivate.test.ts`: exit `0` with one line on stdout on success, `1` with one line on stderr on an actionable refusal, `2` on a usage error, and nothing written to the database on `1` or `2` (`FR-074`)
 
 ### Implementation for User Story 5
 
-- [ ] T110 [US5] Implement `src/features/auth/server/admin-guard.ts` — `withLastAdminGuard`, shared with R3's `deactivateUser`
-- [ ] T111 [US5] Implement `scripts/admin-grant.ts` using `node:util`'s `parseArgs` in strict mode and `node:readline`'s hidden input, with the app's environment loaded through `@next/env`
-- [ ] T112 [US5] Implement `scripts/admin-deactivate.ts`, reusing `deleteAllSessionsForUser()` from T030 and `withLastAdminGuard`
-- [ ] T113 [US5] Failing test in `src/features/auth/role-surface.test.ts` asserting no route, page or Server Action in the feature writes `user.role` — the whole role-change surface is `scripts/admin-grant.ts` (`FR-055`, `OT-AUTHZ-011`)
+- [X] T110 [US5] Implement `src/features/auth/server/admin-guard.ts` — `withLastAdminGuard`, shared with R3's `deactivateUser`
+- [X] T111 [US5] Implement `scripts/admin-grant.ts` using `node:util`'s `parseArgs` in strict mode and `node:readline`'s hidden input, with the app's environment loaded through `@next/env`
+- [X] T112 [US5] Implement `scripts/admin-deactivate.ts`, reusing `deleteAllSessionsForUser()` from T030 and `withLastAdminGuard`
+- [X] T113 [US5] Failing test in `src/features/auth/role-surface.test.ts` asserting no route, page or Server Action in the feature writes `user.role` — the whole role-change surface is `scripts/admin-grant.ts` (`FR-055`, `OT-AUTHZ-011`)
 
 **Checkpoint**: all five stories are independently functional.
 
