@@ -109,7 +109,7 @@ later entry (I, III, VI).
 
 **Scale/Scope**: one installation, one team under twenty people. 68 functional requirements, 5 user
 stories, 30 acceptance scenarios, 26 edge cases, 22 success criteria, 2 screens across 2 routes,
-7 components, 3 Server Actions, 1 table added and 1 altered.
+8 components, 3 Server Actions, 1 table added and 1 altered.
 
 **Unknowns**: none outstanding. Twelve questions were closed across three `/speckit-clarify` sessions
 and are recorded in the spec's *Clarifications*. Research adds three assumptions carried forward
@@ -127,13 +127,13 @@ version record (v1.0.0).
 
 | | Principle | Assessment | Post-design |
 | --- | --- | --- | --- |
-| **I** | Component-Driven Architecture | Six components, each with one concern. Exactly one abstraction is extracted, and both its call sites exist on the day it lands: `editable-text.tsx` serves title and description, whose behaviour `FR-048` makes identical. Exactly one module is promoted to `src/components/shared` — the markdown renderer, at its genuine second call site, which is what `FR-044` requires. Nothing else is extracted: the rail's four controls stay inline, the counter draw and the order append stay inside `createIssue`, and `src/components/ui` is still not created. | pass, with one entry in Complexity Tracking |
+| **I** | Component-Driven Architecture | Eight components, each with one concern. Exactly one abstraction is extracted, and both its call sites exist on the day it lands: `editable-text.tsx` serves title and description, whose behaviour `FR-048` makes identical. Exactly one module is promoted to `src/components/shared` — the markdown renderer, at its genuine second call site, which is what `FR-044` requires. Nothing else is extracted: the rail's four controls stay inline, the counter draw and the order append stay inside `createIssue`, and `src/components/ui` is still not created. | pass, with one entry in Complexity Tracking |
 | **II** | Validated Input Boundaries | Three Server Actions, each a public server entry point, each validating on the server whatever the client checked. One parser per field, taking `unknown` and returning the narrowed value or `null` — never a coercion, never a truncation. Over-length is refused rather than capped, which `SC-016` states and II requires. Every predicate derives its project from the stored row, never from an argument. The `CHECK` constraints are the second line, not the first. | pass |
 | **III** | Straightforward Over Clever | The counter is one `UPDATE … RETURNING` rather than a select-then-update. The markdown subset has no delimiter stack, no nesting and no escapes. The delta is a comparison, not a diffing framework. No hook registry, event bus or callback layer is built for the four entries that will edit these mutators — the spec's *Out of Scope* refuses it and this plan does not reintroduce it. | pass |
 | **IV** | Built-In Features Over Third-Party Libraries | One dependency installed, `fractional-indexing`, already approved in the table for this purpose. No markdown library. No date library — the due date is the Web platform's own control, which is why `@internationalized/date` is not pulled in. React Aria supplies the three selects and the confirmation dialog, as `AGENTS.md` requires. | pass, with two entries in Complexity Tracking |
 | **V** | Intention-Revealing Code Without Comments | No comments in the diff. The three places a reader will want an explanation — why the composite key is `NO ACTION`, why `updateIssue` locks its row, and why the delta is not returned — are answered by [`research.md`](./research.md) A-4, B-5 and B-6 and by the mutator contract, not by annotation. | pass |
 | **VI** | No Dead Code | The delta is the test of this principle in this feature, and it passes by being consumed where it is computed rather than exposed for a later entry. Nothing is returned that R6 does not read; nothing is built that R6 does not render. The confirmation's absent cascade count is an empty list read on every render, not a placeholder. | pass |
-| **VII** | Test-First (NON-NEGOTIABLE) | All 30 acceptance scenarios are Red steps written before their implementation. Every functional requirement has a test: the structural ones (`FR-001`…`FR-008`, `FR-057`) by asserting the database refuses the violating write or the table lacks the column — the method the spec's own preamble fixes — and the rest through a component, a mutator or a query. No requirement in this feature lacks a caller. | pass |
+| **VII** | Test-First (NON-NEGOTIABLE) | All 30 acceptance scenarios are carried by a Red step written before its implementation. One test in the file is deliberately **not** a Red step and says so: `T088` asserts the member's cancellation route, whose behaviour `T065` already delivers, so it passes on first run — its Red step is `T058`, in US3, written before `T065` exists. Labelling it rather than filing it under a Red heading is what keeps gate 1's evidence readable. Every functional requirement has a test: the structural ones (`FR-001`…`FR-008`, `FR-057`) by asserting the database refuses the violating write or the table lacks the column — the method the spec's own preamble fixes — and the rest through a component, a mutator or a query. No requirement in this feature lacks a caller. | pass |
 
 ### Gates 1–8
 
@@ -171,7 +171,11 @@ specs/006-issues-creation-detail-editing/
 │   ├── screens.md              the two routes, their guards, their components and their controls
 │   └── markdown.md             the closed grammar, its two guarantees, and the extraction
 ├── checklists/
-│   └── requirements.md         existing — 16/16
+│   ├── requirements.md         spec-quality gate — 16/16
+│   ├── authz.md                authorization and the write boundary — 27/27
+│   ├── data-integrity.md       numbering, transactions, the cascade — 29/29
+│   ├── ux.md                   both screens' interaction and accessibility — 31/31
+│   └── integration.md          the four reach-back entries and the three providers — 28/28
 └── tasks.md                    Phase 2 — 100 tasks, one phase per user story
 ```
 
@@ -208,7 +212,9 @@ src/
 │   │   │   ├── issue-rail.tsx              "use client" — column, priority, assignee, due date
 │   │   │   │                                              FR-045, FR-051, FR-052, FR-068
 │   │   │   ├── issue-skeletons.tsx          synchronous — both screens' loading shapes    FR-067
-│   │   │   └── delete-issue-control.tsx    "use client" — control + confirmation  FR-061, FR-062
+│   │   │   ├── delete-issue-control.tsx    "use client" — control + confirmation  FR-061, FR-062
+│   │   │   └── new-issue-control.tsx       "use client" — the header slot, all three
+│   │   │                                                  project-scoped screens          FR-028
 │   │   └── server/
 │   │       ├── create-issue.ts             one transaction: draw, append, insert   FR-039, FR-040
 │   │       ├── update-issue.ts             locked read, delta, changed columns only     FR-055
@@ -279,5 +285,5 @@ R11's cascade work joins this transaction rather than introducing it, which is t
 | 0 — Outline & research | [`research.md`](./research.md) | complete — 43 decisions in five groups, three assumptions carried forward, no unknown outstanding |
 | 1 — Design & contracts | [`data-model.md`](./data-model.md), [`contracts/`](./contracts/), [`quickstart.md`](./quickstart.md) | complete |
 | Constitution re-check | this file | complete — pass, five items in Complexity Tracking |
-| 2 — Tasks | [`tasks.md`](./tasks.md) | complete — 100 tasks across eight phases, every acceptance scenario carried by a Red step |
+| 2 — Tasks | [`tasks.md`](./tasks.md) | complete — 100 tasks across eight phases, every acceptance scenario carried by a Red step, and the one non-Red test labelled as such |
 | Implementation | — | **blocked on entries R2 and R5**, both specified, R2 planned, neither built |

@@ -71,11 +71,17 @@ so this split is what makes gate 1 reachable for every acceptance scenario
 src/features/issues/components/
   create-issue-form.tsx      "use client"  the form, useActionState        FR-030…FR-039
   issue-detail.tsx           synchronous   main column + 262px rail        FR-042, FR-043
-  issue-key.tsx              "use client"  the key and its copy control    FR-042
+  copyable-key.tsx           "use client"  the key and its copy control    FR-042
   editable-text.tsx          "use client"  title and description, one component  FR-048, FR-049
   issue-rail.tsx             "use client"  the four quick-change controls  FR-051, FR-052
   delete-issue-control.tsx   "use client"  the control and its confirmation  FR-061, FR-062
+  new-issue-control.tsx      "use client"  the header slot on all three screens  FR-028
+  issue-skeletons.tsx        synchronous   both screens' loading shapes    FR-067
 ```
+
+**Eight components, and the name `copyable-key.tsx` is deliberate.** The pure formatter that joins a project key to a number lives at `src/features/issues/issue-key.ts` and renders nothing; the component that displays the key and copies the address is `copyable-key.tsx`. Naming the component `issue-key.tsx` would put two modules in one feature differing only by extension, which is the kind of collision a reader resolves by opening both.
+
+`new-issue-control.tsx` is listed here because it is a component of this feature that renders on a screen this feature does not own — R5's project details, whose header slot R2 built and left without a destination (`FR-028`). It appears in the plan's Complexity Tracking for that reason.
 
 `editable-text.tsx` has two call sites in the commit that creates it — title and description — so
 Principle I's precondition is met on arrival rather than guessed at. It is **not** promoted to
