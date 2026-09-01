@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState } from "react";
 import { Button } from "react-aria-components/Button";
 import { Form } from "react-aria-components/Form";
+import Logo from "@/app/components/common/logo";
 import { type RequestPasswordResetState, requestPasswordReset } from "../actions";
 import { BackToSignInFooter } from "./back-to-sign-in-footer";
 import { EmailField } from "./email-field";
@@ -42,15 +43,15 @@ export function ResetRequestForm() {
     const waiting = cooldown !== null && cooldown > 0;
 
     return (
-      <output className="flex flex-col gap-[6px]">
-        <span className="mb-3 flex-none text-[var(--color-accent)]">
+      <output className="flex flex-col gap-1.5">
+        <span className="mb-3 flex-none text-(--color-accent)">
           <MailCheckIcon size={24} />
         </span>
         <h1 className="text-h4">Check your email</h1>
         <p className="mb-5 text-[13px] text-[color-mix(in_srgb,var(--color-text)_62%,transparent)]">
           If that address has an account, a link is on the way.
         </p>
-        <div className="flex items-start gap-2 border border-[var(--color-divider)] bg-[var(--color-surface)] px-[14px] py-3 text-[13px] leading-[1.5]">
+        <div className="flex items-start gap-2 border border-(--color-divider) bg-(--color-surface) px-3.5 py-3 text-[13px] leading-normal">
           <span className="mt-px flex-none text-[color-mix(in_srgb,var(--color-text)_62%,transparent)]">
             <InfoIcon size={16} />
           </span>
@@ -67,7 +68,7 @@ export function ResetRequestForm() {
               <Button
                 type="submit"
                 isDisabled={waiting}
-                className="text-[var(--color-accent-text)] underline underline-offset-[3px] data-[disabled]:cursor-not-allowed data-[disabled]:text-[color-mix(in_srgb,var(--color-text)_45%,transparent)] data-[disabled]:no-underline">
+                className="text-(--color-accent-text) underline underline-offset-[3px] data-disabled:cursor-not-allowed data-disabled:text-[color-mix(in_srgb,var(--color-text)_45%,transparent)] data-[disabled]:no-underline">
                 request another
               </Button>
             </form>
@@ -83,27 +84,32 @@ export function ResetRequestForm() {
     <Form
       action={formAction}
       validationBehavior="aria"
-      className="flex flex-col gap-[14px]">
-      <h1 className="text-h4 mb-[6px]">Reset your password</h1>
-      <p className="mb-[10px] text-[13px] text-[color-mix(in_srgb,var(--color-text)_62%,transparent)]">
-        We&rsquo;ll email a link that sets a new one.
-      </p>
-      <EmailField
-        name="email"
-        label="Email"
-        placeholder="you@company.com"
-        value={email}
-        onChange={setEmail}
-        isRequired
-      />
-      <Button
-        type="submit"
-        isDisabled={isPending}
-        className={primaryButtonClasses({ pending: isPending })}>
-        <MailIcon size={16} />
-        {isPending ? "Sending…" : "Send reset link"}
-      </Button>
-      <BackToSignInFooter />
+      className="flex flex-col gap-5">
+      <Logo className="mb-2" />
+      <div>
+        <h1 className="text-h4">Reset your password</h1>
+        <p className="text-[13px] text-[color-mix(in_srgb,var(--color-text)_62%,transparent)]">
+          We&rsquo;ll email a link that sets a new one.
+        </p>
+      </div>
+      <div>
+        <EmailField
+          name="email"
+          label="Email"
+          placeholder="you@company.com"
+          value={email}
+          onChange={setEmail}
+          isRequired
+        />
+        <Button
+          type="submit"
+          isDisabled={isPending}
+          className={primaryButtonClasses({ pending: isPending, className: "mt-4" })}>
+          <MailIcon size={16} />
+          {isPending ? "Sending…" : "Send reset link"}
+        </Button>
+        <BackToSignInFooter />
+      </div>
     </Form>
   );
 }
