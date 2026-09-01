@@ -31,7 +31,7 @@ export default function Logo({ className }: { className?: string }) {
         />
       </svg>
       <span className="font-heading text-control font-extrabold tracking-[-0.01em] text-(--color-text)">
-        ONE TEAM
+        One Team
       </span>
     </div>
   );

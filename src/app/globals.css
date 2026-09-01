@@ -3,6 +3,7 @@
 @theme inline {
   /* --- roles · the Modernist system's own names --------------- */
   --color-bg: #f3f2f2;
+  --color-page: #ffffff;
   --color-surface: #eae9e9;
   --color-text: #201e1d;
   --color-accent: #ec3013;
@@ -66,7 +67,7 @@
   --color-accent-fill: var(--color-accent-600);
   --color-accent-hover: var(--color-accent-700);
   --color-accent-pressed: var(--color-accent-800);
-  --color-accent-text: var(--color-accent-700);
+  --color-accent-text: var(--color-accent-800);
   --color-on-accent: #ffffff;
 
   /* Monochrome status: danger keeps the primary accent family,
