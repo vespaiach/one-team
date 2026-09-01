@@ -79,6 +79,39 @@ describe("ResetRequestForm (FR-030)", () => {
   });
 });
 
+describe("ResetRequestForm — client-side email validation", () => {
+  it("shows a validation error and blocks submission for an empty email", async () => {
+    render(<ResetRequestForm />);
+    submit();
+
+    expect(await screen.findByText("Enter your email address.")).not.toBeNull();
+    expect(requestPasswordReset).not.toHaveBeenCalled();
+  });
+
+  it("shows a validation error and blocks submission for a malformed email", async () => {
+    render(<ResetRequestForm />);
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "not-an-email" } });
+    submit();
+
+    expect(await screen.findByText("Enter a valid email address.")).not.toBeNull();
+    expect(requestPasswordReset).not.toHaveBeenCalled();
+  });
+
+  it("submits once a valid email replaces an invalid one", async () => {
+    vi.mocked(requestPasswordReset).mockResolvedValue({ status: "sent" });
+
+    render(<ResetRequestForm />);
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "not-an-email" } });
+    submit();
+    expect(await screen.findByText("Enter a valid email address.")).not.toBeNull();
+
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "ada@example.com" } });
+    submit();
+
+    expect(await screen.findByText("If that address has an account, a link is on the way.")).not.toBeNull();
+  });
+});
+
 describe("ResetRequestForm — resend cooldown", () => {
   beforeEach(() => {
     vi.useFakeTimers();

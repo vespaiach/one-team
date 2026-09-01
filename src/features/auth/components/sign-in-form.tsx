@@ -7,6 +7,7 @@ import { Form } from "react-aria-components/Form";
 import { Banner } from "./banner";
 import { CardFooterNote } from "./card-footer-note";
 import { EmailField } from "./email-field";
+import { validateEmail } from "./email-validation";
 import { BanIcon, LockIcon, XCircleIcon } from "./icons";
 import { PasswordField } from "./password-field";
 import { primaryButtonClasses } from "./primary-button-classes";
@@ -22,18 +23,6 @@ type Outcome =
   | { kind: "deactivated"; contact: string | null }
   | { kind: "throttled"; minutes: number }
   | null;
-
-const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-function validateEmail(value: string): string | null {
-  if (value.length === 0) {
-    return "Enter your email address.";
-  }
-  if (!EMAIL_SHAPE.test(value)) {
-    return "Enter a valid email address.";
-  }
-  return null;
-}
 
 function validatePassword(value: string): string | null {
   if (value.length === 0) {

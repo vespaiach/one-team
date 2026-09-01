@@ -1,12 +1,13 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { Button } from "react-aria-components/Button";
 import { Form } from "react-aria-components/Form";
 import Logo from "@/app/components/common/logo";
 import { type RequestPasswordResetState, requestPasswordReset } from "../actions";
 import { BackToSignInFooter } from "./back-to-sign-in-footer";
 import { EmailField } from "./email-field";
+import { validateEmail } from "./email-validation";
 import { InfoIcon, MailCheckIcon, MailIcon } from "./icons";
 import { primaryButtonClasses } from "./primary-button-classes";
 
@@ -21,7 +22,19 @@ function formatCountdown(seconds: number): string {
 export function ResetRequestForm() {
   const [state, formAction, isPending] = useActionState(requestPasswordReset, INITIAL_STATE);
   const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState<number | null>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    const nextEmailError = validateEmail(email);
+    setEmailError(nextEmailError);
+
+    if (nextEmailError) {
+      event.preventDefault();
+      emailRef.current?.focus();
+    }
+  }
 
   useEffect(() => {
     if (state.status === "throttled") {
@@ -83,6 +96,7 @@ export function ResetRequestForm() {
   return (
     <Form
       action={formAction}
+      onSubmit={handleSubmit}
       validationBehavior="aria"
       className="flex flex-col gap-5">
       <Logo className="mb-2" />
@@ -99,7 +113,11 @@ export function ResetRequestForm() {
           placeholder="you@company.com"
           value={email}
           onChange={setEmail}
+          onBlur={() => setEmailError(validateEmail(email))}
+          isInvalid={emailError !== null}
+          errorMessage={emailError ?? undefined}
           isRequired
+          inputRef={emailRef}
         />
         <Button
           type="submit"
