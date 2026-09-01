@@ -5,6 +5,7 @@
 **Source of truth**: [`docs/product/specifications.md`](../../docs/product/specifications.md) §3 (*The shell*), §3.2, §3.11, §3.12, §4, §7
 **Contracts**: [`contracts/app-shell.md`](./contracts/app-shell.md) · [`contracts/route-surface.md`](./contracts/route-surface.md) · [`contracts/sign-out.md`](./contracts/sign-out.md) · [`contracts/ux-conventions.md`](./contracts/ux-conventions.md)
 **Extends**: the R1 design — project `cc49e5c8-0982-43e1-9cce-51afb954ef3b`, `Foundations.dc.html`
+**Design handoff received**: [`design-handoff/`](./design-handoff/) — see *Design handoff* below
 
 R2 builds a **frame, not a feature**. Eleven of the twelve remaining roadmap entries render
 inside what this one produces, and almost nothing that will eventually sit in it belongs to
@@ -34,7 +35,7 @@ The specification fixes these. A design that changes one is wrong, not opinionat
 | **Admin navigation is hidden, never disabled** | A member's sidebar has **no** Accounts, **no** Labels and **no** `+`. Not greyed, not present-and-dead — absent. This is the mistake the specification calls out by name. (`FR-011`, `OT-UX-003`) |
 | **No team switcher** | There is one team. No control changes which team is in view. (`FR-006`, `OT-SCOPE-001`) |
 | **No search, no command palette** | Out of v1 entirely. (`OT-SCOPE-005`) |
-| **No current-page indicator** | The sidebar marks nothing as selected. No highlight, no rail, no `aria-current`. (spec *Assumptions*, research B-6) |
+| **No current-page indicator** | Nav rows — Home, Notifications, Accounts, Labels — mark nothing as selected. No highlight, no rail, no `aria-current`. The project-list region is the one exception: it may indicate the active project (design handoff — see *Design handoff*), since that reflects project scope, not page selection. (spec *Assumptions*, research B-6) |
 | **Home has no header** | The one authenticated screen that renders the sidebar and no title block, no per-screen control, no New issue. (`FR-003`, §3.2) |
 | **Three regions, and no fourth** | Sidebar, banner slot, content region. No later entry adds a region — everything R3–R12 brings renders *inside* the content region or *inside* the header's existing slots. (`FR-009`) |
 | **Viewport** | Desktop only. **No breakpoints.** Minimum page width **1280px** = 262 sidebar + 1018 content; below that the page scrolls horizontally and nothing reflows, stacks or hides. (`FR-010`, `OT-SCOPE-004`) |
@@ -99,6 +100,31 @@ since moved again to the Modernist system above.
 | `contracts/app-shell.md` names a `--color-focus` token | **There is no `--color-focus`.** R1 settled the ring as `--color-accent`; a second name that always resolves to the first is indirection with no requirement behind it |
 | `research.md` B-3 puts the new `-on-page` token at "neutral-700 `#4d525a`" | `#4d525a` is the **cool** ramp R1's design replaced. Warm neutral-700 was `#55514e`, measuring 7.03:1 on the page |
 | `research.md` B-3 says R1 measured `--color-text-muted` at 4.36:1 on `--color-page` — below AA | That figure is the cool ramp's. On the warm ramp R1 shipped, `--color-text-muted` on the page cleared AA at 4.80:1 |
+
+---
+
+## Design handoff
+
+A design handoff bundle for the app shell has been delivered and is checked in at
+[`design-handoff/`](./design-handoff/): `README.md` (the full spec as drawn), `app-shell.html`
+(open directly in a browser — admin and member shells, with Board behind them), and `styles.css`
+(the Modernist tokens and component classes it reads from). Per its own README, these are
+**design references, not shipping code** — the target is to recreate the design in this codebase's
+stack (React Aria Components, Tailwind v4 tokens), not to lift the HTML/CSS.
+
+The bundle is a fuller product reference than R2 alone — it renders populated projects and Board
+behind the shell to show busier states — so it is not scoped 1:1 to this entry's eight artboards.
+Treat it as the visual reference for the shell chrome; R2's own artboards still ship the frame
+with an empty project list (`FR-024`).
+
+**Three places where the bundle's design conflicted with this brief's fixed rules, and how each
+was resolved:**
+
+| Conflict | Resolution |
+| --- | --- |
+| The header includes a search field (`.ossrch`, `/` shortcut) | **Out of scope, unchanged.** `OT-SCOPE-005` stands — no search, no command palette. Ignore the search field when building from this reference |
+| The user chip's avatar falls back to initials on a role-coloured square when there's no `avatar_url` or it fails to load | **Now allowed**, superseding the earlier no-fallback rule. See the updated chip spec (§7) and *What this design must not add* below |
+| The active project row in the project-list region carries an accent left-border and fill | **Allowed, scoped to the project list only.** Home, Notifications, Accounts and Labels still carry no current-page indicator — this exception reflects project scope, not page selection. See the updated *No current-page indicator* rule below |
 
 ---
 
@@ -224,7 +250,7 @@ the entry.
 | State | What it must show |
 | --- | --- |
 | **With avatar** | Square avatar (radius 0), display name, sign-out control |
-| **No avatar** | `avatar_url` is optional. The chip renders **the name alone** — no initials circle, no silhouette, no substitute image of any kind. The name carries the identification |
+| **No avatar** | `avatar_url` is optional. The chip renders **initials** on a square, role-coloured fill (radius 0) in place of the image — design handoff: 28px, accent fill for admin, neutral-800 for member — alongside the name. No silhouette or generated-colour substitute (see *Design handoff*) |
 | **Avatar fails to load** | Identical to *no avatar*. The two cases are one case |
 | **Long name** | Two 200-character names cannot widen or wrap the sidebar. **Truncate visually on one line**; the untruncated name stays the control's accessible name |
 
@@ -250,11 +276,11 @@ Each of these is a real temptation and each is refused by a document, not by tas
 | | Why |
 | --- | --- |
 | A component library, or shared primitives | Principle I extracts at the **second** call site. R2 builds the shell's own components and `src/components/ui` is not created. The roadmap says so in §1.1 |
-| A current-page highlight, rail or `aria-current` | Nothing asks for one, and adding it makes the sidebar a client component to read the pathname. The entry that wants it introduces it (research B-6) |
+| A current-page highlight, rail or `aria-current` on a nav row | Nothing asks for one on Home, Notifications, Accounts or Labels, and adding it makes the sidebar a client component to read the pathname. The entry that wants it introduces it (research B-6). The project list's active-project styling is a scoped exception — see *Design handoff* |
 | A sidebar collapse or resize control | `FR-010`: no collapse, no stack, no hide, at any width |
-| A search field or command palette | `OT-SCOPE-005`, out of v1 |
+| A search field or command palette | `OT-SCOPE-005`, out of v1. The design handoff's header search field is not built (*Design handoff*) |
 | A team switcher | `FR-006`. There is one team |
-| An avatar fallback — initials, silhouette, generated colour | The spec has no basis for one; the name carries identification (spec *Edge Cases*) |
+| A silhouette or generated-colour avatar fallback | Neither has a basis in the spec. Initials are now allowed as the no-avatar / failed-load fallback (design handoff — see §7 and *Design handoff*); nothing else is |
 | An illustration or empty-state marketing anywhere | §4, and `FR-024` fixes the empty project list at one quiet line |
 | Toasts, skeletons, the connection banner, disabled-with-reason | Stated by R2, implemented by R3 or R4. They belong to no surface here — see *Deliberately absent* |
 | A second `<h1>`, or a header that is its own landmark | The sidebar is the `nav` landmark and the content region is `main`; the header is composed **inside** `main` (`FR-031`) |
