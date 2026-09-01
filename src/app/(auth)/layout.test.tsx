@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import AuthLayout from "./layout";
 
 describe("(auth) layout (research A-1, A-2, OT-UX-001)", () => {
-  it("renders a <main> landmark carrying the page background, the app mark and the card", () => {
+  it("renders a <main> landmark carrying the page background and the card", () => {
     render(
       <AuthLayout>
         <p>page content</p>
@@ -14,11 +14,10 @@ describe("(auth) layout (research A-1, A-2, OT-UX-001)", () => {
 
     const main = screen.getByRole("main");
     expect(main.className).toContain("--color-bg");
-    expect(main.textContent).toContain("One Team");
     expect(screen.getByText("page content")).not.toBeNull();
   });
 
-  it("renders the app mark as a single logo lockup, centred on the page", () => {
+  it("centres the card on the page and renders no app mark of its own", () => {
     render(
       <AuthLayout>
         <p>page content</p>
@@ -28,14 +27,8 @@ describe("(auth) layout (research A-1, A-2, OT-UX-001)", () => {
     const main = screen.getByRole("main");
     expect(main.className).toContain("items-center");
     expect(main.className).toContain("justify-center");
-
-    const mark = screen.getByText("One Team");
-    expect(mark.tagName).toBe("SPAN");
-    expect(mark.className).toContain("font-heading");
-
-    const svg = mark.parentElement?.querySelector("svg");
-    expect(svg).not.toBeNull();
-    expect(svg?.getAttribute("aria-hidden")).toBe("true");
+    expect(main.querySelector("svg")).toBeNull();
+    expect(screen.queryByText("One Team")).toBeNull();
   });
 
   it("renders the card with a 2px divider border, no radius and the page's own background", () => {
