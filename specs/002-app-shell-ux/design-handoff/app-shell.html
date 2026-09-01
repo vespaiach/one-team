@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>One Team — app shell (design reference)</title>
+<link rel="stylesheet" href="styles.css">
+<script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
+<style>
+body{margin:0;background:var(--color-bg);font-family:var(--font-body)}
+.oseyebrow{font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 55%,transparent)}
+.osnote{font-size:13px;line-height:1.55;max-width:66ch;color:color-mix(in srgb,var(--color-text) 62%,transparent);margin:22px 0 0}
+.oskey{font-family:var(--font-heading);font-weight:600;font-size:11.5px;letter-spacing:0.06em}
+.osh{font-family:var(--font-heading);font-weight:800}
+.osav{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;flex:none;background:var(--color-neutral-800);color:var(--color-bg);font-family:var(--font-heading);font-weight:800;font-size:8.5px}
+.osfr{border:1px solid var(--color-divider);background:var(--color-bg);margin-top:20px;overflow:hidden;min-width:0}
+.osfr > div{min-width:0}
+.oshdr{border-bottom:2px solid var(--color-divider);display:flex;align-items:center;gap:14px;padding:12px 18px;flex-wrap:wrap}
+.oshdr > div:first-child{flex:1 1 220px;min-width:200px}
+.ossrch{border:1px solid var(--color-divider);background:var(--color-neutral-100);padding:7px 10px;font-size:12.5px;display:flex;justify-content:space-between;gap:14px;width:140px;flex:none;color:color-mix(in srgb,var(--color-text) 55%,transparent)}
+.osbtn{display:inline-flex;align-items:center;gap:7px;font-family:var(--font-heading);font-weight:800;font-size:12.5px;padding:8px 12px;border:1px solid var(--color-divider);background:transparent;color:var(--color-text);cursor:pointer}
+.osbtn.pri{background:var(--color-accent);color:var(--color-bg);border-color:var(--color-accent)}
+.osbtn.pri:hover{background:var(--color-accent-600)}
+.osseg{display:inline-flex;border:1px solid var(--color-divider);flex:none}
+.osseg span{padding:6px 10px;font-family:var(--font-heading);font-weight:600;font-size:11px;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;border-right:1px solid var(--color-divider)}
+.osseg span:last-child{border-right:0}
+.osseg span.on{background:var(--color-accent);color:var(--color-bg)}
+.oscardm{background:var(--color-surface);padding:10px 12px}
+.osdot{width:10px;height:10px;flex:none;display:inline-block}
+.osbstrip{display:flex;flex:1;overflow-x:auto}
+.osbstrip > div{width:248px!important;flex:none!important}
+.i16,.i20,.i24{display:inline-flex;align-items:center;flex:none}
+.i16 svg{width:16px!important;height:16px!important;stroke-width:1.25}
+.i20 svg{width:20px!important;height:20px!important}
+.iacc svg{color:var(--color-accent)}
+.imut svg{color:color-mix(in srgb,var(--color-text) 62%,transparent)}
+:focus-visible{outline:2px solid var(--color-accent);outline-offset:2px}
+</style>
+</head>
+<body>
+<div style="max-width:1240px;margin:0 auto;padding:56px 40px 120px">
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+<svg width="22" height="22" viewBox="0 0 32 32" aria-label="One Team"><rect x="1" y="1" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2"></rect><polygon points="7,10.3 12,6 16.3,6 16.3,26 12,26 12,11.4 9.1,13.5" fill="var(--color-accent)"></polygon><rect x="20" y="6" width="4" height="20" fill="currentColor"></rect></svg>
+<span class="osh" style="font-size:15px">One Team</span>
+<span class="oseyebrow" style="margin-left:8px">Design reference · app shell</span>
+</div>
+<div>
+<h3 style="margin:0 0 8px">App shell</h3>
+<div class="oseyebrow" style="margin-bottom:10px">Sidebar 262px · header · content · every authenticated screen</div>
+<p style="max-width:64ch;font-size:14px;margin:0">The chrome every signed-in screen sits in, drawn twice: once as an admin sees it, once as a member does. Board sits behind it, because Board carries the busiest header — title block, grouping control, search, and New issue pinned far right. No team switcher and no breadcrumb: there is one team, and the sidebar already says which project you are in.</p>
+
+<div style="margin-top:26px">
+<div class="oseyebrow" style="margin-bottom:8px">Admin · Ana Kovač</div>
+<div class="osfr" style="margin-top:0;display:flex">
+
+<div style="width:262px;flex:none;border-right:2px solid var(--color-divider);display:flex;flex-direction:column;padding:16px 0;min-height:520px">
+<div style="display:flex;align-items:center;gap:10px;padding:0 16px 20px">
+<svg width="20" height="20" viewBox="0 0 32 32" aria-label="One Team"><rect x="1" y="1" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2"></rect><polygon points="7,10.3 12,6 16.3,6 16.3,26 12,26 12,11.4 9.1,13.5" fill="var(--color-accent)"></polygon><rect x="20" y="6" width="4" height="20" fill="currentColor"></rect></svg>
+<span class="osh" style="font-size:15px">One Team</span>
+</div>
+<div style="display:flex;align-items:center;gap:10px;padding:8px 16px;font-size:14px"><span class="i20"><i data-lucide="home"></i></span>Home</div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:20px 16px 6px;border-bottom:1px solid var(--color-divider)">
+<span class="oseyebrow">Projects</span>
+<span class="i20 iacc" style="cursor:pointer"><i data-lucide="plus"></i></span>
+</div>
+<div style="display:flex;align-items:center;gap:10px;padding:8px 14px;font-size:14px;background:var(--color-surface);border-left:2px solid var(--color-accent)"><span class="osdot" style="background:var(--color-accent)"></span><span class="osh">Website Redesign</span><span class="oskey text-muted" style="margin-left:auto">WEB</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:14px"><span class="osdot" style="background:var(--color-neutral-900)"></span>Design Ops<span class="oskey text-muted" style="margin-left:auto">OTDO</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:14px"><span class="osdot" style="background:var(--color-neutral-700)"></span>Platform Migration<span class="oskey text-muted" style="margin-left:auto">PLAT</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:14px"><span class="osdot" style="background:var(--color-neutral-500)"></span>Docs &amp; Guides<span class="oskey text-muted" style="margin-left:auto">DOCS</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:14px;opacity:.45"><span class="osdot" style="background:var(--color-neutral-400)"></span>Billing v2<span class="oseyebrow" style="margin-left:auto">archived</span></div>
+<div style="height:2px;background:var(--color-divider);margin:16px 0"></div>
+<div style="display:flex;align-items:center;gap:10px;padding:8px 16px;font-size:14px"><span class="i20"><i data-lucide="bell"></i></span>Notifications<span class="osh" style="margin-left:auto;background:var(--color-accent);color:var(--color-bg);font-size:11px;padding:1px 7px">4</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:8px 16px;font-size:14px"><span class="i20"><i data-lucide="users"></i></span>Accounts<span class="oseyebrow" style="margin-left:auto">admin</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:8px 16px;font-size:14px"><span class="i20"><i data-lucide="tag"></i></span>Labels<span class="oseyebrow" style="margin-left:auto">admin</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:14px 16px 0;margin-top:auto;border-top:2px solid var(--color-divider);cursor:pointer">
+<span class="osav" style="width:28px;height:28px;font-size:10px;background:var(--color-accent)">AK</span>
+<div style="min-width:0"><div class="osh" style="font-size:13px">Ana Kovač</div><div style="font-size:11px" class="text-muted">admin · Profile</div></div>
+<span class="i16 imut" style="margin-left:auto;cursor:pointer"><i data-lucide="log-out"></i></span>
+</div>
+</div>
+
+<div style="flex:1;min-width:0;display:flex;flex-direction:column">
+<div class="oshdr">
+<div style="flex:1 1 240px;min-width:220px">
+<div style="display:flex;align-items:center;gap:9px"><span class="osdot" style="background:var(--color-accent)"></span><span class="osh" style="font-size:16px">Website Redesign</span><span class="oskey text-muted">WEB</span></div>
+<div style="font-size:12px;margin-top:3px" class="text-muted">32 issues · 5 members · target 12 Sep</div>
+</div>
+<div class="osseg"><span class="on" style="display:inline-flex;align-items:center;gap:6px"><span class="i16"><i data-lucide="columns"></i></span>Column</span><span style="display:inline-flex;align-items:center;gap:6px"><span class="i16 imut"><i data-lucide="user"></i></span>Assignee</span><span style="display:inline-flex;align-items:center;gap:6px"><span class="i16 imut"><i data-lucide="signal-high"></i></span>Priority</span></div>
+<div class="ossrch" style="width:110px"><span style="display:inline-flex;align-items:center;gap:7px"><span class="i16 imut"><i data-lucide="search"></i></span>Search</span><span class="oskey">/</span></div>
+<button class="osbtn pri"><span class="i16"><i data-lucide="plus"></i></span>New issue</button>
+</div>
+<div class="osbstrip">
+<div style="flex:1;min-width:0;border-right:1px solid var(--color-divider)"><div style="display:flex;align-items:center;gap:8px;padding:11px 13px;border-bottom:1px solid var(--color-divider)"><span class="osdot" style="background:var(--color-neutral-400)"></span><span class="osh" style="font-size:13px">Backlog</span><span class="oskey text-muted">12</span></div><div style="padding:11px;display:flex;flex-direction:column;gap:9px"><div class="oscardm"><div class="oskey text-muted" style="margin-bottom:5px">WEB-151</div><div class="osh" style="font-size:13px;line-height:1.3">Rate-limit the reset endpoint</div></div><div class="oscardm"><div class="oskey text-muted" style="margin-bottom:5px">WEB-149</div><div class="osh" style="font-size:13px;line-height:1.3;margin-bottom:8px">Seeded admin banner copy</div><div style="display:flex;align-items:center;gap:8px"><span class="tag tag-neutral">docs</span><span class="osav" style="margin-left:auto;background:var(--color-neutral-600)">TB</span></div></div></div></div>
+<div style="flex:1;min-width:0;border-right:1px solid var(--color-divider)"><div style="display:flex;align-items:center;gap:8px;padding:11px 13px;border-bottom:1px solid var(--color-divider)"><span class="osdot" style="background:var(--color-neutral-600)"></span><span class="osh" style="font-size:13px">Todo</span><span class="oskey text-muted">7</span></div><div style="padding:11px;display:flex;flex-direction:column;gap:9px"><div class="oscardm"><div class="oskey text-muted" style="margin-bottom:5px">WEB-142</div><div class="osh" style="font-size:13px;line-height:1.3;margin-bottom:8px">Board drag drops the card back on refresh</div><div style="display:flex;align-items:center;gap:8px"><span class="tag tag-accent">bug</span><span class="osav" style="margin-left:auto;background:var(--color-accent)">AK</span></div></div></div></div>
+<div style="flex:1;min-width:0;border-right:1px solid var(--color-divider)"><div style="display:flex;align-items:center;gap:8px;padding:11px 13px;border-bottom:1px solid var(--color-divider)"><span class="osdot" style="background:var(--color-neutral-800)"></span><span class="osh" style="font-size:13px">In Progress</span><span class="oskey text-muted">5</span></div><div style="padding:11px;display:flex;flex-direction:column;gap:9px"><div class="oscardm"><div class="oskey text-muted" style="margin-bottom:5px">WEB-127</div><div class="osh" style="font-size:13px;line-height:1.3;margin-bottom:8px">Mention autocomplete lists members first</div><div style="display:flex;align-items:center;gap:8px"><span class="osav" style="margin-left:auto;background:var(--color-neutral-800)">TM</span></div></div></div></div>
+<div style="flex:1;min-width:0;border-right:1px solid var(--color-divider)"><div style="display:flex;align-items:center;gap:8px;padding:11px 13px;border-bottom:1px solid var(--color-divider)"><span class="osdot" style="background:var(--color-neutral-900)"></span><span class="osh" style="font-size:13px">In Review</span><span class="oskey text-muted">3</span></div><div style="padding:11px;display:flex;flex-direction:column;gap:9px"><div class="oscardm"><div class="oskey text-muted" style="margin-bottom:5px">WEB-118</div><div class="osh" style="font-size:13px;line-height:1.3">Column reorder writes sort_order</div></div></div></div>
+<div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:8px;padding:11px 13px;border-bottom:1px solid var(--color-divider)"><span class="osdot" style="background:var(--color-accent)"></span><span class="osh" style="font-size:13px">Done</span><span class="oskey text-muted">5</span></div><div style="padding:11px;display:flex;flex-direction:column;gap:9px"><div class="oscardm"><div class="oskey text-muted" style="margin-bottom:5px">WEB-110</div><div class="osh" style="font-size:13px;line-height:1.3">Invite acceptance sets the password</div></div></div></div>
+</div>
+</div>
+</div>
+<p class="osnote">Nine entries and no more: the mark, Home, the five projects flat with a colour dot, Notifications with its unread count, Accounts, Labels, and the user chip. Accounts and Labels carry an admin tag rather than sitting under a Settings parent — two screens do not need a section. The chip at the foot is the link to Profile; sign out is the icon beside it, not a menu.</p>
+</div>
+
+<div style="margin-top:34px">
+<div class="oseyebrow" style="margin-bottom:8px">Member · Tomáš Marek</div>
+<div class="osfr" style="margin-top:0;display:flex">
+
+<div style="width:262px;flex:none;border-right:2px solid var(--color-divider);display:flex;flex-direction:column;padding:16px 0;min-height:520px">
+<div style="display:flex;align-items:center;gap:10px;padding:0 16px 20px">
+<svg width="20" height="20" viewBox="0 0 32 32" aria-label="One Team"><rect x="1" y="1" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2"></rect><polygon points="7,10.3 12,6 16.3,6 16.3,26 12,26 12,11.4 9.1,13.5" fill="var(--color-accent)"></polygon><rect x="20" y="6" width="4" height="20" fill="currentColor"></rect></svg>
+<span class="osh" style="font-size:15px">One Team</span>
+</div>
+<div style="display:flex;align-items:center;gap:10px;padding:8px 16px;font-size:14px"><span class="i20"><i data-lucide="home"></i></span>Home</div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:20px 16px 6px;border-bottom:1px solid var(--color-divider)">
+<span class="oseyebrow">Projects</span>
+</div>
+<div style="display:flex;align-items:center;gap:10px;padding:8px 14px;font-size:14px;background:var(--color-surface);border-left:2px solid var(--color-accent)"><span class="osdot" style="background:var(--color-accent)"></span><span class="osh">Website Redesign</span><span class="oskey text-muted" style="margin-left:auto">WEB</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:14px"><span class="osdot" style="background:var(--color-neutral-900)"></span>Design Ops<span class="oskey text-muted" style="margin-left:auto">OTDO</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:14px"><span class="osdot" style="background:var(--color-neutral-700)"></span>Platform Migration<span class="oskey text-muted" style="margin-left:auto">PLAT</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:14px"><span class="osdot" style="background:var(--color-neutral-500)"></span>Docs &amp; Guides<span class="oskey text-muted" style="margin-left:auto">DOCS</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:14px;opacity:.45"><span class="osdot" style="background:var(--color-neutral-400)"></span>Billing v2<span class="oseyebrow" style="margin-left:auto">archived</span></div>
+<div style="height:2px;background:var(--color-divider);margin:16px 0"></div>
+<div style="display:flex;align-items:center;gap:10px;padding:8px 16px;font-size:14px"><span class="i20"><i data-lucide="bell"></i></span>Notifications<span class="osh" style="margin-left:auto;background:var(--color-accent);color:var(--color-bg);font-size:11px;padding:1px 7px">2</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:14px 16px 0;margin-top:auto;border-top:2px solid var(--color-divider);cursor:pointer">
+<span class="osav" style="width:28px;height:28px;font-size:10px;background:var(--color-neutral-800)">TM</span>
+<div style="min-width:0"><div class="osh" style="font-size:13px">Tomáš Marek</div><div style="font-size:11px" class="text-muted">member · Profile</div></div>
+<span class="i16 imut" style="margin-left:auto;cursor:pointer"><i data-lucide="log-out"></i></span>
+</div>
+</div>
+
+<div style="flex:1;min-width:0;display:flex;flex-direction:column">
+<div class="oshdr">
+<div style="flex:1 1 240px;min-width:220px">
+<div style="display:flex;align-items:center;gap:9px"><span class="osdot" style="background:var(--color-accent)"></span><span class="osh" style="font-size:16px">Website Redesign</span><span class="oskey text-muted">WEB</span></div>
+<div style="font-size:12px;margin-top:3px" class="text-muted">32 issues · 5 members · target 12 Sep</div>
+</div>
+<div class="osseg"><span class="on" style="display:inline-flex;align-items:center;gap:6px"><span class="i16"><i data-lucide="columns"></i></span>Column</span><span style="display:inline-flex;align-items:center;gap:6px"><span class="i16 imut"><i data-lucide="user"></i></span>Assignee</span><span style="display:inline-flex;align-items:center;gap:6px"><span class="i16 imut"><i data-lucide="signal-high"></i></span>Priority</span></div>
+<button class="osbtn" style="padding:8px 10px" aria-label="Search"><span class="i16 imut"><i data-lucide="search"></i></span></button>
+<button class="osbtn pri"><span class="i16"><i data-lucide="plus"></i></span>New issue</button>
+</div>
+<div class="osbstrip">
+<div style="flex:1;min-width:0;border-right:1px solid var(--color-divider)"><div style="display:flex;align-items:center;gap:8px;padding:11px 13px;border-bottom:1px solid var(--color-divider)"><span class="osdot" style="background:var(--color-neutral-400)"></span><span class="osh" style="font-size:13px">Backlog</span><span class="oskey text-muted">12</span></div><div style="padding:11px;display:flex;flex-direction:column;gap:9px"><div class="oscardm"><div class="oskey text-muted" style="margin-bottom:5px">WEB-151</div><div class="osh" style="font-size:13px;line-height:1.3">Rate-limit the reset endpoint</div></div><div class="oscardm"><div class="oskey text-muted" style="margin-bottom:5px">WEB-149</div><div class="osh" style="font-size:13px;line-height:1.3;margin-bottom:8px">Seeded admin banner copy</div><div style="display:flex;align-items:center;gap:8px"><span class="tag tag-neutral">docs</span><span class="osav" style="margin-left:auto;background:var(--color-neutral-600)">TB</span></div></div></div></div>
+<div style="flex:1;min-width:0;border-right:1px solid var(--color-divider)"><div style="display:flex;align-items:center;gap:8px;padding:11px 13px;border-bottom:1px solid var(--color-divider)"><span class="osdot" style="background:var(--color-neutral-600)"></span><span class="osh" style="font-size:13px">Todo</span><span class="oskey text-muted">7</span></div><div style="padding:11px;display:flex;flex-direction:column;gap:9px"><div class="oscardm"><div class="oskey text-muted" style="margin-bottom:5px">WEB-142</div><div class="osh" style="font-size:13px;line-height:1.3;margin-bottom:8px">Board drag drops the card back on refresh</div><div style="display:flex;align-items:center;gap:8px"><span class="tag tag-accent">bug</span><span class="osav" style="margin-left:auto;background:var(--color-accent)">AK</span></div></div></div></div>
+<div style="flex:1;min-width:0;border-right:1px solid var(--color-divider)"><div style="display:flex;align-items:center;gap:8px;padding:11px 13px;border-bottom:1px solid var(--color-divider)"><span class="osdot" style="background:var(--color-neutral-800)"></span><span class="osh" style="font-size:13px">In Progress</span><span class="oskey text-muted">5</span></div><div style="padding:11px;display:flex;flex-direction:column;gap:9px"><div class="oscardm" style="border-left:2px solid var(--color-accent)"><div class="oskey text-muted" style="margin-bottom:5px">WEB-127</div><div class="osh" style="font-size:13px;line-height:1.3;margin-bottom:8px">Mention autocomplete lists members first</div><div style="display:flex;align-items:center;gap:8px"><span class="osav" style="margin-left:auto;background:var(--color-neutral-800)">TM</span></div></div></div></div>
+<div style="flex:1;min-width:0;border-right:1px solid var(--color-divider)"><div style="display:flex;align-items:center;gap:8px;padding:11px 13px;border-bottom:1px solid var(--color-divider)"><span class="osdot" style="background:var(--color-neutral-900)"></span><span class="osh" style="font-size:13px">In Review</span><span class="oskey text-muted">3</span></div><div style="padding:11px;display:flex;flex-direction:column;gap:9px"><div class="oscardm"><div class="oskey text-muted" style="margin-bottom:5px">WEB-118</div><div class="osh" style="font-size:13px;line-height:1.3">Column reorder writes sort_order</div></div></div></div>
+<div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:8px;padding:11px 13px;border-bottom:1px solid var(--color-divider)"><span class="osdot" style="background:var(--color-accent)"></span><span class="osh" style="font-size:13px">Done</span><span class="oskey text-muted">5</span></div><div style="padding:11px;display:flex;flex-direction:column;gap:9px"><div class="oscardm"><div class="oskey text-muted" style="margin-bottom:5px">WEB-110</div><div class="osh" style="font-size:13px;line-height:1.3">Invite acceptance sets the password</div></div></div></div>
+</div>
+</div>
+</div>
+<p class="osnote">One difference, and it is a removal: Accounts and Labels are gone, and with them the plus beside Projects — creating a project is admin-only. Everything else is identical. The same five projects, because everyone reads every project; the same New issue button, because Tomáš is a member of this one. Search shows its collapsed form here: the field gives up its width to the icon when the per-screen control needs the room.</p>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:30px;border-top:2px solid var(--color-divider);padding-top:22px">
+<div><div class="oseyebrow" style="margin-bottom:8px">Sidebar</div><p style="margin:0;font-size:13px;line-height:1.55">262px fixed, never collapsible. Projects sit flat with a colour dot, active first; archived ones stay in the list at 45% rather than hiding, so a project never silently disappears.</p></div>
+<div><div class="oseyebrow" style="margin-bottom:8px">Header</div><p style="margin:0;font-size:13px;line-height:1.55">Title block, then at most one per-screen control, then search, then New issue. Screens with nothing to control leave the middle empty — Home drops the header entirely.</p></div>
+<div><div class="oseyebrow" style="margin-bottom:8px">Role</div><p style="margin:0;font-size:13px;line-height:1.55">The shell hides only what a role has no screen for. Actions a role cannot take render disabled with a reason on the screen itself, never quietly removed from the chrome.</p></div>
+</div>
+</div>
+</div>
+</div>
+<script>window.lucide && lucide.createIcons();</script>
+</body>
+</html>
