@@ -46,31 +46,38 @@ The specification fixes these. A design that changes one is wrong, not opinionat
 
 ## What R1 already settled — do not re-propose
 
+**Superseded by the Modernist system.** This section originally recapped R1's `#5b5bd6` / warm-ramp
+token block. The product has since moved to the Modernist system in `src/app/globals.css` —
+monochrome red-orange, a nine-step neutral ramp, nine named type steps — and the table below is
+updated to match it. The *Three corrections* subsection is R1-era history (a stale `research.md`
+figure against a ramp that no longer ships) and is left as a record rather than rewritten again.
+
 The shipped `@theme inline` block. Design against it; extend it only where §*Decisions* below asks.
 
 **Colour, semantic layer only** — nothing names a ramp step and nothing names a hex.
 
 | Token | Points at | Job in R2 |
 | --- | --- | --- |
-| `--color-page` | neutral-100 `#f4f2f0` | **The sidebar's fill** |
-| `--color-surface` | `#ffffff` | **The content region's fill** |
-| `--color-surface-sunken` | neutral-50 `#fbfaf9` | Neutral message grounds |
-| `--color-border` | neutral-300 `#d7d3cf` | The sidebar / content divider, and any rule inside the sidebar — decorative only |
-| `--color-border-control` | neutral-500 `#8f8a86` | Anything a user has to aim at |
-| `--color-text` | neutral-900 `#24211f` | Sidebar entries, headings, the display name |
-| `--color-text-muted` | neutral-600 `#6e6a66` | The quiet line, secondary copy |
-| `--color-accent` | accent-500 `#5b5bd6` | **The focus ring** — see the correction below |
-| `--color-accent-text` | accent-700 `#3c3c9c` | Links at body size |
-| `--color-advisory` / `-fill` / `-text` | amber 500 / 100 / 700 | The must-change-password banner |
+| `--color-bg` | role `#f3f2f2` | **The sidebar's fill** |
+| `--color-surface` | role `#eae9e9` | **The content region's fill** |
+| `--color-surface-sunken` | neutral-100 `#f8f4f4` | Neutral message grounds |
+| `--color-border` | `--color-divider` (translucent) | The sidebar / content divider, and any rule inside the sidebar — decorative only |
+| `--color-border-control` | neutral-600 `#7d7979` | Anything a user has to aim at |
+| `--color-text` | role `#201e1d` | Sidebar entries, headings, the display name |
+| `--color-text-muted` | neutral-700 `#605d5d` | The quiet line, secondary copy |
+| `--color-accent` | role `#ec3013` | **The focus ring** — non-text use only, see R1's correction |
+| `--color-accent-fill` | accent-600 `#dd2b0f` | Any filled control carrying text — one ramp step darker than the role, so white text clears 4.5:1 |
+| `--color-accent-text` | accent-700 `#ae1800` | Links at body size |
+| `--color-advisory` / `-fill` / `-text` | accent-2-600 / accent-2-100 / accent-2-800 | The must-change-password banner — no longer amber, the muted accent-2 family |
 
-**Type** — Archivo, six steps, absolute line heights. `title` (22 / 28 / 600 / −0.01em) was
-declared by R1 and used by no R1 surface — **it is reserved for this frame's `<h1>`**.
+**Type** — Archivo, nine named steps, absolute line heights. `h3` (25 / 1.12 / 800 / −0.015em) is
+what this frame's `<h1>` uses (R1's reserved `title` step, renamed and resized).
 
-| `display` 32/36/700 | `title` 22/28/600 | `control` 16/24/500 | `body` 15/24/400 | `small` 13/20/400 | `micro` 11/16/600 caps |
-| --- | --- | --- | --- | --- | --- |
+| `h2` 32/1.12/800 | `h3` 25/1.12/800 | `control` 14/24/500 | `body` 15/1.55/400 | `label` 12/20/400 |
+| --- | --- | --- | --- | --- |
 
-**Space** — 4px unit. R1 used 4 · 8 · 12 · 16 · 20 · 24 · 32 and **reserved 48 and 64 for this
-entry's shell gutters and page sections**.
+**Space** — 4px unit, unchanged. R1 used 4 · 8 · 12 · 16 · 20 · 24 · 32 and **reserved 48 and 64 for
+this entry's shell gutters and page sections**.
 
 **Geometry** — radius **0** everywhere. Nothing in this product has a rounded corner, including
 the avatar.
@@ -84,13 +91,14 @@ layout.
 ### Three corrections to carry into the design
 
 R2's planning documents were written before R1's design returned and cite three superseded
-values. Design against the right-hand column.
+values, against the ramp R1 originally shipped. Kept as a historical record; the ramp itself has
+since moved again to the Modernist system above.
 
-| Document says | Shipped, and binding |
+| Document says | Shipped at the time, and binding |
 | --- | --- |
 | `contracts/app-shell.md` names a `--color-focus` token | **There is no `--color-focus`.** R1 settled the ring as `--color-accent`; a second name that always resolves to the first is indirection with no requirement behind it |
-| `research.md` B-3 puts the new `-on-page` token at "neutral-700 `#4d525a`" | `#4d525a` is the **cool** ramp R1's design replaced. Warm neutral-700 is **`#55514e`**, and it measures **7.03:1** on `--color-page` |
-| `research.md` B-3 says R1 measured `--color-text-muted` at 4.36:1 on `--color-page` — below AA | That figure is the cool ramp's. On the **warm** ramp shipped, `--color-text-muted` on `--color-page` is **4.80:1** and clears AA. See decision 7 — the new token may not be needed at all |
+| `research.md` B-3 puts the new `-on-page` token at "neutral-700 `#4d525a`" | `#4d525a` is the **cool** ramp R1's design replaced. Warm neutral-700 was `#55514e`, measuring 7.03:1 on the page |
+| `research.md` B-3 says R1 measured `--color-text-muted` at 4.36:1 on `--color-page` — below AA | That figure is the cool ramp's. On the warm ramp R1 shipped, `--color-text-muted` on the page cleared AA at 4.80:1 |
 
 ---
 
@@ -121,7 +129,7 @@ every measurement below is legible in one place.
 │ ─────────────────    │                                         │
 │ [av] Ada Lovelace  ⏻ │                                         │
 └──────────────────────┴─────────────────────────────────────────┘
-   --color-page              --color-surface
+   --color-bg                --color-surface
 ```
 
 - The sidebar is **full viewport height**; the chip is **pinned to its bottom edge**, not last in
@@ -292,11 +300,11 @@ Return an explicit value for each.
    indicator, so a hover treatment that reads as "selected" will be read as one on a sidebar where
    nothing is ever selected. Hover must read as *hover*.
 
-3. **The sidebar / content boundary.** The two fills are `--color-page` and `--color-surface` — a
-   contrast of **1.12:1** — and the divider at `--color-border` is **1.49:1** on white. Both are
-   decorative and neither is required to meet a ratio, but this is the frame's primary structural
-   line and it runs the full height of every screen in the product. Is that boundary enough? If
-   not, what carries it?
+3. **The sidebar / content boundary.** The two fills are `--color-bg` and `--color-surface` — a
+   contrast of **1.08:1** — and the divider at `--color-border` (a translucent mix, not a flat step)
+   composites to roughly **2.4:1** against either fill. Both are decorative and neither is required
+   to meet a ratio, but this is the frame's primary structural line and it runs the full height of
+   every screen in the product. Is that boundary enough? If not, what carries it?
 
 4. **The user chip.** The three-part layout in 262px, the avatar's size (square, radius 0), and
    what the sign-out control is — a text label, a glyph, or a glyph with a visible label. Where
@@ -314,10 +322,10 @@ Return an explicit value for each.
    than that?
 
 7. **Whether `--color-text-muted-on-page` is added at all.** R2's contract adds one token for the
-   quiet empty line, prescribed against R1's superseded cool ramp. On the warm ramp that shipped,
-   `--color-text-muted` measures **4.80:1** on `--color-page` and already clears AA, so the token
-   may be unnecessary. The margin is thin (4.80 against a 4.50 floor) and neutral-700 `#55514e`
-   would give **7.03:1**. Decide, and say which.
+   quiet empty line, prescribed against a ramp that has since changed twice. On the Modernist
+   neutral ramp now shipped, `--color-text-muted` (neutral-700) measures **5.83:1** on `--color-bg`
+   and clears AA with a comfortable margin — wider than either earlier ramp managed — so the token
+   looks even less necessary now than when this decision was first raised. Decide, and say which.
 
 8. **The New issue slot's reserve.** `FR-013` will eventually render New issue **disabled with an
    inline reason beside it** — "Only project members can create issues in Website Redesign" — not
@@ -328,18 +336,17 @@ Return an explicit value for each.
 
 ## Contrast — the pairs R2 introduces
 
-R1 measured everything on `--color-surface`. R2 puts text on `--color-page` for the first time, at
-full height. Target is **WCAG 2.2 AA**.
+R1 measured everything on `--color-surface`. R2 puts text on `--color-bg` for the first time, at
+full height. Target is **WCAG 2.2 AA**. Values below are against the Modernist palette now shipped.
 
 | Pair | Ratio | Needs | |
 | --- | --- | --- | --- |
-| `--color-text` on `--color-page` — every sidebar entry, the display name | 14.33:1 | 4.5:1 | pass |
-| `--color-text-muted` on `--color-page` — the quiet empty line | 4.80:1 | 4.5:1 | pass, thin |
-| neutral-700 `#55514e` on `--color-page` — the `-on-page` alternative | 7.03:1 | 4.5:1 | pass |
-| Focus ring `--color-accent` on `--color-page` | 4.81:1 | 3:1 | pass |
-| `--color-border` on `--color-page` — the divider, decorative | 1.33:1 | — | n/a |
-| `--color-border` on `--color-surface` — the divider, decorative | 1.49:1 | — | n/a |
-| `--color-page` against `--color-surface` — the fill change at the boundary | 1.12:1 | — | n/a, see decision 3 |
+| `--color-text` on `--color-bg` — every sidebar entry, the display name | 14.86:1 | 4.5:1 | pass |
+| `--color-text-muted` on `--color-bg` — the quiet empty line | 5.83:1 | 4.5:1 | pass |
+| Focus ring `--color-accent` on `--color-bg` | 3.76:1 | 3:1 | pass |
+| `--color-border` on `--color-bg` — the divider, decorative, composited | ~2.41:1 | — | n/a |
+| `--color-border` on `--color-surface` — the divider, decorative, composited | ~2.38:1 | — | n/a |
+| `--color-bg` against `--color-surface` — the fill change at the boundary | 1.08:1 | — | n/a, see decision 3 |
 
 Any pair the design introduces beyond these must be measured. `src/app/globals.test.ts` asserts
 every declared pair directly against `globals.css` and fails the build gate if one drops below its

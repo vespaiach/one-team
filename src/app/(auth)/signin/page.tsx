@@ -9,7 +9,7 @@ export default async function SignInPage({ searchParams }: PageProps<"/signin">)
 
   return (
     <>
-      <h1 className="text-heading font-semibold text-[var(--color-text)]">Sign in</h1>
+      <h1 className="text-h3">Sign in</h1>
       {showResetBanner && (
         <output className="text-[var(--color-success)]">
           Your password has been changed. Sign in with it now.
