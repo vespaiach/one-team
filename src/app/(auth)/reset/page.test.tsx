@@ -1,15 +1,19 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ResetTokenRecord } from "@/features/auth/server/reset-tokens";
 
 vi.mock("@/features/auth/server/reset-tokens", () => ({
   resolveResetTokenState: vi.fn(),
+}));
+vi.mock("@/features/auth/server/credentials", () => ({
+  getUserEmail: vi.fn(),
 }));
 vi.mock("@/features/auth/actions", () => ({
   completePasswordReset: vi.fn(),
   requestPasswordReset: vi.fn(),
 }));
 
+import { getUserEmail } from "@/features/auth/server/credentials";
 import { resolveResetTokenState } from "@/features/auth/server/reset-tokens";
 import ResetPage from "./page";
 
@@ -21,6 +25,10 @@ const RESET_TOKEN_ROW: ResetTokenRecord = {
   usedAt: null,
   createdAt: new Date("2026-01-01T00:00:00.000Z"),
 };
+
+afterEach(() => {
+  vi.clearAllMocks();
+});
 
 describe("/reset page (FR-030, FR-034, FR-067)", () => {
   it("renders the reset-request form when no token is present", async () => {
@@ -49,12 +57,33 @@ describe("/reset page (FR-030, FR-034, FR-067)", () => {
 
   it("resolves a well-shaped token server-side and renders the form for a valid token", async () => {
     vi.mocked(resolveResetTokenState).mockResolvedValue({ state: "valid", resetToken: RESET_TOKEN_ROW });
+    vi.mocked(getUserEmail).mockResolvedValue("jo@oneteam.io");
 
     const jsx = await ResetPage({ searchParams: Promise.resolve({ token: "a".repeat(43) }) });
     render(jsx);
 
     expect(screen.getByLabelText("New password")).not.toBeNull();
     expect(resolveResetTokenState).toHaveBeenCalledWith("a".repeat(43));
+  });
+
+  it("names the token owner's address on the valid-token form", async () => {
+    vi.mocked(resolveResetTokenState).mockResolvedValue({ state: "valid", resetToken: RESET_TOKEN_ROW });
+    vi.mocked(getUserEmail).mockResolvedValue("jo@oneteam.io");
+
+    const jsx = await ResetPage({ searchParams: Promise.resolve({ token: "a".repeat(43) }) });
+    render(jsx);
+
+    expect(screen.getByText("jo@oneteam.io")).not.toBeNull();
+    expect(getUserEmail).toHaveBeenCalledWith(RESET_TOKEN_ROW.userId);
+  });
+
+  it("does not look up an owner address for a dead token", async () => {
+    vi.mocked(resolveResetTokenState).mockResolvedValue({ state: "expired", resetToken: RESET_TOKEN_ROW });
+
+    const jsx = await ResetPage({ searchParams: Promise.resolve({ token: "a".repeat(43) }) });
+    render(jsx);
+
+    expect(getUserEmail).not.toHaveBeenCalled();
   });
 
   it("renders the expired notice for a token the server resolves as expired", async () => {

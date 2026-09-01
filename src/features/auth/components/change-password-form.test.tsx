@@ -3,18 +3,19 @@ import { describe, expect, it, vi } from "vitest";
 import type { CompletePasswordResetState } from "../actions";
 import { ChangePasswordForm } from "./change-password-form";
 
-function renderForm(initialState: CompletePasswordResetState, action = vi.fn()) {
+function renderForm(initialState: CompletePasswordResetState, action = vi.fn(), email?: string) {
   render(
     <ChangePasswordForm
       action={action}
       initialState={initialState}
+      email={email}
     />,
   );
   return action;
 }
 
 function submit() {
-  const form = screen.getByRole("button", { name: /change password/i }).closest("form");
+  const form = screen.getByRole("button", { name: /save password/i }).closest("form");
   if (!form) {
     throw new Error("no form found");
   }
@@ -22,11 +23,34 @@ function submit() {
 }
 
 describe("ChangePasswordForm (FR-034, FR-035, FR-036, OT-SEC-016)", () => {
-  it("renders New password and Confirm password fields", () => {
+  it("renders the title, New password and Confirm password fields, and the Save password control", () => {
     renderForm({ status: "idle" });
 
+    expect(screen.getByRole("heading", { name: "Set a new password" })).not.toBeNull();
     expect(screen.getByLabelText("New password")).not.toBeNull();
     expect(screen.getByLabelText("Confirm password")).not.toBeNull();
+    expect(screen.getByRole("button", { name: /save password/i })).not.toBeNull();
+  });
+
+  it("names the address the link is bound to when given one", () => {
+    renderForm({ status: "idle" }, vi.fn(), "jo@oneteam.io");
+
+    expect(screen.getByText("jo@oneteam.io").tagName).toBe("B");
+    expect(screen.getByText(/this link is single-use/i)).not.toBeNull();
+  });
+
+  it("shows the twelve-character hint under New password until it is invalid", () => {
+    renderForm({ status: "idle" });
+
+    expect(screen.getByText(/twelve characters minimum/i)).not.toBeNull();
+  });
+
+  it("carries the sign-out footer note", () => {
+    renderForm({ status: "idle" });
+
+    expect(
+      screen.getByText("Saving signs out every session on this account, including this browser."),
+    ).not.toBeNull();
   });
 
   it("shows an inline mismatch error on Confirm password when the two fields differ", async () => {
@@ -76,40 +100,48 @@ describe("ChangePasswordForm (FR-034, FR-035, FR-036, OT-SEC-016)", () => {
     expect(await screen.findByText(/too common/i)).not.toBeNull();
   });
 
-  it("renders a distinguishable expired-token notice with a route back to /reset", () => {
+  it("renders a distinguishable expired-token notice as a banner, with a route back to /reset", () => {
     renderForm({ status: "expired" });
 
-    expect(screen.getByText("This link has expired. Reset links last one hour.")).not.toBeNull();
+    const banner = screen.getByRole("alert");
+    expect(banner.textContent).toContain("This link has expired. Reset links last one hour.");
     const link = screen.getByRole("link", { name: /request a new link/i });
     expect(link.getAttribute("href")).toBe("/reset");
   });
 
-  it("renders a distinguishable used-token notice with a route back to /reset", () => {
+  it("renders a distinguishable used-token notice as a banner, with a route back to /reset", () => {
     renderForm({ status: "used" });
 
-    expect(
-      screen.getByText("This link has already been used. Your password was changed with it."),
-    ).not.toBeNull();
+    const banner = screen.getByRole("alert");
+    expect(banner.textContent).toContain(
+      "This link has already been used. Your password was changed with it.",
+    );
     const link = screen.getByRole("link", { name: /request a new link/i });
     expect(link.getAttribute("href")).toBe("/reset");
   });
 
-  it("renders a distinguishable unknown-token notice with a route back to /reset", () => {
+  it("renders a distinguishable unknown-token notice as a banner, with a route back to /reset", () => {
     renderForm({ status: "unknown" });
 
-    expect(
-      screen.getByText(
-        "This link isn't one we recognise. Check the whole address came across from the email.",
-      ),
-    ).not.toBeNull();
+    const banner = screen.getByRole("alert");
+    expect(banner.textContent).toContain(
+      "This link isn't one we recognise. Check the whole address came across from the email.",
+    );
     const link = screen.getByRole("link", { name: /request a new link/i });
     expect(link.getAttribute("href")).toBe("/reset");
+  });
+
+  it("also links back to sign in from a dead-token card", () => {
+    renderForm({ status: "expired" });
+
+    const link = screen.getByRole("link", { name: /back to sign in/i });
+    expect(link.getAttribute("href")).toBe("/signin");
   });
 
   it("no form renders once the token state is expired, used or unknown", () => {
     renderForm({ status: "expired" });
 
     expect(screen.queryByLabelText("New password")).toBeNull();
-    expect(screen.queryByRole("button", { name: /change password/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /save password/i })).toBeNull();
   });
 });
