@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { credential, user } from "@/db/schema";
 import { testDb, truncateTestDatabase } from "@/db/test-database";
-import { findSignInCandidate } from "./credentials";
+import { findSignInCandidate, getUserEmail } from "./credentials";
 
 async function insertUser(overrides: Partial<typeof user.$inferInsert> = {}) {
   const now = new Date();
@@ -72,5 +72,20 @@ describe("findSignInCandidate (FR-013, FR-062)", () => {
     const candidate = await findSignInCandidate(owner.email);
 
     expect(candidate?.deactivatedAt?.getTime()).toBe(deactivatedAt.getTime());
+  });
+});
+
+describe("getUserEmail", () => {
+  it("returns the address for a known user id", async () => {
+    await truncateTestDatabase();
+    const owner = await insertUser({ email: "jo@oneteam.io" });
+
+    await expect(getUserEmail(owner.id)).resolves.toBe("jo@oneteam.io");
+  });
+
+  it("returns null for an id matching no user", async () => {
+    await truncateTestDatabase();
+
+    await expect(getUserEmail("0198c1c0-0000-7000-8000-000000000000")).resolves.toBeNull();
   });
 });

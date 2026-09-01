@@ -3,9 +3,15 @@
 import { useActionState } from "react";
 import { Button } from "react-aria-components/Button";
 import { Form } from "react-aria-components/Form";
-import { FieldError, Input, Label, TextField } from "react-aria-components/TextField";
+import { Link } from "react-aria-components/Link";
 import type { CompletePasswordResetAction, CompletePasswordResetState } from "../actions";
 import type { PasswordPolicyFailure } from "../server/password-policy";
+import { BackToSignInFooter } from "./back-to-sign-in-footer";
+import { Banner } from "./banner";
+import { CardFooterNote } from "./card-footer-note";
+import { KeyRoundIcon, LockIcon, RefreshCwIcon } from "./icons";
+import { PasswordField } from "./password-field";
+import { primaryButtonClasses } from "./primary-button-classes";
 
 const POLICY_MESSAGES: Record<PasswordPolicyFailure, string> = {
   too_short: "Must be at least 12 characters.",
@@ -31,24 +37,28 @@ const TOKEN_STATE_COPY = {
 export function ChangePasswordForm({
   action,
   initialState,
+  email,
 }: {
   action: CompletePasswordResetAction;
   initialState: CompletePasswordResetState;
+  email?: string;
 }) {
   const [state, formAction, isPending] = useActionState(action, initialState);
 
   if (state.status === "expired" || state.status === "used" || state.status === "unknown") {
     const copy = TOKEN_STATE_COPY[state.status];
     return (
-      <output className="flex flex-col gap-4 border-t-2 border-[var(--color-border-strong)] bg-[var(--color-surface-sunken)] p-4">
-        <h1 className="text-h3">{copy.heading}</h1>
-        <p>{copy.message}</p>
-        <a
+      <div className="flex flex-col gap-[14px]">
+        <h1 className="text-h4">{copy.heading}</h1>
+        <Banner icon={LockIcon}>{copy.message}</Banner>
+        <Link
           href="/reset"
-          className="self-start">
+          className={`mt-[6px] no-underline ${primaryButtonClasses()}`}>
+          <RefreshCwIcon size={16} />
           Request a new link
-        </a>
-      </output>
+        </Link>
+        <BackToSignInFooter />
+      </div>
     );
   }
 
@@ -56,41 +66,42 @@ export function ChangePasswordForm({
     <Form
       action={formAction}
       validationBehavior="aria"
-      className="flex flex-col gap-6">
-      <h1 className="text-h3">Change password</h1>
-      <p className="text-label text-[var(--color-text-muted)]">
-        At least twelve characters. Nothing else is required.
+      className="flex flex-col gap-[14px]">
+      <h1 className="text-h4 mb-[6px]">Set a new password</h1>
+      <p className="mb-[10px] text-[13px] text-[color-mix(in_srgb,var(--color-text)_62%,transparent)]">
+        {email ? (
+          <>
+            For <b className="text-[var(--color-text)]">{email}</b>. This link is single-use.
+          </>
+        ) : (
+          "This link is single-use."
+        )}
       </p>
-      <TextField
+      <PasswordField
         name="password"
-        type="password"
+        label="New password"
+        placeholder="At least 12 characters"
         isRequired
         isInvalid={state.status === "policy"}
-        className="flex flex-col gap-2">
-        <Label>New password</Label>
-        <Input className="h-[var(--size-field)] border border-[var(--color-border-control)] px-3" />
-        <FieldError className="text-label text-[var(--color-danger-text)]">
-          {state.status === "policy" ? POLICY_MESSAGES[state.failure] : undefined}
-        </FieldError>
-      </TextField>
-      <TextField
+        errorMessage={state.status === "policy" ? POLICY_MESSAGES[state.failure] : undefined}
+        hint="Twelve characters minimum. No other rules, but common passwords are refused."
+      />
+      <PasswordField
         name="confirmPassword"
-        type="password"
+        label="Confirm password"
+        placeholder="Repeat it"
         isRequired
         isInvalid={state.status === "mismatch"}
-        className="flex flex-col gap-2">
-        <Label>Confirm password</Label>
-        <Input className="h-[var(--size-field)] border border-[var(--color-border-control)] px-3" />
-        <FieldError className="text-label text-[var(--color-danger-text)]">
-          {state.status === "mismatch" ? "The passwords don't match." : undefined}
-        </FieldError>
-      </TextField>
+        errorMessage={state.status === "mismatch" ? "These two don't match." : undefined}
+      />
       <Button
         type="submit"
         isDisabled={isPending}
-        className="h-[var(--size-field)] bg-[var(--color-accent-fill)] font-semibold text-[var(--color-on-accent)]">
-        {isPending ? "Changing…" : "Change password"}
+        className={primaryButtonClasses({ pending: isPending })}>
+        <KeyRoundIcon size={16} />
+        {isPending ? "Saving…" : "Save password"}
       </Button>
+      <CardFooterNote>Saving signs out every session on this account, including this browser.</CardFooterNote>
     </Form>
   );
 }

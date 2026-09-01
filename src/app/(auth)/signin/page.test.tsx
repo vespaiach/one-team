@@ -35,6 +35,12 @@ describe("/signin page (FR-012, FR-060, FR-079)", () => {
     expect(screen.queryByRole("checkbox")).toBeNull();
   });
 
+  it("renders the sub-line telling the visitor which email to use", async () => {
+    await renderPage();
+
+    expect(screen.getByText("Use the email your invitation was sent to.")).not.toBeNull();
+  });
+
   it("renders the form even to a caller who already holds a session", async () => {
     await renderPage();
 

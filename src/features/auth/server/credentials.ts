@@ -48,6 +48,11 @@ export async function findResetCandidate(email: string): Promise<ResetCandidate 
   return { userId: row.userId, deactivatedAt: row.deactivatedAt, hasCredential: row.credentialId !== null };
 }
 
+export async function getUserEmail(userId: string): Promise<string | null> {
+  const [row] = await db.select({ email: user.email }).from(user).where(eq(user.id, userId));
+  return row?.email ?? null;
+}
+
 export async function setCredentialPassword(
   executor: DbOrTransaction,
   userId: string,

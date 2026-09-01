@@ -14,26 +14,41 @@ describe("(auth) layout (research A-1, A-2, OT-UX-001)", () => {
 
     const main = screen.getByRole("main");
     expect(main.className).toContain("--color-bg");
-    expect(main.textContent).toContain("OneTeam");
+    expect(main.textContent).toContain("One Team");
     expect(screen.getByText("page content")).not.toBeNull();
   });
 
-  it("renders the app mark as a two-block lockup per the visual identity (Visual Logo, turn 3)", () => {
+  it("renders the app mark as a single logo lockup, centred on the page", () => {
     render(
       <AuthLayout>
         <p>page content</p>
       </AuthLayout>,
     );
 
-    const one = screen.getByText("One");
-    const team = screen.getByText("Team");
+    const main = screen.getByRole("main");
+    expect(main.className).toContain("items-center");
+    expect(main.className).toContain("justify-center");
 
-    expect(one.className).toContain("bg-[var(--color-text)]");
-    expect(one.className).toContain("text-white");
-    expect(team.className).toContain("bg-[var(--color-accent-fill)]");
-    expect(team.className).toContain("text-[var(--color-on-accent)]");
-    expect(one.parentElement?.className).toContain("uppercase");
-    expect(one.parentElement?.className).toContain("font-black");
+    const mark = screen.getByText("One Team");
+    expect(mark.tagName).toBe("SPAN");
+    expect(mark.className).toContain("font-heading");
+
+    const svg = mark.parentElement?.querySelector("svg");
+    expect(svg).not.toBeNull();
+    expect(svg?.getAttribute("aria-hidden")).toBe("true");
+  });
+
+  it("renders the card with a 2px divider border, no radius and the page's own background", () => {
+    render(
+      <AuthLayout>
+        <p>page content</p>
+      </AuthLayout>,
+    );
+
+    const card = screen.getByText("page content").closest("div");
+    expect(card?.className).toContain("border-2");
+    expect(card?.className).toContain("border-[var(--color-divider)]");
+    expect(card?.className).toContain("bg-[var(--color-bg)]");
   });
 
   it("is a Server Component holding no state, and imports nothing from react-aria-components", () => {
