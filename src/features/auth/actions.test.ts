@@ -3,10 +3,10 @@ import nodemailer from "nodemailer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { authAttempt, credential, resetToken, session, user } from "@/db/schema";
 import { testDb, truncateTestDatabase } from "@/db/test-database";
-import { completePasswordReset, requestPasswordReset } from "./actions";
-import { hashPassword, verifyPassword } from "./server/crypto";
+import { completePasswordReset, requestPasswordReset, signOut } from "./actions";
+import { digestToken, hashPassword, verifyPassword } from "./server/crypto";
 import { issueResetToken } from "./server/reset-tokens";
-import { issueSession } from "./server/sessions";
+import { issueSession, SESSION_COOKIE_NAME } from "./server/sessions";
 
 const ORIGINAL_ENV = {
   APP_URL: process.env.APP_URL,
@@ -15,9 +15,19 @@ const ORIGINAL_ENV = {
 };
 
 let currentOrigin: string | undefined = "https://app.example.com";
+const cookieJar = new Map<string, string>();
 
 vi.mock("next/headers", () => ({
   headers: async () => new Headers(currentOrigin ? { origin: currentOrigin } : {}),
+  cookies: async () => ({
+    get: (name: string) => (cookieJar.has(name) ? { value: cookieJar.get(name) } : undefined),
+    set: (name: string, value: string) => {
+      cookieJar.set(name, value);
+    },
+    delete: (name: string) => {
+      cookieJar.delete(name);
+    },
+  }),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -32,6 +42,7 @@ beforeEach(async () => {
   process.env.SMTP_URL = "smtp://localhost:1025";
   process.env.MAIL_FROM = "no-reply@example.com";
   currentOrigin = "https://app.example.com";
+  cookieJar.clear();
 });
 
 afterEach(() => {
@@ -384,5 +395,106 @@ describe("completePasswordReset (FR-035, FR-027, FR-038, FR-050, FR-066, SC-008)
         }),
       ),
     ).rejects.toThrow();
+  });
+});
+
+describe("signOut (FR-018, OT-SEC-009, OT-AUTHZ-004)", () => {
+  it("deletes the live session's row, clears the cookie, and redirects to /signin (s11)", async () => {
+    const owner = await insertUser();
+    const { token } = await issueSession({ userId: owner.id, ipAddress: "203.0.113.4", userAgent: null });
+    cookieJar.set(SESSION_COOKIE_NAME, token);
+
+    await expect(signOut()).rejects.toThrow("NEXT_REDIRECT:/signin");
+
+    const rows = await testDb
+      .select()
+      .from(session)
+      .where(eq(session.tokenDigest, digestToken(token)));
+    expect(rows).toHaveLength(0);
+    expect(cookieJar.has(SESSION_COOKIE_NAME)).toBe(false);
+  });
+
+  it("succeeds and reports nothing when called a second time", async () => {
+    const owner = await insertUser();
+    const { token } = await issueSession({ userId: owner.id, ipAddress: "203.0.113.4", userAgent: null });
+    cookieJar.set(SESSION_COOKIE_NAME, token);
+
+    await expect(signOut()).rejects.toThrow("NEXT_REDIRECT:/signin");
+    cookieJar.set(SESSION_COOKIE_NAME, token);
+    await expect(signOut()).rejects.toThrow("NEXT_REDIRECT:/signin");
+  });
+
+  it("succeeds, clears the cookie, and redirects for a cookie naming no row", async () => {
+    cookieJar.set(SESSION_COOKIE_NAME, "not-a-real-token");
+
+    await expect(signOut()).rejects.toThrow("NEXT_REDIRECT:/signin");
+
+    expect(cookieJar.has(SESSION_COOKIE_NAME)).toBe(false);
+  });
+
+  it("refuses a foreign Origin before anything is read or written, leaving the caller signed in", async () => {
+    const owner = await insertUser();
+    const { token } = await issueSession({ userId: owner.id, ipAddress: "203.0.113.4", userAgent: null });
+    cookieJar.set(SESSION_COOKIE_NAME, token);
+    currentOrigin = "https://evil.example.com";
+
+    await expect(signOut()).rejects.toThrow();
+
+    const rows = await testDb
+      .select()
+      .from(session)
+      .where(eq(session.tokenDigest, digestToken(token)));
+    expect(rows).toHaveLength(1);
+    expect(cookieJar.get(SESSION_COOKIE_NAME)).toBe(token);
+  });
+
+  it("refuses a request with no Origin at all, leaving the caller signed in", async () => {
+    const owner = await insertUser();
+    const { token } = await issueSession({ userId: owner.id, ipAddress: "203.0.113.4", userAgent: null });
+    cookieJar.set(SESSION_COOKIE_NAME, token);
+    currentOrigin = undefined;
+
+    await expect(signOut()).rejects.toThrow();
+
+    const rows = await testDb
+      .select()
+      .from(session)
+      .where(eq(session.tokenDigest, digestToken(token)));
+    expect(rows).toHaveLength(1);
+  });
+
+  it("leaves another live session for the same user present afterwards (s12)", async () => {
+    const owner = await insertUser();
+    const { token: firstToken } = await issueSession({
+      userId: owner.id,
+      ipAddress: "203.0.113.4",
+      userAgent: null,
+    });
+    const { token: secondToken } = await issueSession({
+      userId: owner.id,
+      ipAddress: "203.0.113.5",
+      userAgent: null,
+    });
+    cookieJar.set(SESSION_COOKIE_NAME, firstToken);
+
+    await expect(signOut()).rejects.toThrow("NEXT_REDIRECT:/signin");
+
+    const remaining = await testDb
+      .select()
+      .from(session)
+      .where(eq(session.tokenDigest, digestToken(secondToken)));
+    expect(remaining).toHaveLength(1);
+  });
+
+  it("leaves a request replaying the old cookie resolving no actor (SC-013)", async () => {
+    const owner = await insertUser();
+    const { token } = await issueSession({ userId: owner.id, ipAddress: "203.0.113.4", userAgent: null });
+    cookieJar.set(SESSION_COOKIE_NAME, token);
+
+    await expect(signOut()).rejects.toThrow("NEXT_REDIRECT:/signin");
+    cookieJar.set(SESSION_COOKIE_NAME, token);
+
+    const { loadActor } = await import("./server/actor");
+    await expect(loadActor()).resolves.toBeNull();
   });
 });
