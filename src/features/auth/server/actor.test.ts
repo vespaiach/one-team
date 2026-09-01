@@ -61,9 +61,36 @@ describe("loadActor (FR-009, FR-020, FR-021)", () => {
       role: owner.role,
       firstName: owner.firstName,
       lastName: owner.lastName,
+      avatarUrl: owner.avatarUrl,
+      mustChangePassword: owner.mustChangePassword,
     });
 
     selectSpy.mockRestore();
+  });
+
+  it("reads avatarUrl and mustChangePassword from the same query, in one round trip (FR-017, FR-026)", async () => {
+    const owner = await insertUser({ avatarUrl: "https://example.com/ada.png", mustChangePassword: true });
+    const { token } = await issueSession({ userId: owner.id, ipAddress: "203.0.113.4", userAgent: null });
+    mockCookie(token);
+
+    const { loadActor } = await import("./actor");
+
+    const actor = await loadActor();
+
+    expect(actor?.avatarUrl).toBe("https://example.com/ada.png");
+    expect(actor?.mustChangePassword).toBe(true);
+  });
+
+  it("resolves avatarUrl to null when the user has none set (FR-017 edge case)", async () => {
+    const owner = await insertUser({ avatarUrl: null });
+    const { token } = await issueSession({ userId: owner.id, ipAddress: "203.0.113.4", userAgent: null });
+    mockCookie(token);
+
+    const { loadActor } = await import("./actor");
+
+    const actor = await loadActor();
+
+    expect(actor?.avatarUrl).toBeNull();
   });
 
   it("resolves to no actor for a cookie naming no session row", async () => {
