@@ -14,7 +14,7 @@ export default defineConfig({
     },
   },
   test: {
-    exclude: ["node_modules/**", ".next/**", "drizzle/**"],
+    exclude: ["node_modules/**", ".next/**", "drizzle/**", ".claude/**"],
     projects: [
       {
         extends: true,
@@ -33,7 +33,7 @@ export default defineConfig({
           name: "ui",
           environment: "jsdom",
           include: ["**/*.test.tsx"],
-          setupFiles: ["./src/test-setup-ui.ts"],
+          setupFiles: ["./src/test-setup-ui.tsx"],
         },
       },
     ],
