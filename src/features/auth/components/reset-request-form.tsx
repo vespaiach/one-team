@@ -39,7 +39,7 @@ export function ResetRequestForm() {
       action={formAction}
       validationBehavior="aria"
       className="flex flex-col gap-6">
-      <p className="text-small text-[var(--color-text-muted)]">
+      <p className="text-label text-[var(--color-text-muted)]">
         We&rsquo;ll email a link that sets a new one.
       </p>
       <TextField
@@ -49,12 +49,12 @@ export function ResetRequestForm() {
         className="flex flex-col gap-2">
         <Label>Email</Label>
         <Input className="h-[var(--size-field)] border border-[var(--color-border-control)] px-3" />
-        <FieldError className="text-small text-[var(--color-danger-text)]" />
+        <FieldError className="text-label text-[var(--color-danger-text)]" />
       </TextField>
       <Button
         type="submit"
         isDisabled={isPending}
-        className="h-[var(--size-field)] bg-[var(--color-accent)] font-semibold text-white">
+        className="h-[var(--size-field)] bg-[var(--color-accent-fill)] font-semibold text-[var(--color-on-accent)]">
         {isPending ? "Sending…" : "Send reset link"}
       </Button>
     </Form>

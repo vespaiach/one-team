@@ -112,12 +112,12 @@ export function SignInForm() {
         isInvalid={emailError !== null}
         onBlur={() => setEmailError(validateEmail(email))}
         className="flex flex-col gap-1.5">
-        <Label className="text-small font-medium text-[var(--color-text)]">Email</Label>
+        <Label className="text-label font-medium text-[var(--color-text)]">Email</Label>
         <Input
           ref={emailRef}
           className="h-[var(--size-field)] border border-[var(--color-border-control)] bg-[var(--color-surface)] px-3 text-control text-[var(--color-text)] data-[invalid]:border-[var(--color-danger)]"
         />
-        <FieldError className="text-small text-[var(--color-danger)]">{emailError}</FieldError>
+        <FieldError className="text-label text-[var(--color-danger)]">{emailError}</FieldError>
       </TextField>
 
       <TextField
@@ -128,31 +128,31 @@ export function SignInForm() {
         isInvalid={passwordError !== null}
         onBlur={() => setPasswordError(validatePassword(password))}
         className="flex flex-col gap-1.5">
-        <Label className="text-small font-medium text-[var(--color-text)]">Password</Label>
+        <Label className="text-label font-medium text-[var(--color-text)]">Password</Label>
         <Input
           ref={passwordRef}
           className="h-[var(--size-field)] border border-[var(--color-border-control)] bg-[var(--color-surface)] px-3 text-control text-[var(--color-text)] data-[invalid]:border-[var(--color-danger)]"
         />
-        <FieldError className="text-small text-[var(--color-danger)]">{passwordError}</FieldError>
+        <FieldError className="text-label text-[var(--color-danger)]">{passwordError}</FieldError>
       </TextField>
 
       {outcome && (
         <div
           role="alert"
-          className="break-words text-small text-[var(--color-danger)]">
+          className="break-words text-label text-[var(--color-danger)]">
           {outcome.message}
         </div>
       )}
 
       <Button
         type="submit"
-        className="h-[var(--size-field)] bg-[var(--color-accent)] font-medium text-white data-[hovered]:bg-[var(--color-accent-hover)] data-[pressed]:bg-[var(--color-accent-pressed)]">
+        className="h-[var(--size-field)] bg-[var(--color-accent-fill)] font-medium text-[var(--color-on-accent)] data-[hovered]:bg-[var(--color-accent-hover)] data-[pressed]:bg-[var(--color-accent-pressed)]">
         {submitting ? "Signing in…" : "Sign in"}
       </Button>
 
       <a
         href="/reset"
-        className="text-small text-[var(--color-accent-text)]">
+        className="text-label text-[var(--color-accent-text)]">
         Forgot password?
       </a>
     </Form>

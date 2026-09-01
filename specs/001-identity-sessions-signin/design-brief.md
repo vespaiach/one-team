@@ -20,6 +20,16 @@ records the specification's answer as the built one and the design as the thing 
 are listed under *Where the design loses to the specification*; what the specification does not
 decide is under *Decided beyond the specification*.
 
+**Superseded by the Modernist system.** Everything under *Colour* and the token values quoted
+through *Type, space, geometry* and *Contrast* describe the R1 palette (`#5b5bd6` accent, the warm
+neutral ramp, six named type steps) that shipped first. The team has since moved the whole product
+to the Modernist system pasted into `src/app/globals.css` — monochrome red-orange (`#ec3013` /
+`#e15b47`), a nine-step neutral ramp and a nine-step named type scale. The record below is kept for
+the history it carries (why the field border sits at neutral-500-equivalent, why there is no
+`--color-focus`, why Archivo replaced Geist) but its hex values, ratios and six-step type table are
+no longer what is built. Current values live in `src/app/globals.css` directly and in this brief's
+counterpart in `specs/002-app-shell-ux/design-brief.md`.
+
 ---
 
 ## Non-negotiables
@@ -53,56 +63,50 @@ The brief asked for an explicit value for each. These are the values.
 
 ---
 
-## Colour
+## Colour (Modernist — current)
 
-### Neutral — eleven steps, warm
-
-A trace of yellow in the hue, so the page reads as paper rather than as screen grey.
+### Neutral — nine steps
 
 | | | | | | |
 | --- | --- | --- | --- | --- | --- |
-| 50 | `#fbfaf9` | 400 | `#b3aeaa` | 800 | `#3a3735` |
-| 100 | `#f4f2f0` | 500 | `#8f8a86` | 900 | `#24211f` |
-| 200 | `#e8e5e2` | 600 | `#6e6a66` | 950 | `#151312` |
-| 300 | `#d7d3cf` | 700 | `#55514e` | | |
+| 100 | `#f8f4f4` | 400 | `#bab6b6` | 700 | `#605d5d` |
+| 200 | `#eae7e7` | 500 | `#9b9797` | 800 | `#444141` |
+| 300 | `#d7d3d3` | 600 | `#7d7979` | 900 | `#2d2b2b` |
 
-- **50–200** grounds and tinted fills. The page is 100; cards are pure white so they lift off it without a shadow.
-- **300–400** rules and disabled ink. 300 is the card edge and dividers; 400 is the lightest thing allowed to hold a glyph.
-- **500–600** secondary text, and 500 is the field border (L5). 600 carries all muted copy, and placeholders where a screen keeps one (L6).
-- **700–950** ink. Body text is 900. 950 is reserved for an eventual dark-mode ground.
+- `--color-bg` (`#f3f2f2`) and `--color-surface` (`#eae9e9`) are roles in their own right, not ramp
+  steps — the ground and the card each sit near neutral-100/200 without being pinned to one.
+- **300** is the card edge and dividers, carried by `--color-divider` — a translucent mix
+  (`color-mix(in srgb, #201e1d 40%, transparent)`), not a flat step.
+- **600** is the field border. **700** carries muted text and placeholders: 5.38:1 on the card and
+  5.83:1 on the page, clear of the 4.5:1 floor by a wider margin than R1's ramp managed.
+- **900** is ink — `--color-text` (`#201e1d`, its own role), 13.70–14.86:1 on card and page.
 
-**The scale is warm and §7's `grey #8b909a` is cool, and they deliberately never touch.** §7's grey
-stays a *content* colour — a value someone chose for a project or a label — so it must not read as
-chrome.
+There is no longer a *content* colour reserved out of this system — §7 no longer names one at all
+(below).
 
-### Accent and red — full ramps
+### Accent and accent-2 — full ramps
 
-The two §7 colours with a job on these screens. Both get a ramp because both need a tint, the
-declared base, and a step dark enough to set body copy on their own tint.
-
-| Accent — `#5b5bd6` is 500 | | Red — `#c8453c` is 500 | |
+| Accent — `#ec3013` is the role | | Accent-2 — `#e15b47` is the role | |
 | --- | --- | --- | --- |
-| 50 `#f2f2fc` · 100 `#e4e4f9` · 200 `#c9c9f2` | 300 `#a5a5e9` · 400 `#8080df` | 50 `#fdf3f2` · 100 `#fbe4e2` · 200 `#f5c4c0` | 300 `#ec9a94` · 400 `#dd6b63` |
-| **500 `#5b5bd6`** · 600 `#4a4ac0` · 700 `#3c3c9c` | 800 `#2f2f78` · 900 `#23235a` | **500 `#c8453c`** · 600 `#ad3730` · 700 `#8c2b25` | 800 `#6b211d` · 900 `#4f1917` |
+| 100 `#fff2ef` · 200 `#ffe0d9` · 300 `#ffc4b8` | 400 `#ff9783` · 500 `#ff563c` | 100 `#fff2ef` · 200 `#ffe0da` · 300 `#ffc4b9` | 400 `#ff9784` · 500 `#ef6853` |
+| 600 `#dd2b0f` · 700 `#ae1800` | 800 `#7c1405` · 900 `#4d170e` | 600 `#c94b39` · 700 `#9e3526` | 800 `#71261b` · 900 `#471d16` |
 
-Accent 500 fills the primary control and draws the focus ring; 600 is hover, 700 pressed and the
-only accent step allowed to set text, including the "Forgot password?" link. Red 500 draws the
-errored field border, 100 is the message fill, 700 the text on it. **Red never fills a button** —
-nothing on these screens is destructive.
+**One correction the given palette itself needed.** White text on the raw accent role measures
+4.20:1 — under the 4.5:1 text floor, though it clears 1.4.11's 3:1 for non-text use. A filled
+control (the primary button, the "Team" wordmark block) is built one ramp step darker, at accent-600
+(4.74:1 white-on-fill), named `--color-accent-fill`; the raw `--color-accent` role stays reserved for
+the focus ring and other non-text accents, where 3.47–3.76:1 clears the 3:1 that applies there.
+Accent-700 draws the "Forgot password?" link and any accent-coloured text, at 5.91–6.41:1.
 
-### Content colours — three steps each, unused on R1
+### Monochrome status — no green, no amber, no per-item palette
 
-The remaining five from §7. They label projects, board columns and tags, carry no interface meaning,
-and appear on none of these screens.
-
-| | | | |
-| --- | --- | --- | --- |
-| blue | `#e7f1f9` · `#2f7fc4` · `#1f5c92` | green | `#e7f4ec` · `#3a9d5d` · `#27713f` |
-| violet | `#f3ebfd` · `#9b5de5` · `#6f39ad` | amber | `#fbf2dc` · `#d4a017` · `#8a6708` |
-| grey | `#eff0f2` · `#8b909a` · `#5a5f68` | | |
-
-Green and amber are the exception to "unused": the post-reset success block and the
-must-change-password banner borrow their tint / deep pair through the semantic layer.
+§7 no longer carries a content palette, and status no longer gets a third and fourth hue either.
+Danger stays on the primary accent family (border and text both at accent-700, fill at accent-100);
+advisory — the must-change-password banner — moves to the muted accent-2 family (text at accent-2-800,
+fill at accent-2-100) so the two read as distinct tones without inventing a third hue; success
+carries **no hue at all** — ink on a tint, both neutral. The post-reset message on `/signin` states
+its own outcome in words ("Your password has been changed."), so it does not need the same visual
+weight a warning needs.
 
 ### Semantic layer — the only names a component uses
 
@@ -111,40 +115,47 @@ cheap to reverse.
 
 | Token | Points at | Where |
 | --- | --- | --- |
-| `--color-page` | neutral-100 | The ground behind the card on all three screens |
-| `--color-surface` | `#ffffff` | The card, and the inside of every field |
-| `--color-surface-sunken` | neutral-50 | Neutral message blocks — the token states, which explain rather than accuse |
-| `--color-border` | neutral-300 | Card edge and dividers **only** — decorative, never a control boundary (L5) |
-| `--color-border-control` | neutral-500 | Every field border, from rest (L5) |
+| `--color-bg` | role `#f3f2f2` | The ground behind the card on all three screens |
+| `--color-surface` | role `#eae9e9` | The card, and the inside of every field |
+| `--color-surface-sunken` | neutral-100 | Neutral message blocks — the token states, which explain rather than accuse |
+| `--color-border` | `--color-divider` (role) | Card edge and dividers **only** — decorative, never a control boundary (L5) |
+| `--color-border-control` | neutral-600 | Every field border, from rest (L5) |
 | `--color-border-strong` | neutral-900 | The 2px rule that opens a section or a message block |
-| `--color-text` | neutral-900 | Headings, labels, field values |
-| `--color-text-muted` | neutral-600 | The one quiet line per surface, helper text |
-| `--color-text-placeholder` | neutral-**600** | Placeholders only — never a value the reader has to keep. neutral-500 as returned fails 4.5:1 (L6) |
+| `--color-text` | role `#201e1d` | Headings, labels, field values |
+| `--color-text-muted` | neutral-700 | The one quiet line per surface, helper text |
+| `--color-text-placeholder` | neutral-700 | Placeholders only — never a value the reader has to keep |
 | `--color-text-disabled` | neutral-400 | Rare here — the submit control never goes dead (`OT-UX-011`) |
-| `--color-accent` / `-hover` / `-pressed` | accent-500 / 600 / 700 | Primary fill, and the focus ring |
+| `--color-accent` | role `#ec3013` | The focus ring — see the correction above |
+| `--color-accent-fill` / `-hover` / `-pressed` | accent-600 / 700 / 800 | Primary fill, from rest |
 | `--color-accent-text` | accent-700 | Links at body size |
-| `--color-danger` / `-fill` / `-text` | red-500 / 100 / 700 | Errored border, error ground, error ink |
-| `--color-success` / `-fill` / `-text` | green-500 / 100 / 700 | The post-reset banner on `/signin` |
-| `--color-advisory` / `-fill` / `-text` | amber-500 / 100 / 700 | The must-change-password banner |
+| `--color-danger` / `-fill` / `-text` | accent-700 / accent-100 / accent-700 | Errored border, error ground, error ink |
+| `--color-success` / `-fill` / `-text` | neutral-900 / neutral-100 / neutral-900 | The post-reset banner on `/signin` |
+| `--color-advisory` / `-fill` / `-text` | accent-2-600 / accent-2-100 / accent-2-800 | The must-change-password banner |
 
 ---
 
 ## Type, space, geometry
 
-**Type** — Archivo, six steps, absolute line heights.
+**Type (Modernist — current)** — Archivo, nine named steps; five are what these screens use.
 
 | Step | Size / line-height / weight | Job |
 | --- | --- | --- |
-| `display` | 32 / 36 / 700 / −0.02em | The card heading |
-| `title` | 22 / 28 / 600 / −0.01em | Reserved — no R1 surface uses it |
-| `control` | 16 / 24 / 500 | Field values and button labels |
-| `body` | 15 / 24 / 400 | Message blocks, the quiet line, links |
-| `small` | 13 / 20 / 400 | Inline field errors, helper text |
-| `micro` | 11 / 16 / 600 / +0.08em / caps | Field labels |
+| `h2` | 32 / 1.12 / 800 / −0.015em | The card heading (was `display`) |
+| `h3` | 25 / 1.12 / 800 / −0.015em | Screen and dialog titles — Sign in, Forgot password, Change password (was `title`) |
+| `control` | 14 / 24 / 500 | Field values and button labels — same name, was 16 |
+| `body` | 15 / 1.55 / 400 | Message blocks, the quiet line, links |
+| `label` | 12 / 20 / 400 | Field labels, inline field errors, helper text, the "Forgot password?" link (was `small`) |
 
-Body is 15 rather than 16 because the only long-form text in the product is an issue description,
-and 15/24 sets a comfortable measure at 440px. Control text stays 16 so a value never looks smaller
-than the label above it.
+`h1`, `h4`–`h6` and `caption` are declared and unused here, the role R1's own `title` and `micro`
+held before any surface used them.
+
+Body is 15 because the only long-form text in the product is an issue description, and 15/1.55 sets
+a comfortable measure at 440px. Control stays larger than the 12px label above it — 14 rather than
+R1's 16 — so a value still never looks smaller than its label.
+
+Headings are real `<h1>`/`<h3>` elements now: `globals.css`'s base layer sets Archivo, weight 800 and
+the size directly on the element, so a component no longer pairs a size class with a weight class
+and a colour class — `<h1 className="text-h3">Sign in</h1>` is the whole thing.
 
 **Space** — unit 4px, nine steps, the card uses five.
 
@@ -265,30 +276,31 @@ would say it twice.
 
 ## Contrast — measured, not assumed
 
-WCAG ratios for the pairs the screens actually use. **The conformance target is WCAG 2.2 AA**
-(`FR-012`).
+WCAG ratios for the pairs the screens actually use, against the Modernist palette now shipped.
+**The conformance target is WCAG 2.2 AA** (`FR-012`). `src/app/globals.test.ts` asserts every one of
+these directly against `globals.css`, so a token edit cannot regress this silently.
 
 | Pair | Ratio | Needs | |
 | --- | --- | --- | --- |
-| `--color-text` on page | 14.33:1 | 4.5:1 | pass |
-| `--color-text` on surface | 16.00:1 | 4.5:1 | pass |
-| `--color-text-muted` on surface | 5.36:1 | 4.5:1 | pass |
-| `--color-text-muted` on **page** | 4.80:1 | 4.5:1 | pass |
-| `--color-accent-text` on surface | 9.06:1 | 4.5:1 | pass |
-| `#ffffff` on `--color-accent` | 5.37:1 | 4.5:1 | pass |
-| `--color-danger-text` on `--color-danger-fill` | 6.95:1 | 4.5:1 | pass |
-| `--color-success-text` on `--color-success-fill` | 5.27:1 | 4.5:1 | pass |
-| `--color-advisory-text` on `--color-advisory-fill` | 4.68:1 | 4.5:1 | pass |
-| Focus ring on surface / on page | 5.37:1 / 4.81:1 | 3:1 | pass |
-| `--color-border-control` on surface — the field border | 3.42:1 | 3:1 (1.4.11) | pass |
-| `--color-danger` border on surface | 4.80:1 | 3:1 (1.4.11) | pass |
-| `--color-text-placeholder` at neutral-600 on surface | 5.36:1 | 4.5:1 | pass |
-| ~~neutral-300 as a field border, **as returned**~~ | 1.49:1 | 3:1 (1.4.11) | **fail — L5** |
-| ~~neutral-500 as placeholder ink, **as returned**~~ | 3.42:1 | 4.5:1 | **fail — L6** |
+| `--color-text` on `--color-bg` | 14.86:1 | 4.5:1 | pass |
+| `--color-text` on `--color-surface` | 13.70:1 | 4.5:1 | pass |
+| `--color-text-muted` on `--color-surface` | 5.38:1 | 4.5:1 | pass |
+| `--color-text-muted` on `--color-bg` | 5.83:1 | 4.5:1 | pass |
+| `--color-accent-text` on `--color-surface` | 5.91:1 | 4.5:1 | pass |
+| `--color-on-accent` on `--color-accent-fill` | 4.74:1 | 4.5:1 | pass |
+| `--color-danger-text` on `--color-danger-fill` | 6.55:1 | 4.5:1 | pass |
+| `--color-success-text` on `--color-success-fill` | 12.89:1 | 4.5:1 | pass |
+| `--color-advisory-text` on `--color-advisory-fill` | 9.62:1 | 4.5:1 | pass |
+| Focus ring (`--color-accent`) on surface / on bg | 3.47:1 / 3.76:1 | 3:1 | pass |
+| `--color-border-control` on surface — the field border | 3.55:1 | 3:1 (1.4.11) | pass |
+| `--color-danger` border on surface | 5.91:1 | 3:1 (1.4.11) | pass |
+| `--color-text-placeholder` at neutral-700 on surface | 5.38:1 | 4.5:1 | pass |
+| ~~`--color-accent` role as the button fill, `#ec3013` white text~~ | 4.20:1 | 4.5:1 | **fail — corrected, see Colour above** |
 
-The warm ramp fixes the failure the planning documents recorded against the earlier cool one: muted
-text now clears 4.5:1 on the page background as well as on the card. The two struck rows are the
-values the design returned; the rows above them are what is built.
+Every pair clears its floor with more room than R1's own ramp did — the muted-text margin that used
+to be a thin 0.30 over the floor is now upward of 0.80. The one row struck through is the palette's
+own defect as given, corrected by building the filled control one ramp step darker rather than by
+changing the declared accent role (see *Accent and accent-2* above).
 
 ---
 

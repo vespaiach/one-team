@@ -21,6 +21,11 @@ and are not open to redesign; what is open is listed in §15 and nowhere else.
 an installation begins with one seeded admin, and every other account exists because an admin invited
 an address. This screen is where any of those people corrects their own record.
 
+**Superseded by the Modernist system.** §2's *Colour* and *Type* tables below describe the R1-era
+token set (`#5b5bd6` accent, six named type steps). The product has since moved to the Modernist
+system in `src/app/globals.css` — monochrome red-orange, a nine-step neutral ramp, nine named type
+steps — and both tables are rewritten to match.
+
 ---
 
 ## Conflicts in the source, and how this brief resolves them
@@ -85,41 +90,52 @@ default violates every one of them.
 
 | Token | Value | Use here |
 | --- | --- | --- |
-| `--color-surface` | `#ffffff` | the content region this screen fills |
-| `--color-page` | `#f4f2f0` | the sidebar beside it — not this screen's fill |
-| `--color-surface-sunken` | `#fbfaf9` | available, unused so far |
-| `--color-border` | `#d7d3cf` | dividers, row rules |
-| `--color-border-control` | `#8f8a86` | the border of a field being edited |
-| `--color-text` | `#24211f` | a stored value, a label |
-| `--color-text-muted` | `#6e6a66` | secondary text |
-| `--color-text-placeholder` | `#6e6a66` | the empty-field line — **the same value as `-muted` today** |
-| `--color-accent` | `#5b5bd6` | the focus ring, and link text via `--color-accent-text` `#3c3c9c` |
-| `--color-danger` / `-fill` / `-text` | `#c8453c` / `#fbe4e2` / `#8c2b25` | inline field errors |
-| `--color-success` / `-fill` / `-text` | `#3a9d5d` / `#e7f4ec` / `#27713f` | — the message host's, see §9 |
-| `--color-advisory` / `-fill` / `-text` | `#d4a017` / `#fbf2dc` / `#8a6708` | — the message host's, see §9 |
+| `--color-surface` | `#eae9e9` | the content region this screen fills |
+| `--color-bg` | `#f3f2f2` | the sidebar beside it — not this screen's fill |
+| `--color-surface-sunken` | `#f8f4f4` | available, unused so far |
+| `--color-border` | translucent mix of `#201e1d` | dividers, row rules |
+| `--color-border-control` | `#7d7979` | the border of a field being edited |
+| `--color-text` | `#201e1d` | a stored value, a label |
+| `--color-text-muted` | `#605d5d` | secondary text |
+| `--color-text-placeholder` | `#605d5d` | the empty-field line — **the same value as `-muted` today** |
+| `--color-accent` | `#ec3013` | the focus ring — not a filled control's fill, see below |
+| `--color-accent-fill` | `#dd2b0f` | any filled accent control, paired with `--color-on-accent` text |
+| `--color-accent-text` | `#ae1800` | link text |
+| `--color-danger` / `-fill` / `-text` | `#ae1800` / `#fff2ef` / `#ae1800` | inline field errors |
+| `--color-success` / `-fill` / `-text` | `#2d2b2b` / `#f8f4f4` / `#2d2b2b` | — the message host's, see §9. No hue — ink on a neutral tint |
+| `--color-advisory` / `-fill` / `-text` | `#c94b39` / `#fff2ef` / `#71261b` | — the message host's, see §9. The muted accent-2 family, not amber |
 
-`--color-text-muted` at `#6e6a66` is **4.80:1** on `--color-page` and higher on `--color-surface`,
-so muted 13px text passes AA on both fills. Do not invent a lighter grey to get below it.
+`--color-text-muted` at `#605d5d` is **5.83:1** on `--color-bg` and **5.38:1** on `--color-surface`,
+so muted 12px text passes AA on both fills. Do not invent a lighter grey to get below it.
+
+**White text on the raw `--color-accent` role measures 4.20:1 — under the 4.5:1 AA floor.** Anything
+filled that carries text (there is nothing on this screen today, but a future control might) uses
+`--color-accent-fill` and `--color-on-accent`, not the raw role and a literal `white`.
 
 **There is no `--color-focus` token.** Focus is one global rule and this screen inherits it:
 `outline: 2px solid var(--color-accent); outline-offset: 2px`, applied on `:focus-visible` and on
 React Aria's `[data-focus-visible]`. Do not design a second focus treatment.
 
-### Type — Archivo, six steps, no others
+### Type — Archivo, nine named steps, no others
 
 | Step | Size / line | Notes |
 | --- | --- | --- |
-| `micro` | 11 / 16 | weight 600, tracking `+0.08em` |
-| `small` | 13 / 20 | labels, inline error text |
-| `body` | 15 / 24 | a stored value at rest |
-| `control` | 16 / 24 | text inside a field being edited |
-| `title` | 22 / 28 | tracking `−0.01em` |
-| `display` | 32 / 36 | tracking `−0.02em` |
+| `label` | 12 / 20 | field labels, inline error text (was `small`) |
+| `body` | 15 / 1.55 | a stored value at rest |
+| `control` | 14 / 24 | text inside a field being edited — was 16, now smaller than `body` |
+| `h3` | 25 / 1.12 | weight 800, tracking `−0.015em` |
+| `h2` | 32 / 1.12 | weight 800, tracking `−0.015em` |
 
-Note the deliberate step **up** from `body` 15px at rest to `control` 16px while editing. Whatever
-row anatomy you draw has to absorb that 1px without the line jumping when a value becomes a field —
-`FR-031`'s "data landing must not shift the layout" is about loading, but the same discipline is what
-makes in-place editing feel like editing rather than replacing.
+`h1`, `h4`–`h6` and `caption` are declared and unused on this screen.
+
+**The step from `body` to `control` now goes down, not up, and that reopens the row-anatomy
+question.** R1's scale stepped a value *up* from 15px at rest to 16px while editing, so a field never
+looked smaller than the label above it. The Modernist scale's `control` is 14px — smaller than
+`body`'s 15px — so a value that becomes a field now shrinks by 1px instead of growing. Whatever row
+anatomy is drawn has to decide whether that shrink is acceptable, or whether editing should render
+at `body` size instead of `control` size to preserve the original intent. Either way, `FR-031`'s "data
+landing must not shift the layout" still applies to whichever choice is made: the row must not jump
+when a value becomes a field.
 
 ---
 
@@ -129,7 +145,7 @@ makes in-place editing feel like editing rather than replacing.
 ┌──────────────┬───────────────────────────────────────────────┐
 │ sidebar      │ banner slot            ← R2's region, R3 fills │
 │ 262px        ├───────────────────────────────────────────────┤
-│ --color-page │ header  <ScreenHeader name="Profile" />       │
+│ --color-bg   │ header  <ScreenHeader name="Profile" />       │
 │              ├───────────────────────────────────────────────┤
 │  … user chip │                                                │
 │    links here│ THE PAGE  ← this brief                         │
@@ -192,13 +208,13 @@ job title are legal stored values; decide what a row does with them (§15).
 For one representative single-line row, draw all five and show them adjacent so the transitions can
 be read:
 
-1. **Shown, filled** — the value in `--color-text` at `body` 15/24, with its label.
+1. **Shown, filled** — the value in `--color-text` at `body` 15/1.55, with its label.
 2. **Shown, hovered** — `data-hovered`. The affordance that says "this is pressable".
 3. **Shown, focused by keyboard** — `data-focus-visible`, carrying the global 2px accent outline at
    2px offset. Tab must reach every editable value; this is how `SC-012` is met.
 4. **Editing** — a React Aria `TextField`: `44px` tall, `1px --color-border-control`, `--color-surface`
-   fill, `control` 16/24 text, focused, carrying the current value.
-5. **Invalid** — the same field with `--color-danger` border and inline error text at `small` 13/20
+   fill, `control` 14/24 text, focused, carrying the current value.
+5. **Invalid** — the same field with `--color-danger` border and inline error text at `label` 12/20
    in `--color-danger`, associated with the field. Never colour alone; the error is words.
 
 The gestures, which the drawing must make legible and must not add to (`FR-013a`):
@@ -411,12 +427,13 @@ These are not specified anywhere upstream. Decide them, and say what you decided
    distinct group at the foot of the column.
 8. **Whether the column is grouped or continuous** — dividers, section headings, or nine rows in a
    row. The spec fixes the order, not the grouping.
-9. **The header's h1 type step.** `ScreenHeader` is R2's and its typography is not settled — and there
-   is a live gap behind it: [`(auth)/signin/page.tsx`](../../src/app/(auth)/signin/page.tsx) styles its
-   `h1` with a `text-heading` class that **no `--text-heading` token backs**, so that heading renders at
-   the browser default today. R3's brief records the same finding. Propose a step from the six if it
-   helps the page read, and mark it as a note to R2 — the Profile title, the Accounts title and
-   sign-in's should settle together, not one screen at a time.
+9. **The header's h1 type step.** `ScreenHeader` is R2's and its typography is not settled. The dead
+   `text-heading` class this point originally flagged on the sign-in page's `h1` has since been fixed
+   — sign-in now renders `<h1 className="text-h3">`, relying on `globals.css`'s base-layer heading
+   rule for weight and family — but whether `h3` (25px) is the right step for **every** screen title,
+   or just sign-in's, is still open. Propose a step from the nine if it helps the page read, and mark
+   it as a note to R2 — the Profile title, the Accounts title and sign-in's should settle together,
+   not one screen at a time.
 
 ---
 

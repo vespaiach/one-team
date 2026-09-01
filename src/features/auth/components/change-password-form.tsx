@@ -41,7 +41,7 @@ export function ChangePasswordForm({
     const copy = TOKEN_STATE_COPY[state.status];
     return (
       <output className="flex flex-col gap-4 border-t-2 border-[var(--color-border-strong)] bg-[var(--color-surface-sunken)] p-4">
-        <h1 className="text-title font-semibold">{copy.heading}</h1>
+        <h1 className="text-h3">{copy.heading}</h1>
         <p>{copy.message}</p>
         <a
           href="/reset"
@@ -57,8 +57,8 @@ export function ChangePasswordForm({
       action={formAction}
       validationBehavior="aria"
       className="flex flex-col gap-6">
-      <h1 className="text-title font-semibold">Change password</h1>
-      <p className="text-small text-[var(--color-text-muted)]">
+      <h1 className="text-h3">Change password</h1>
+      <p className="text-label text-[var(--color-text-muted)]">
         At least twelve characters. Nothing else is required.
       </p>
       <TextField
@@ -69,7 +69,7 @@ export function ChangePasswordForm({
         className="flex flex-col gap-2">
         <Label>New password</Label>
         <Input className="h-[var(--size-field)] border border-[var(--color-border-control)] px-3" />
-        <FieldError className="text-small text-[var(--color-danger-text)]">
+        <FieldError className="text-label text-[var(--color-danger-text)]">
           {state.status === "policy" ? POLICY_MESSAGES[state.failure] : undefined}
         </FieldError>
       </TextField>
@@ -81,14 +81,14 @@ export function ChangePasswordForm({
         className="flex flex-col gap-2">
         <Label>Confirm password</Label>
         <Input className="h-[var(--size-field)] border border-[var(--color-border-control)] px-3" />
-        <FieldError className="text-small text-[var(--color-danger-text)]">
+        <FieldError className="text-label text-[var(--color-danger-text)]">
           {state.status === "mismatch" ? "The passwords don't match." : undefined}
         </FieldError>
       </TextField>
       <Button
         type="submit"
         isDisabled={isPending}
-        className="h-[var(--size-field)] bg-[var(--color-accent)] font-semibold text-white">
+        className="h-[var(--size-field)] bg-[var(--color-accent-fill)] font-semibold text-[var(--color-on-accent)]">
         {isPending ? "Changing…" : "Change password"}
       </Button>
     </Form>

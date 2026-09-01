@@ -14,7 +14,7 @@ export default async function ResetPage({ searchParams }: { searchParams: Promis
   if (token === undefined) {
     return (
       <>
-        <h1 className="text-title font-semibold">Forgot password</h1>
+        <h1 className="text-h3">Forgot password</h1>
         <ResetRequestForm />
       </>
     );

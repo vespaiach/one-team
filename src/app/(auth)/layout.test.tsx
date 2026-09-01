@@ -13,7 +13,7 @@ describe("(auth) layout (research A-1, A-2, OT-UX-001)", () => {
     );
 
     const main = screen.getByRole("main");
-    expect(main.className).toContain("--color-page");
+    expect(main.className).toContain("--color-bg");
     expect(main.textContent).toContain("OneTeam");
     expect(screen.getByText("page content")).not.toBeNull();
   });
@@ -30,8 +30,8 @@ describe("(auth) layout (research A-1, A-2, OT-UX-001)", () => {
 
     expect(one.className).toContain("bg-[var(--color-text)]");
     expect(one.className).toContain("text-white");
-    expect(team.className).toContain("bg-[var(--color-accent)]");
-    expect(team.className).toContain("text-white");
+    expect(team.className).toContain("bg-[var(--color-accent-fill)]");
+    expect(team.className).toContain("text-[var(--color-on-accent)]");
     expect(one.parentElement?.className).toContain("uppercase");
     expect(one.parentElement?.className).toContain("font-black");
   });
