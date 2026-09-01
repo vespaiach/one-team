@@ -5,6 +5,8 @@ import { defineConfig } from "vitest/config";
 
 nextEnv.loadEnvConfig(process.cwd());
 
+const authInterruptsEnv = { __NEXT_EXPERIMENTAL_AUTH_INTERRUPTS: "true" };
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -25,6 +27,7 @@ export default defineConfig({
           globalSetup: ["./src/db/test-setup.ts"],
           setupFiles: ["./src/db/test-env-setup.ts"],
           fileParallelism: false,
+          env: authInterruptsEnv,
         },
       },
       {
@@ -34,6 +37,7 @@ export default defineConfig({
           environment: "jsdom",
           include: ["**/*.test.tsx"],
           setupFiles: ["./src/test-setup-ui.tsx"],
+          env: authInterruptsEnv,
         },
       },
     ],
