@@ -171,6 +171,7 @@ describe("POST /api/auth/signin — deactivated (FR-014)", () => {
 
 describe("POST /api/auth/signin — closed via this feature's deactivateAccount (FR-046, OT-SEC-013, C-5)", () => {
   it("refuses with the closed-account message rather than the generic one", async () => {
+    process.env.SUPPORT_EMAIL = "";
     const owner = await insertUser();
     await insertCredential(owner.id, "correct horse battery staple 12");
     await deactivateAccount(owner.id);
