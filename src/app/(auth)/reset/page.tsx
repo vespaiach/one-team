@@ -4,10 +4,9 @@ import { ChangePasswordForm } from "@/features/auth/components/change-password-f
 import { ResetRequestForm } from "@/features/auth/components/reset-request-form";
 import { getUserEmail } from "@/features/auth/server/credentials";
 import { resolveResetTokenState } from "@/features/auth/server/reset-tokens";
+import { TOKEN_SHAPE } from "@/features/auth/server/token-state";
 
 export const metadata: Metadata = { title: "Reset password" };
-
-const TOKEN_SHAPE = /^[A-Za-z0-9_-]{20,}$/;
 
 export default async function ResetPage({ searchParams }: { searchParams: Promise<{ token?: string }> }) {
   const { token } = await searchParams;

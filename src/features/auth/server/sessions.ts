@@ -7,21 +7,34 @@ import { digestToken, issueToken } from "./crypto.ts";
 export const SESSION_COOKIE_NAME = "one_team_session";
 export const SESSION_LIFETIME_MS = 30 * 24 * 60 * 60 * 1000;
 
+export const SESSION_COOKIE_OPTIONS = {
+  httpOnly: true,
+  sameSite: "lax",
+  path: "/",
+  maxAge: SESSION_LIFETIME_MS / 1000,
+  get secure() {
+    return process.env.NODE_ENV === "production";
+  },
+} as const;
+
 export type SessionRecord = typeof session.$inferSelect;
 
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type DbOrTransaction = typeof db | Transaction;
 
-export async function issueSession(params: {
-  userId: string;
-  ipAddress: string;
-  userAgent: string | null;
-  now?: Date;
-}): Promise<{ token: string; session: SessionRecord }> {
+export async function issueSession(
+  params: {
+    userId: string;
+    ipAddress: string;
+    userAgent: string | null;
+    now?: Date;
+  },
+  executor: DbOrTransaction = db,
+): Promise<{ token: string; session: SessionRecord }> {
   const now = params.now ?? new Date();
   const { token, digest } = issueToken();
 
-  const [row] = await db
+  const [row] = await executor
     .insert(session)
     .values({
       userId: params.userId,

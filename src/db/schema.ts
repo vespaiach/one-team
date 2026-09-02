@@ -100,6 +100,31 @@ export const resetToken = pgTable(
   ],
 );
 
+export const invite = pgTable(
+  "invite",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .$defaultFn(() => uuidv7()),
+    email: text("email").notNull(),
+    invitedBy: uuid("invited_by")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    tokenDigest: text("token_digest").notNull().unique(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("invite_email_lower_unspent_idx")
+      .on(sql`lower(${table.email})`)
+      .where(sql`${table.acceptedAt} is null`),
+    check("invite_email_length", sql`char_length(${table.email}) <= 200`),
+    check("invite_token_digest_length", sql`char_length(${table.tokenDigest}) = 64`),
+  ],
+);
+
 export const authAttempt = pgTable(
   "auth_attempt",
   {

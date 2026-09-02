@@ -25,16 +25,17 @@ describe("proxy (FR-011, research B-3)", () => {
     expect(response.headers.get("x-middleware-next")).toBe("1");
   });
 
-  it("exempts exactly /signin, /reset, /api/auth/signin, /_next/* and static assets", () => {
+  it("exempts exactly /signin, /reset, /invite/accept, /api/auth/signin, /_next/* and static assets", () => {
     const exempt = [
       "/signin",
       "/reset",
+      "/invite/accept",
       "/api/auth/signin",
       "/_next/static/chunk.js",
       "/_next/image",
       "/favicon.ico",
     ];
-    const protectedPaths = ["/home", "/invite/accept", "/api/projects", "/settings"];
+    const protectedPaths = ["/home", "/api/projects", "/settings"];
 
     for (const path of exempt) {
       expect(unstable_doesMiddlewareMatch({ config, url: `https://app.example.com${path}` })).toBe(false);

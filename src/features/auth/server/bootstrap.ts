@@ -3,6 +3,7 @@ import postgres from "postgres";
 import { db } from "@/db";
 import { credential, user } from "@/db/schema";
 import { touched } from "@/db/touched";
+import { isUniqueViolation } from "@/db/unique-violation";
 import { hashPassword } from "./crypto";
 import { parseEmail } from "./input";
 import { logRefusedFirstRunSeed } from "./log";
@@ -32,17 +33,6 @@ export interface BootstrapEnv {
   databaseUrl: string | undefined;
   adminEmail: string | undefined;
   adminPassword: string | undefined;
-}
-
-function hasUniqueViolationCode(error: unknown): boolean {
-  return typeof error === "object" && error !== null && "code" in error && error.code === "23505";
-}
-
-function isUniqueViolation(error: unknown): boolean {
-  if (hasUniqueViolationCode(error)) {
-    return true;
-  }
-  return error instanceof Error && hasUniqueViolationCode(error.cause);
 }
 
 export function assertAppUrl(value: string | undefined): void {

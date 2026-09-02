@@ -42,4 +42,18 @@ describe("migration (FR-008, research C-9)", () => {
     expect(defs.some((def) => /\(flow, kind, subject, attempted_at\)/i.test(def))).toBe(true);
     expect(defs.some((def) => /\(attempted_at\)/i.test(def))).toBe(true);
   });
+
+  it("indexes token_digest uniquely on invite", async () => {
+    const defs = await indexDefsFor("invite");
+    expect(defs.some((def) => /unique/i.test(def) && /token_digest/i.test(def))).toBe(true);
+  });
+
+  it("indexes lower(email) uniquely and partially on invite where accepted_at is null (FR-009a, FR-014)", async () => {
+    const defs = await indexDefsFor("invite");
+    const partial = defs.find((def) => /invite_email_lower_unspent_idx/i.test(def));
+    expect(partial).toBeDefined();
+    expect(partial).toMatch(/unique/i);
+    expect(partial).toMatch(/lower\(email\)/i);
+    expect(partial).toMatch(/accepted_at is null/i);
+  });
 });
