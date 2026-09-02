@@ -1,6 +1,8 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { Sidebar } from "./sidebar";
+
+vi.mock("@/features/auth/actions", () => ({ signOut: vi.fn() }));
 
 const baseProps = { displayName: "Ada Lovelace", avatarUrl: null };
 

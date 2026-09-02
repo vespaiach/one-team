@@ -1,6 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { UserChip } from "./user-chip";
+
+vi.mock("@/features/auth/actions", () => ({ signOut: vi.fn() }));
 
 describe("UserChip (FR-017, FR-018, research B-5)", () => {
   it("renders the given display name, first and last joined by one space (s7)", () => {
