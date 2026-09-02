@@ -47,6 +47,11 @@ const SIGNED_IN_ROUTES = [
   },
 ];
 
+const DELIVERED_SIGNED_IN_ROUTE_NAMES = new Set(["/profile"]);
+const UNDELIVERED_SIGNED_IN_ROUTES = SIGNED_IN_ROUTES.filter(
+  (route) => !DELIVERED_SIGNED_IN_ROUTE_NAMES.has(route.name),
+);
+
 const ALL_ROUTES = [...ADMIN_ONLY_ROUTES, ...SIGNED_IN_ROUTES];
 
 describe("Route guards (FR-014, FR-019, FR-021, FR-022, FR-029, research D-1)", () => {
@@ -102,7 +107,9 @@ describe("Route guards (FR-014, FR-019, FR-021, FR-022, FR-029, research D-1)", 
     });
   });
 
-  it.each(SIGNED_IN_ROUTES)("$name answers 404 for a signed-in member", async ({ importPage }) => {
+  it.each(UNDELIVERED_SIGNED_IN_ROUTES)("$name answers 404 for a signed-in member", async ({
+    importPage,
+  }) => {
     requireActorMock.mockResolvedValue(member);
     const { default: Page } = await importPage();
 
@@ -111,12 +118,19 @@ describe("Route guards (FR-014, FR-019, FR-021, FR-022, FR-029, research D-1)", 
     });
   });
 
-  it.each(SIGNED_IN_ROUTES)("$name answers 404 for a signed-in admin", async ({ importPage }) => {
+  it.each(UNDELIVERED_SIGNED_IN_ROUTES)("$name answers 404 for a signed-in admin", async ({ importPage }) => {
     requireActorMock.mockResolvedValue(admin);
     const { default: Page } = await importPage();
 
     await expect(Page()).rejects.toMatchObject({
       digest: "NEXT_HTTP_ERROR_FALLBACK;404",
     });
+  });
+
+  it("/profile renders the screen, rather than 404, for a signed-in member", async () => {
+    requireActorMock.mockResolvedValue(member);
+    const { default: Page } = await import("./profile/page");
+
+    await expect(Page()).resolves.not.toBeNull();
   });
 });

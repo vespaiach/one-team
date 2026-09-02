@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { MustChangePasswordBanner } from "@/features/auth/components/must-change-password-banner";
+import { ConnectionBanner } from "./connection-banner";
 import { Sidebar } from "./sidebar";
 
 export function AppShell({
@@ -31,6 +32,7 @@ export function AppShell({
         id="main-content"
         className="flex flex-1 flex-col bg-(--color-surface)">
         {showPasswordBanner ? <MustChangePasswordBanner /> : null}
+        <ConnectionBanner />
         {children}
       </main>
     </div>

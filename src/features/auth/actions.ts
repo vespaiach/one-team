@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { user } from "@/db/schema";
 import { touched } from "@/db/touched";
+import { requireActor } from "./server/actor";
 import { clientIp } from "./server/client-ip";
 import { findResetCandidate, setCredentialPassword } from "./server/credentials";
 import { hashPassword } from "./server/crypto";
@@ -69,6 +70,40 @@ export async function requestPasswordReset(
       await sendPasswordResetMail({ to: email, token });
     }
   }
+
+  return { status: "sent" };
+}
+
+export type RequestOwnPasswordResetResult =
+  | { status: "sent" }
+  | { status: "throttled"; retryAfterSeconds: number };
+
+export async function requestOwnPasswordReset(): Promise<RequestOwnPasswordResetResult> {
+  const requestHeaders = await headers();
+  assertSameOrigin({ headers: requestHeaders });
+  const actor = await requireActor();
+
+  const [owner] = await db.select({ email: user.email }).from(user).where(eq(user.id, actor.id));
+  if (!owner) {
+    return { status: "sent" };
+  }
+
+  const ip = clientIp(requestHeaders);
+
+  try {
+    await assertNotThrottled({ flow: "reset", email: owner.email, ip });
+  } catch (error) {
+    if (error instanceof ThrottledError) {
+      await recordFailure({ flow: "reset", email: owner.email, ip });
+      return { status: "throttled", retryAfterSeconds: error.retryAfterSeconds };
+    }
+    throw error;
+  }
+
+  await recordFailure({ flow: "reset", email: owner.email, ip });
+
+  const { token } = await issueResetToken({ userId: actor.id });
+  await sendPasswordResetMail({ to: owner.email, token });
 
   return { status: "sent" };
 }

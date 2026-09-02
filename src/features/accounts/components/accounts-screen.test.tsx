@@ -74,14 +74,11 @@ describe("AccountsScreen (FR-003, FR-003a, FR-008, FR-008b)", () => {
     expect(invitationsTab.getAttribute("aria-selected")).toBe("true");
   });
 
-  it("renders the toast region and connection banner at page level, outside both tab panels", () => {
+  it("mounts no toast region or connection banner of its own — the app-wide shell instance is the only one", () => {
     renderScreen();
 
-    const panels = screen.getAllByRole("tabpanel", { hidden: true });
-    const region = screen.getByRole("region", { name: /notifications/i, hidden: true });
-    for (const panel of panels) {
-      expect(panel.contains(region)).toBe(false);
-    }
+    expect(screen.queryByRole("region", { name: /notifications/i, hidden: true })).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 
   it("FR-008's control closes the modal, switches to Accounts, and highlights the reached row, with no URL change", async () => {
