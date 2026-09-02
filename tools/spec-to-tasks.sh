@@ -18,22 +18,59 @@ fi
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 SPEC_DIR="$(cd "$SPEC_DIR" && pwd)"
 SPEC_NAME="$(basename "$SPEC_DIR")"
-SUFFIX="$(date +%s)-$$"
-BRANCH="tasks/$SPEC_NAME-$SUFFIX"
 
-WORKTREE_DIR="$REPO_ROOT/.claude/worktrees/$SPEC_NAME-$SUFFIX"
+PROGRESS_DIR="$REPO_ROOT/.claude/spec-to-tasks"
+STATE_FILE="$PROGRESS_DIR/$SPEC_NAME.state"
+mkdir -p "$PROGRESS_DIR"
 
-echo "Setting up isolated worktree for $SPEC_NAME..."
+LAST_STEP=0
 
-if git -C "$REPO_ROOT" show-ref --verify --quiet "refs/heads/$BRANCH"; then
-  echo "Error: branch $BRANCH already exists. Remove it or choose a different spec." >&2
-  exit 1
+if [ -f "$STATE_FILE" ]; then
+  echo "Found saved progress for $SPEC_NAME, resuming..."
+  # shellcheck disable=SC1090
+  source "$STATE_FILE"
+
+  if git -C "$REPO_ROOT" show-ref --verify --quiet "refs/heads/$BRANCH"; then
+    if [ -d "$WORKTREE_DIR" ]; then
+      echo "Reusing existing worktree at $WORKTREE_DIR..."
+    else
+      echo "Recreating worktree at $WORKTREE_DIR for branch $BRANCH..."
+      git -C "$REPO_ROOT" worktree add "$WORKTREE_DIR" "$BRANCH"
+      if [ -f "$REPO_ROOT/package.json" ]; then
+        (cd "$WORKTREE_DIR" && npm install)
+      fi
+    fi
+  else
+    echo "Saved branch $BRANCH no longer exists; starting over."
+    rm -f "$STATE_FILE"
+    LAST_STEP=0
+  fi
 fi
 
-git -C "$REPO_ROOT" worktree add "$WORKTREE_DIR" -b "$BRANCH"
+if [ ! -f "$STATE_FILE" ]; then
+  SUFFIX="$(date +%s)-$$"
+  BRANCH="tasks/$SPEC_NAME-$SUFFIX"
+  WORKTREE_DIR="$REPO_ROOT/.claude/worktrees/$SPEC_NAME-$SUFFIX"
+  LAST_STEP=0
 
-if [ -f "$REPO_ROOT/package.json" ]; then
-  (cd "$WORKTREE_DIR" && npm install)
+  echo "Setting up isolated worktree for $SPEC_NAME..."
+
+  if git -C "$REPO_ROOT" show-ref --verify --quiet "refs/heads/$BRANCH"; then
+    echo "Error: branch $BRANCH already exists. Remove it or choose a different spec." >&2
+    exit 1
+  fi
+
+  git -C "$REPO_ROOT" worktree add "$WORKTREE_DIR" -b "$BRANCH"
+
+  if [ -f "$REPO_ROOT/package.json" ]; then
+    (cd "$WORKTREE_DIR" && npm install)
+  fi
+
+  {
+    echo "BRANCH=$BRANCH"
+    echo "WORKTREE_DIR=$WORKTREE_DIR"
+    echo "LAST_STEP=$LAST_STEP"
+  } > "$STATE_FILE"
 fi
 
 WORKTREE_SPEC_DIR="$WORKTREE_DIR/specs/$SPEC_NAME"
@@ -54,14 +91,27 @@ PROMPTS=(
 
 for PROMPT_NUMBER in "${!PROMPTS[@]}"; do
   PROMPT_INDEX=$((PROMPT_NUMBER + 1))
+
+  if [ "$PROMPT_INDEX" -le "$LAST_STEP" ]; then
+    echo "Skipping Prompt $PROMPT_INDEX (already completed): ${PROMPTS[$PROMPT_NUMBER]}"
+    continue
+  fi
+
   echo "Running Prompt $PROMPT_INDEX: ${PROMPTS[$PROMPT_NUMBER]}"
   claude --dangerously-skip-permissions -p "${PROMPTS[$PROMPT_NUMBER]}"
+
+  {
+    echo "BRANCH=$BRANCH"
+    echo "WORKTREE_DIR=$WORKTREE_DIR"
+    echo "LAST_STEP=$PROMPT_INDEX"
+  } > "$STATE_FILE"
 done
 
 echo "Task building complete."
 
 if [ -z "$(git -C "$WORKTREE_DIR" status --porcelain)" ]; then
   echo "No changes produced; skipping commit and PR."
+  rm -f "$STATE_FILE"
   exit 0
 fi
 
@@ -77,5 +127,7 @@ gh pr create \
   --head "$BRANCH" \
   --title "Build tasks for $SPEC_NAME" \
   --body "Automated checklist resolution and task generation for \`specs/$SPEC_NAME\`."
+
+rm -f "$STATE_FILE"
 
 echo "Done."
