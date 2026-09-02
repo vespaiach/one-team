@@ -60,3 +60,13 @@ export async function setCredentialPassword(
 ): Promise<void> {
   await executor.update(credential).set(touched({ passwordHash })).where(eq(credential.userId, userId));
 }
+
+export async function createCredential(
+  executor: DbOrTransaction,
+  params: { userId: string; passwordHash: string; now?: Date },
+): Promise<void> {
+  const now = params.now ?? new Date();
+  await executor
+    .insert(credential)
+    .values({ userId: params.userId, passwordHash: params.passwordHash, createdAt: now, updatedAt: now });
+}

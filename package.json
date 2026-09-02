@@ -27,7 +27,7 @@
     "nodemailer": "^9.0.6",
     "postgres": "^3.4.9",
     "react": "19.2.8",
-    "react-aria-components": "^1.20.0",
+    "react-aria-components": "1.20.0",
     "react-dom": "19.2.8",
     "server-only": "^0.0.1",
     "uuidv7": "^1.2.1"

@@ -1,5 +1,5 @@
 import "server-only";
-import nodemailer from "nodemailer";
+import { sendMail } from "@/lib/mail";
 import { logMailSendFailure } from "./log";
 
 function buildResetLink(token: string): string {
@@ -13,25 +13,14 @@ function buildResetLink(token: string): string {
 }
 
 export async function sendPasswordResetMail(params: { to: string; token: string }): Promise<void> {
-  const smtpUrl = process.env.SMTP_URL;
-  const mailFrom = process.env.MAIL_FROM;
-
-  if (!smtpUrl || !mailFrom) {
-    logMailSendFailure(params.to);
-    return;
-  }
-
-  const transport = nodemailer.createTransport(smtpUrl);
   const link = buildResetLink(params.token);
+  const outcome = await sendMail({
+    to: params.to,
+    subject: "Reset your password",
+    text: `Reset your password: ${link}`,
+  });
 
-  try {
-    await transport.sendMail({
-      from: mailFrom,
-      to: params.to,
-      subject: "Reset your password",
-      text: `Reset your password: ${link}`,
-    });
-  } catch {
+  if (outcome === "not_sent") {
     logMailSendFailure(params.to);
   }
 }

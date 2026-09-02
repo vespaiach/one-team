@@ -1,7 +1,8 @@
+import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { credential, user } from "@/db/schema";
 import { testDb, truncateTestDatabase } from "@/db/test-database";
-import { findSignInCandidate, getUserEmail } from "./credentials";
+import { createCredential, findSignInCandidate, getUserEmail } from "./credentials";
 
 async function insertUser(overrides: Partial<typeof user.$inferInsert> = {}) {
   const now = new Date();
@@ -72,6 +73,18 @@ describe("findSignInCandidate (FR-013, FR-062)", () => {
     const candidate = await findSignInCandidate(owner.email);
 
     expect(candidate?.deactivatedAt?.getTime()).toBe(deactivatedAt.getTime());
+  });
+});
+
+describe("createCredential (F-6)", () => {
+  it("inserts a credential row through the given executor", async () => {
+    await truncateTestDatabase();
+    const owner = await insertUser();
+
+    await createCredential(testDb, { userId: owner.id, passwordHash: "hashed-value" });
+
+    const [row] = await testDb.select().from(credential).where(eq(credential.userId, owner.id));
+    expect(row?.passwordHash).toBe("hashed-value");
   });
 });
 

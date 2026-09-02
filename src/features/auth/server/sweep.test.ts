@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { authAttempt, resetToken, session, user } from "@/db/schema";
+import { authAttempt, invite, resetToken, session, user } from "@/db/schema";
 import { testDb, truncateTestDatabase } from "@/db/test-database";
 import { startSweep, sweep } from "./sweep";
 
@@ -130,6 +130,35 @@ describe("sweep (FR-044, research C-6)", () => {
 
     const rows = await testDb.select().from(authAttempt);
     expect(rows.map((row) => row.subject)).toEqual(["fresh@example.com"]);
+  });
+
+  it("deletes no invite row, spent or expired (FR-031a, SC-004, B-4)", async () => {
+    const admin = await insertUser();
+    await testDb.insert(invite).values([
+      {
+        email: `spent-${crypto.randomUUID()}@example.com`,
+        invitedBy: admin.id,
+        tokenDigest: "a".repeat(64),
+        expiresAt: new Date(NOW.getTime() + 60 * 60 * 1000),
+        acceptedAt: NOW,
+        createdAt: NOW,
+        updatedAt: NOW,
+      },
+      {
+        email: `expired-${crypto.randomUUID()}@example.com`,
+        invitedBy: admin.id,
+        tokenDigest: "b".repeat(64),
+        expiresAt: new Date(NOW.getTime() - 1000),
+        acceptedAt: null,
+        createdAt: NOW,
+        updatedAt: NOW,
+      },
+    ]);
+
+    await sweep(NOW);
+
+    const rows = await testDb.select().from(invite);
+    expect(rows).toHaveLength(2);
   });
 });
 

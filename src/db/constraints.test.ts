@@ -1,5 +1,6 @@
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
-import { authAttempt, credential, resetToken, session, user } from "./schema";
+import { authAttempt, credential, invite, resetToken, session, user } from "./schema";
 import { testDb, truncateTestDatabase } from "./test-database";
 
 beforeEach(async () => {
@@ -212,5 +213,100 @@ describe("free-text CHECK bounds (FR-002, research C-2, C-3, C-4, C-11)", () => 
         }),
       ).resolves.toBeDefined();
     });
+
+    describe("invite.token_digest", () => {
+      it("rejects an invite.token_digest not exactly 64 characters", async () => {
+        const admin = await insertUser();
+        const now = new Date();
+        await expect(
+          testDb.insert(invite).values({
+            email: `invitee-${crypto.randomUUID()}@example.com`,
+            invitedBy: admin.id,
+            tokenDigest: "a".repeat(63),
+            expiresAt: now,
+            createdAt: now,
+            updatedAt: now,
+          }),
+        ).rejects.toThrow();
+      });
+
+      it("accepts an invite.token_digest at exactly 64 characters", async () => {
+        const admin = await insertUser();
+        const now = new Date();
+        await expect(
+          testDb.insert(invite).values({
+            email: `invitee-${crypto.randomUUID()}@example.com`,
+            invitedBy: admin.id,
+            tokenDigest: "a".repeat(64),
+            expiresAt: now,
+            createdAt: now,
+            updatedAt: now,
+          }),
+        ).resolves.toBeDefined();
+      });
+    });
+  });
+});
+
+describe("invite enforced behaviour (FR-009a, FR-010)", () => {
+  async function insertAdmin() {
+    return insertUser();
+  }
+
+  function inviteValues(overrides: Partial<typeof invite.$inferInsert> & { invitedBy: string }) {
+    const now = new Date();
+    return {
+      email: `invitee-${crypto.randomUUID()}@example.com`,
+      tokenDigest: crypto.randomUUID().replace(/-/g, "").repeat(2),
+      expiresAt: now,
+      createdAt: now,
+      updatedAt: now,
+      ...overrides,
+    };
+  }
+
+  it("rejects a second unspent row for one case-folded address", async () => {
+    const admin = await insertAdmin();
+    const email = `Invitee-${crypto.randomUUID()}@Example.com`;
+    await testDb.insert(invite).values(inviteValues({ invitedBy: admin.id, email }));
+
+    await expect(
+      testDb.insert(invite).values(inviteValues({ invitedBy: admin.id, email: email.toLowerCase() })),
+    ).rejects.toThrow();
+  });
+
+  it("accepts a second row once the first is spent", async () => {
+    const admin = await insertAdmin();
+    const email = `invitee-${crypto.randomUUID()}@example.com`;
+    const [first] = await testDb
+      .insert(invite)
+      .values(inviteValues({ invitedBy: admin.id, email }))
+      .returning();
+    if (!first) {
+      throw new Error("first invite was not inserted");
+    }
+    await testDb.update(invite).set({ acceptedAt: new Date() }).where(eq(invite.id, first.id));
+
+    await expect(
+      testDb.insert(invite).values(inviteValues({ invitedBy: admin.id, email })),
+    ).resolves.toBeDefined();
+  });
+
+  it("rejects an invite.email over 200 characters", async () => {
+    const admin = await insertAdmin();
+    const overlong = `${"a".repeat(195)}@example.com`;
+    expect(overlong.length).toBeGreaterThan(200);
+    await expect(
+      testDb.insert(invite).values(inviteValues({ invitedBy: admin.id, email: overlong })),
+    ).rejects.toThrow();
+  });
+
+  it("accepts an invite.email at exactly 200 characters", async () => {
+    const admin = await insertAdmin();
+    const email = `${"a".repeat(188)}@example.com`;
+    expect(email.length).toBe(200);
+    await expect(
+      testDb.insert(invite).values(inviteValues({ invitedBy: admin.id, email })),
+    ).resolves.toBeDefined();
   });
 });

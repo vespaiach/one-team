@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { authAttempt, credential, session, user } from "@/db/schema";
 import { testDb, truncateTestDatabase } from "@/db/test-database";
+import { deactivateAccount } from "@/features/accounts/server/accounts";
 import * as cryptoModule from "@/features/auth/server/crypto";
 import { hashPassword } from "@/features/auth/server/crypto";
 import { SESSION_COOKIE_NAME } from "@/features/auth/server/sessions";
@@ -165,6 +166,20 @@ describe("POST /api/auth/signin — deactivated (FR-014)", () => {
     const response = await POST(signInRequest({ email: owner.email, password: "the-wrong-password!" }));
 
     await expect(response.json()).resolves.toEqual({ result: "rejected" });
+  });
+});
+
+describe("POST /api/auth/signin — closed via this feature's deactivateAccount (FR-046, OT-SEC-013, C-5)", () => {
+  it("refuses with the closed-account message rather than the generic one", async () => {
+    const owner = await insertUser();
+    await insertCredential(owner.id, "correct horse battery staple 12");
+    await deactivateAccount(owner.id);
+
+    const response = await POST(
+      signInRequest({ email: owner.email, password: "correct horse battery staple 12" }),
+    );
+
+    await expect(response.json()).resolves.toEqual({ result: "deactivated", contact: null });
   });
 });
 

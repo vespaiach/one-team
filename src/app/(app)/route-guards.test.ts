@@ -24,6 +24,11 @@ const ADMIN_ONLY_ROUTES = [
   { name: "/settings/labels", importPage: () => import("./settings/labels/page") },
 ];
 
+const DELIVERED_ADMIN_ROUTE_NAMES = new Set(["/settings/accounts"]);
+const UNDELIVERED_ADMIN_ROUTES = ADMIN_ONLY_ROUTES.filter(
+  (route) => !DELIVERED_ADMIN_ROUTE_NAMES.has(route.name),
+);
+
 const SIGNED_IN_ROUTES = [
   { name: "/profile", importPage: () => import("./profile/page") },
   { name: "/notifications", importPage: () => import("./notifications/page") },
@@ -87,7 +92,7 @@ describe("Route guards (FR-014, FR-019, FR-021, FR-022, FR-029, research D-1)", 
   });
 
   it.each(
-    ADMIN_ONLY_ROUTES,
+    UNDELIVERED_ADMIN_ROUTES,
   )("$name tells an admin the undelivered screen does not exist (s8, SC-014)", async ({ importPage }) => {
     requireActorMock.mockResolvedValue(admin);
     const { default: Page } = await importPage();

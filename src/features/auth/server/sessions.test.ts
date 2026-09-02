@@ -77,6 +77,21 @@ describe("sessions (FR-010, FR-016, FR-017, FR-038, FR-054, SC-004, SC-008)", ()
     await expect(resolveSession(token, wayLater)).resolves.toBeNull();
   });
 
+  it("issueSession writes through a caller-supplied executor, matching deleteAllSessionsForUser's signature (F-4)", async () => {
+    const owner = await insertUser();
+    const now = new Date();
+
+    await expect(
+      testDb.transaction(async (tx) => {
+        await issueSession({ userId: owner.id, ipAddress: "203.0.113.4", userAgent: null, now }, tx);
+        throw new Error("rollback");
+      }),
+    ).rejects.toThrow("rollback");
+
+    const rows = await testDb.select().from(session).where(eq(session.userId, owner.id));
+    expect(rows).toHaveLength(0);
+  });
+
   it("deleteAllSessionsForUser removes every row for one user and none for any other", async () => {
     const owner = await insertUser();
     const other = await insertUser();
