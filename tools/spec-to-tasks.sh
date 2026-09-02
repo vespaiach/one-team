@@ -1,81 +1,130 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
-# Check if directory argument is provided
-if [ -z "$1" ]; then
+if [ -z "${1:-}" ]; then
   echo "Usage: $0 <path-to-spec-directory>"
   echo "Example: $0 specs/007-comments-activity-feeds"
   exit 1
 fi
 
-SPEC_DIR="$1"
-
-if [ ! -d "$SPEC_DIR" ]; then
-  echo "Error: Directory $SPEC_DIR does not exist."
+if [ ! -d "$1" ]; then
+  echo "Error: Directory $1 does not exist." >&2
   exit 1
 fi
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
-SPEC_DIR="$(cd "$SPEC_DIR" && pwd)"
+SPEC_DIR="$(cd "$1" && pwd)"
 SPEC_NAME="$(basename "$SPEC_DIR")"
+
+case "$SPEC_DIR" in
+  "$REPO_ROOT"/*) ;;
+  *)
+    echo "Error: $SPEC_DIR is outside the repository at $REPO_ROOT." >&2
+    exit 1
+    ;;
+esac
 
 PROGRESS_DIR="$REPO_ROOT/.claude/spec-to-tasks"
 STATE_FILE="$PROGRESS_DIR/$SPEC_NAME.state"
 mkdir -p "$PROGRESS_DIR"
 
-LAST_STEP=0
+BRANCH=""
+WORKTREE_DIR=""
+BASE_SHA=""
+
+save_state() {
+  local tmp="$STATE_FILE.tmp"
+  {
+    printf 'BRANCH=%q\n' "$BRANCH"
+    printf 'WORKTREE_DIR=%q\n' "$WORKTREE_DIR"
+    printf 'BASE_SHA=%q\n' "$BASE_SHA"
+  } > "$tmp"
+  mv "$tmp" "$STATE_FILE"
+}
+
+install_dependencies() {
+  if [ -f "$WORKTREE_DIR/package.json" ]; then
+    (cd "$WORKTREE_DIR" && npm install)
+  fi
+}
 
 if [ -f "$STATE_FILE" ]; then
   echo "Found saved progress for $SPEC_NAME, resuming..."
   # shellcheck disable=SC1090
   source "$STATE_FILE"
 
-  if git -C "$REPO_ROOT" show-ref --verify --quiet "refs/heads/$BRANCH"; then
-    if [ -d "$WORKTREE_DIR" ]; then
-      echo "Reusing existing worktree at $WORKTREE_DIR..."
-    else
-      echo "Recreating worktree at $WORKTREE_DIR for branch $BRANCH..."
-      git -C "$REPO_ROOT" worktree add "$WORKTREE_DIR" "$BRANCH"
-      if [ -f "$REPO_ROOT/package.json" ]; then
-        (cd "$WORKTREE_DIR" && npm install)
-      fi
-    fi
-  else
+  if [ -z "$BRANCH" ] || [ -z "$WORKTREE_DIR" ] || [ -z "$BASE_SHA" ]; then
+    echo "Saved progress is incomplete; starting over."
+    rm -f "$STATE_FILE"
+  elif ! git -C "$REPO_ROOT" show-ref --verify --quiet "refs/heads/$BRANCH"; then
     echo "Saved branch $BRANCH no longer exists; starting over."
     rm -f "$STATE_FILE"
-    LAST_STEP=0
   fi
 fi
 
-if [ ! -f "$STATE_FILE" ]; then
+if [ -f "$STATE_FILE" ]; then
+  if [ "$(git -C "$WORKTREE_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || true)" = "$BRANCH" ]; then
+    echo "Reusing existing worktree at $WORKTREE_DIR..."
+  elif [ -e "$WORKTREE_DIR" ]; then
+    echo "Error: $WORKTREE_DIR exists but is not a worktree for $BRANCH." >&2
+    echo "Remove it, or delete $STATE_FILE to start over." >&2
+    exit 1
+  else
+    echo "Recreating worktree at $WORKTREE_DIR for branch $BRANCH..."
+    git -C "$REPO_ROOT" worktree prune
+    git -C "$REPO_ROOT" worktree add "$WORKTREE_DIR" "$BRANCH"
+    install_dependencies
+  fi
+else
   SUFFIX="$(date +%s)-$$"
   BRANCH="tasks/$SPEC_NAME-$SUFFIX"
   WORKTREE_DIR="$REPO_ROOT/.claude/worktrees/$SPEC_NAME-$SUFFIX"
-  LAST_STEP=0
 
   echo "Setting up isolated worktree for $SPEC_NAME..."
+  git -C "$REPO_ROOT" fetch --quiet origin main
+  BASE_SHA="$(git -C "$REPO_ROOT" rev-parse origin/main)"
 
-  if git -C "$REPO_ROOT" show-ref --verify --quiet "refs/heads/$BRANCH"; then
-    echo "Error: branch $BRANCH already exists. Remove it or choose a different spec." >&2
+  if ! git -C "$REPO_ROOT" cat-file -e "$BASE_SHA:specs/$SPEC_NAME" 2>/dev/null; then
+    echo "Error: specs/$SPEC_NAME is not on origin/main, which the worktree branches from." >&2
+    echo "Commit and push the spec to main first." >&2
     exit 1
   fi
 
-  git -C "$REPO_ROOT" worktree add "$WORKTREE_DIR" -b "$BRANCH"
-
-  if [ -f "$REPO_ROOT/package.json" ]; then
-    (cd "$WORKTREE_DIR" && npm install)
-  fi
-
-  {
-    echo "BRANCH=$BRANCH"
-    echo "WORKTREE_DIR=$WORKTREE_DIR"
-    echo "LAST_STEP=$LAST_STEP"
-  } > "$STATE_FILE"
+  git -C "$REPO_ROOT" worktree add "$WORKTREE_DIR" -b "$BRANCH" "$BASE_SHA"
+  install_dependencies
+  save_state
 fi
 
 WORKTREE_SPEC_DIR="$WORKTREE_DIR/specs/$SPEC_NAME"
 
 cd "$WORKTREE_DIR"
+
+COMPLETED_STEPS="$(git rev-list --count "$BASE_SHA..HEAD")"
+
+if [ -n "$(git status --porcelain)" ]; then
+  ABANDONED_STEP=$((COMPLETED_STEPS + 1))
+  git add -A
+  git commit --quiet --message "spec-to-tasks: abandoned partial step $ABANDONED_STEP"
+  echo "Discarded partial output from step $ABANDONED_STEP; recoverable at $(git rev-parse HEAD)"
+  git reset --quiet --hard HEAD~1
+fi
+
+verify_step_artifact() {
+  case "$1" in
+    1)
+      if [ -z "$(find "specs/$SPEC_NAME/checklists" -type f -print -quit 2>/dev/null)" ]; then
+        echo "Error: step 1 produced no checklist in specs/$SPEC_NAME/checklists." >&2
+        exit 1
+      fi
+      ;;
+    4)
+      if [ ! -f "specs/$SPEC_NAME/tasks.md" ]; then
+        echo "Error: step 4 produced no specs/$SPEC_NAME/tasks.md." >&2
+        exit 1
+      fi
+      ;;
+  esac
+}
 
 echo "Starting task building for $WORKTREE_SPEC_DIR..."
 
@@ -89,44 +138,47 @@ PROMPTS=(
   "Review the speckit-analyze report for specs/$SPEC_NAME. Directly update spec.md, plan.md, and tasks.md to resolve any identified conflicts, gaps, or ambiguities."
 )
 
-for PROMPT_NUMBER in "${!PROMPTS[@]}"; do
-  PROMPT_INDEX=$((PROMPT_NUMBER + 1))
+for PROMPT_INDEX in "${!PROMPTS[@]}"; do
+  STEP_NUMBER=$((PROMPT_INDEX + 1))
 
-  if [ "$PROMPT_INDEX" -le "$LAST_STEP" ]; then
-    echo "Skipping Prompt $PROMPT_INDEX (already completed): ${PROMPTS[$PROMPT_NUMBER]}"
+  if [ "$STEP_NUMBER" -le "$COMPLETED_STEPS" ]; then
+    echo "Skipping step $STEP_NUMBER (already completed): ${PROMPTS[$PROMPT_INDEX]}"
     continue
   fi
 
-  echo "Running Prompt $PROMPT_INDEX: ${PROMPTS[$PROMPT_NUMBER]}"
-  claude --dangerously-skip-permissions -p "${PROMPTS[$PROMPT_NUMBER]}"
+  echo "Running step $STEP_NUMBER: ${PROMPTS[$PROMPT_INDEX]}"
+  claude --dangerously-skip-permissions -p "${PROMPTS[$PROMPT_INDEX]}"
 
-  {
-    echo "BRANCH=$BRANCH"
-    echo "WORKTREE_DIR=$WORKTREE_DIR"
-    echo "LAST_STEP=$PROMPT_INDEX"
-  } > "$STATE_FILE"
+  verify_step_artifact "$STEP_NUMBER"
+
+  git add -A
+  git commit --quiet --allow-empty --message "spec-to-tasks: step $STEP_NUMBER for $SPEC_NAME"
 done
 
 echo "Task building complete."
 
-if [ -z "$(git -C "$WORKTREE_DIR" status --porcelain)" ]; then
-  echo "No changes produced; skipping commit and PR."
+if git diff --quiet "$BASE_SHA" HEAD; then
+  echo "No changes produced; skipping push and pull request."
   rm -f "$STATE_FILE"
   exit 0
 fi
 
-echo "Committing and pushing changes..."
-git -C "$WORKTREE_DIR" add -A
-git -C "$WORKTREE_DIR" commit -m "Build tasks for $SPEC_NAME"
-git -C "$WORKTREE_DIR" push -u origin "$BRANCH"
+echo "Pushing $BRANCH..."
+git push --quiet -u origin "$BRANCH"
 
-echo "Opening pull request..."
-gh pr create \
-  --repo vespaiach/one-team \
-  --base main \
-  --head "$BRANCH" \
-  --title "Build tasks for $SPEC_NAME" \
-  --body "Automated checklist resolution and task generation for \`specs/$SPEC_NAME\`."
+EXISTING_PR="$(gh pr list --repo vespaiach/one-team --head "$BRANCH" --state open --json url --jq '.[0].url // empty')"
+
+if [ -n "$EXISTING_PR" ]; then
+  echo "Pull request already open: $EXISTING_PR"
+else
+  echo "Opening pull request..."
+  gh pr create \
+    --repo vespaiach/one-team \
+    --base main \
+    --head "$BRANCH" \
+    --title "Build tasks for $SPEC_NAME" \
+    --body "Automated checklist resolution and task generation for \`specs/$SPEC_NAME\`."
+fi
 
 rm -f "$STATE_FILE"
 
