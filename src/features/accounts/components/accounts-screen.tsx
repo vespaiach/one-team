@@ -3,14 +3,14 @@
 import { useState } from "react";
 import { Button } from "react-aria-components/Button";
 import { Tab, TabList, TabPanel, Tabs } from "react-aria-components/Tabs";
+import { guardedWrite } from "@/features/shell/components/connection-banner";
+import { showToast } from "@/features/shell/components/toast-region";
 import type { AccountState, AddressCheck, ResendState, RevokeState } from "../actions";
 import type { InvitationRow, RosterView } from "../server/roster";
-import { ConnectionBanner, guardedWrite } from "./connection-banner";
 import { InvitationsTable } from "./invitations-table";
 import type { InviteModalAction } from "./invite-modal";
 import { InviteModal } from "./invite-modal";
 import { RosterTable } from "./roster-table";
-import { showToast, ToastRegion } from "./toast-region";
 
 function ReadFailure() {
   return (
@@ -110,8 +110,6 @@ export function AccountsScreen({
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <ConnectionBanner />
-      <ToastRegion />
       <Tabs
         selectedKey={selectedKey}
         onSelectionChange={(key) => setSelectedKey(String(key))}>

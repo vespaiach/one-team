@@ -1,6 +1,7 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { act, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { AppShell } from "./app-shell";
+import { reportTransportFailure, reportTransportSuccess } from "./connection-banner";
 
 vi.mock("@/features/auth/actions", () => ({ signOut: vi.fn() }));
 
@@ -163,5 +164,37 @@ describe("AppShell banner slot (FR-025, FR-026, SC-009)", () => {
     expect(screen.queryByText(/your password is still the one set/i)).toBeNull();
     const main = screen.getByRole("main");
     expect(main.firstElementChild).toBe(screen.getByText("page content"));
+  });
+});
+
+describe("AppShell connection banner (FR-034, FR-057)", () => {
+  afterEach(() => {
+    reportTransportSuccess();
+  });
+
+  it("stacks the connection banner with the password banner rather than replacing it (FR-034)", () => {
+    render(
+      <AppShell
+        {...baseProps}
+        showPasswordBanner={true}>
+        <p>page content</p>
+      </AppShell>,
+    );
+    act(() => {
+      reportTransportFailure();
+    });
+
+    expect(screen.getByText(/your password is still the one set/i)).not.toBeNull();
+    expect(screen.getByRole("alert").textContent).toBe("Can't reach the server. Reconnecting.");
+  });
+
+  it("renders no connection banner while the transport is live", () => {
+    render(
+      <AppShell {...baseProps}>
+        <p>page content</p>
+      </AppShell>,
+    );
+
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 });
