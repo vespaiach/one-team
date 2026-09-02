@@ -138,12 +138,17 @@ PROMPTS=(
   "Run the speckit-tasks skill for specs/$SPEC_NAME to generate tasks.md based on the updated spec."
   "Run the speckit-analyze skill for specs/$SPEC_NAME to evaluate documentation consistency."
   "Review the speckit-analyze report for specs/$SPEC_NAME. Directly update spec.md, plan.md, and tasks.md to resolve any identified conflicts, gaps, or ambiguities."
-  "/goal Using the \`speckit-implement\` skill, please execute the implementation tasks defined in \`specs/$SPEC_NAME/tasks.md\`. You must strictly adhere to the following execution strategy:
+  "/goal \`specs/$SPEC_NAME/tasks.md\` is fully implemented: every task line is marked \`[X]\`, every phase has its own commit, the working tree is clean, and \`npm run verify\` passes.
 
-* Sequential Processing: Execute the document in strict order, starting from the first Phase and proceeding sequentially to the final Phase.
-* Sub-Agent Delegation: For each Phase, you must spawn a sub-agent using the exact command \`/speckit-implement execute phase {phase-number}\` to handle the implementation of all tasks within that specific phase.
-* Automated Commits: After a sub-agent fully completes, verifies, and reports success on its phase, it must automatically create a git commit containing all changes made during that phase before control returns to the orchestrator.
-* Blocking Execution: Wait for the sub-agent to fully complete, verify, create its commit, and report success on the current Phase before you spawn the next sub-agent for the subsequent Phase."
+Reach that state with the \`speckit-implement\` skill, following this execution strategy exactly:
+
+* Sequential Processing: Work the phases in document order, from the first Phase to the last. Do not begin a phase until the previous one is committed.
+* Sub-Agent Delegation: For each Phase, spawn a sub-agent using the exact command \`/speckit-implement execute phase {phase-number}\` to implement every task in that phase.
+* Blocking Execution: Wait for that sub-agent to fully complete, verify its work, and commit before spawning the next one. Never run two phases at once.
+* Automated Commits: Each sub-agent commits its own phase's changes before returning control, so one phase is one commit and the tree is clean between phases.
+* Honest Reporting: Never mark a task \`[X]\` that is not done, and never skip past a failing phase to a later one. If a phase cannot be completed, or the same failure survives two attempts, stop and report which task failed and why.
+
+The goal is NOT met while any task line is still \`- [ ]\`, any phase's work is uncommitted, or \`npm run verify\` fails."
 )
 
 for PROMPT_INDEX in "${!PROMPTS[@]}"; do
