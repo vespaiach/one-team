@@ -1,11 +1,11 @@
-import { createElement, isValidElement, type ReactNode } from "react";
+import { Children, createElement, isValidElement, type ReactElement, type ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 const { loadActorMock } = vi.hoisted(() => ({ loadActorMock: vi.fn() }));
 vi.mock("@/features/auth/server/actor", () => ({ loadActor: loadActorMock }));
 
-describe("(app)/layout.tsx (FR-002, FR-015, contracts/app-shell.md)", () => {
-  it("wraps children in AppShell when an actor is present", async () => {
+describe("(app)/layout.tsx (FR-002, FR-015, FR-033, contracts/app-shell.md, contracts/ux-conventions.md)", () => {
+  it("wraps children in AppShell when an actor is present, alongside a single message host", async () => {
     loadActorMock.mockResolvedValue({
       id: "u1",
       role: "member",
@@ -17,6 +17,7 @@ describe("(app)/layout.tsx (FR-002, FR-015, contracts/app-shell.md)", () => {
 
     const { default: AppLayout } = await import("./layout");
     const { AppShell } = await import("@/features/shell/components/app-shell");
+    const { MessageHost } = await import("@/features/shell/components/message-host");
     const children = createElement("p", null, "page content");
 
     const result = await AppLayout({ children });
@@ -25,8 +26,13 @@ describe("(app)/layout.tsx (FR-002, FR-015, contracts/app-shell.md)", () => {
     if (!isValidElement<{ children: ReactNode }>(result)) {
       throw new Error("expected a React element");
     }
-    expect(result.type).toBe(AppShell);
-    expect(result.props.children).toBe(children);
+    const siblings = Children.toArray(result.props.children) as ReactElement[];
+    const shellElement = siblings.find((sibling) => sibling.type === AppShell);
+    const hostElements = siblings.filter((sibling) => sibling.type === MessageHost);
+
+    expect(shellElement).toBeDefined();
+    expect((shellElement as ReactElement<{ children: ReactNode }>).props.children).toBe(children);
+    expect(hostElements).toHaveLength(1);
   });
 
   it("renders exactly its children, with no frame, when there is no actor", async () => {
