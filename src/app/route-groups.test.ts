@@ -38,4 +38,15 @@ describe("route-group boundary (FR-004, s7)", () => {
 
     expect(loadingFiles).toHaveLength(0);
   });
+
+  it("renders no banner slot under (auth) — a screen outside the shell has nothing to render and nothing to suppress (s5, FR-027)", async () => {
+    const files = (await filesUnder(AUTH_DIR)).filter(
+      (file) => file.endsWith(".ts") || file.endsWith(".tsx"),
+    );
+
+    for (const file of files) {
+      const contents = readFileSync(file, "utf8");
+      expect(contents).not.toMatch(/MustChangePasswordBanner/);
+    }
+  });
 });

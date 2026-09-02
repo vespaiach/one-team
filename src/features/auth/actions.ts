@@ -1,7 +1,7 @@
 "use server";
 
 import { eq, TransactionRollbackError } from "drizzle-orm";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { user } from "@/db/schema";
@@ -14,7 +14,7 @@ import { sendPasswordResetMail } from "./server/mail";
 import { assertSameOrigin } from "./server/origin";
 import { assertPasswordPolicy, type PasswordPolicyFailure } from "./server/password-policy";
 import { issueResetToken, resolveResetTokenState, spendResetToken } from "./server/reset-tokens";
-import { deleteAllSessionsForUser } from "./server/sessions";
+import { deleteAllSessionsForUser, deleteSession, SESSION_COOKIE_NAME } from "./server/sessions";
 import { assertNotThrottled, recordFailure, ThrottledError } from "./server/throttle";
 
 export type RequestPasswordResetState =
@@ -141,4 +141,18 @@ export async function completePasswordReset(
   }
 
   redirect("/signin?reset=done");
+}
+
+export async function signOut(): Promise<void> {
+  assertSameOrigin({ headers: await headers() });
+
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+
+  if (token) {
+    await deleteSession(token);
+  }
+
+  cookieStore.delete(SESSION_COOKIE_NAME);
+  redirect("/signin");
 }
