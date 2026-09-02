@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { requestPasswordReset } from "../actions";
 import { ResetRequestForm } from "./reset-request-form";
 
@@ -20,13 +20,18 @@ function submit() {
 }
 
 describe("ResetRequestForm (FR-030)", () => {
-  it("renders an email field and a Send reset link control, and nothing else", () => {
+  it("renders the title, an email field, a Send reset link control and a single back-to-sign-in link", () => {
     render(<ResetRequestForm />);
 
+    expect(screen.getByRole("heading", { name: "Reset your password" })).not.toBeNull();
     expect(screen.getByLabelText(/email/i)).not.toBeNull();
     expect(screen.getByRole("button", { name: /send reset link/i })).not.toBeNull();
-    expect(screen.queryAllByRole("link")).toHaveLength(0);
     expect(screen.queryByLabelText(/password/i)).toBeNull();
+
+    const links = screen.getAllByRole("link");
+    expect(links).toHaveLength(1);
+    expect(links[0]?.textContent).toContain("Back to sign in");
+    expect(links[0]?.getAttribute("href")).toBe("/signin");
   });
 
   it("shows the identical confirmation whether or not the address has an account", async () => {
@@ -36,19 +41,21 @@ describe("ResetRequestForm (FR-030)", () => {
     fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "ada@example.com" } });
     submit();
 
-    expect(await screen.findByText("If that address has an account, a link is on the way")).not.toBeNull();
+    expect(await screen.findByText("If that address has an account, a link is on the way.")).not.toBeNull();
+    expect(screen.getByRole("heading", { name: "Check your email" })).not.toBeNull();
     expect(screen.queryByLabelText(/email/i)).toBeNull();
   });
 
-  it("renders its own throttled state with the remaining time as whole minutes rounded up", async () => {
-    vi.mocked(requestPasswordReset).mockResolvedValue({ status: "throttled", retryAfterSeconds: 61 });
+  it("shows the same confirmation with a live countdown when already throttled", async () => {
+    vi.mocked(requestPasswordReset).mockResolvedValue({ status: "throttled", retryAfterSeconds: 47 });
 
     render(<ResetRequestForm />);
     fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "ada@example.com" } });
     submit();
 
-    const outcome = await screen.findByRole("alert");
-    expect(outcome.textContent).toContain("2 minutes");
+    expect(await screen.findByText("If that address has an account, a link is on the way.")).not.toBeNull();
+    expect(screen.getByRole("heading", { name: "Check your email" })).not.toBeNull();
+    expect(screen.getByText(/00:47/)).not.toBeNull();
   });
 
   it("shows an in-flight state while the action is pending, then the confirmation", async () => {
@@ -68,6 +75,65 @@ describe("ResetRequestForm (FR-030)", () => {
 
     resolveAction({ status: "sent" });
 
-    expect(await screen.findByText("If that address has an account, a link is on the way")).not.toBeNull();
+    expect(await screen.findByText("If that address has an account, a link is on the way.")).not.toBeNull();
+  });
+});
+
+describe("ResetRequestForm — client-side email validation", () => {
+  it("shows a validation error and blocks submission for an empty email", async () => {
+    render(<ResetRequestForm />);
+    submit();
+
+    expect(await screen.findByText("Enter your email address.")).not.toBeNull();
+    expect(requestPasswordReset).not.toHaveBeenCalled();
+  });
+
+  it("shows a validation error and blocks submission for a malformed email", async () => {
+    render(<ResetRequestForm />);
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "not-an-email" } });
+    submit();
+
+    expect(await screen.findByText("Enter a valid email address.")).not.toBeNull();
+    expect(requestPasswordReset).not.toHaveBeenCalled();
+  });
+
+  it("submits once a valid email replaces an invalid one", async () => {
+    vi.mocked(requestPasswordReset).mockResolvedValue({ status: "sent" });
+
+    render(<ResetRequestForm />);
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "not-an-email" } });
+    submit();
+    expect(await screen.findByText("Enter a valid email address.")).not.toBeNull();
+
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "ada@example.com" } });
+    submit();
+
+    expect(await screen.findByText("If that address has an account, a link is on the way.")).not.toBeNull();
+  });
+});
+
+describe("ResetRequestForm — resend cooldown", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("disables request-another while the cooldown counts down, and enables it once it reaches zero", async () => {
+    vi.mocked(requestPasswordReset).mockResolvedValue({ status: "throttled", retryAfterSeconds: 2 });
+
+    render(<ResetRequestForm />);
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "ada@example.com" } });
+    await vi.waitFor(() => submit());
+
+    const requestAnother = await vi.waitFor(() => screen.getByRole("button", { name: /request another/i }));
+    expect(requestAnother.hasAttribute("disabled")).toBe(true);
+
+    await vi.advanceTimersByTimeAsync(2000);
+
+    expect(requestAnother.hasAttribute("disabled")).toBe(false);
+    expect(screen.queryByText(/00:00/)).toBeNull();
   });
 });

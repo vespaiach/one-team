@@ -13,6 +13,8 @@ export type Actor = {
   role: string;
   firstName: string;
   lastName: string;
+  avatarUrl: string | null;
+  mustChangePassword: boolean;
 };
 
 async function loadActorImpl(): Promise<Actor | null> {
@@ -32,6 +34,8 @@ async function loadActorImpl(): Promise<Actor | null> {
       role: user.role,
       firstName: user.firstName,
       lastName: user.lastName,
+      avatarUrl: user.avatarUrl,
+      mustChangePassword: user.mustChangePassword,
       deactivatedAt: user.deactivatedAt,
     })
     .from(session)
@@ -47,7 +51,14 @@ async function loadActorImpl(): Promise<Actor | null> {
     .set({ lastSeenAt: now, expiresAt: new Date(now.getTime() + SESSION_LIFETIME_MS) })
     .where(eq(session.id, row.sessionId));
 
-  return { id: row.userId, role: row.role, firstName: row.firstName, lastName: row.lastName };
+  return {
+    id: row.userId,
+    role: row.role,
+    firstName: row.firstName,
+    lastName: row.lastName,
+    avatarUrl: row.avatarUrl,
+    mustChangePassword: row.mustChangePassword,
+  };
 }
 
 export const loadActor = cache(loadActorImpl);

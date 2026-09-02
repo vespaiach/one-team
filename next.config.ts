@@ -6,6 +6,9 @@ const nextConfig: NextConfig = {
   logging: {
     browserToTerminal: true,
   },
+  experimental: {
+    authInterrupts: true,
+  },
 };
 
 export default nextConfig;

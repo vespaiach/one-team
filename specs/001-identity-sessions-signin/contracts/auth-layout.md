@@ -34,11 +34,10 @@ frame is needed — only on the body.
 
 | The layout owns | Each page owns |
 | --- | --- |
-| The page background (`--color-page`) | Its `<h1>` |
+| The page background (`--color-page`) | Its own app mark, inside its own card, then its `<h1>` |
 | Horizontal centring and the card's vertical anchor | Its form, or its explanatory state |
 | The card: surface, border, radius, padding, `max-width` | Its fields and its submit control |
-| The app mark above the card | Its own error, success and in-flight states — **all three routes have an in-flight state**, not only `/signin` |
-| The document `<main>` landmark | — |
+| The document `<main>` landmark | Its own error, success and in-flight states — **all three routes have an in-flight state**, not only `/signin` |
 
 **It performs no data access, no authorization and no redirect.** These are the public routes; there
 is nothing to check. It also holds no state: the layout has no `"use client"`, imports nothing from
@@ -52,10 +51,10 @@ is nothing to check. It also holds no state: the layout has no `"use client"`, i
 main                                  --color-page, min-h-full, flex-col, items-center,
                                       pt-[max(12vh,96px)], pb-16
 └── div                               w-full, max-w-[440px], flex-col, gap-6
-    ├── p                             app mark — the One/Team lockup, aligned to the card's left edge
     └── div                           the card — --color-surface, 1px --color-border,
                                       radius 0, p-8, flex-col, gap-6
-        └── {children}                the page
+        └── {children}                the page — starts with its own app mark, the
+                                      One/Team lockup, then its <h1>
 ```
 
 `min-h-full` rather than `min-h-screen`: the root layout already sets `h-full` on `<html>` and
@@ -67,9 +66,10 @@ reader while they are reading the error that just appeared; the floor means a sh
 rather than clipping, and `pb-16` means a tall state — change password with two fields and two policy
 messages — scrolls instead of running off the bottom.
 
-**Every page's first child is its `<h1>`.** The heading is not lifted into the layout because a
-layout cannot receive per-page props, and passing one through a context or a slot would be
-indirection where a heading in the page is plainly readable (Principle III).
+**Every page renders its own app mark, then its `<h1>`, inside the card.** Neither is lifted into
+the layout because a layout cannot receive per-page props, and passing one through a context or a
+slot would be indirection where an app mark and a heading in the page are plainly readable
+(Principle III).
 
 ---
 

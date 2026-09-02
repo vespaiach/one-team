@@ -48,10 +48,25 @@ export async function findResetCandidate(email: string): Promise<ResetCandidate 
   return { userId: row.userId, deactivatedAt: row.deactivatedAt, hasCredential: row.credentialId !== null };
 }
 
+export async function getUserEmail(userId: string): Promise<string | null> {
+  const [row] = await db.select({ email: user.email }).from(user).where(eq(user.id, userId));
+  return row?.email ?? null;
+}
+
 export async function setCredentialPassword(
   executor: DbOrTransaction,
   userId: string,
   passwordHash: string,
 ): Promise<void> {
   await executor.update(credential).set(touched({ passwordHash })).where(eq(credential.userId, userId));
+}
+
+export async function createCredential(
+  executor: DbOrTransaction,
+  params: { userId: string; passwordHash: string; now?: Date },
+): Promise<void> {
+  const now = params.now ?? new Date();
+  await executor
+    .insert(credential)
+    .values({ userId: params.userId, passwordHash: params.passwordHash, createdAt: now, updatedAt: now });
 }

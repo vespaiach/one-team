@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import AuthLayout from "./layout";
 
 describe("(auth) layout (research A-1, A-2, OT-UX-001)", () => {
-  it("renders a <main> landmark carrying the page background, the app mark and the card", () => {
+  it("renders a <main> landmark carrying the page background and the card", () => {
     render(
       <AuthLayout>
         <p>page content</p>
@@ -13,27 +13,35 @@ describe("(auth) layout (research A-1, A-2, OT-UX-001)", () => {
     );
 
     const main = screen.getByRole("main");
-    expect(main.className).toContain("--color-page");
-    expect(main.textContent).toContain("OneTeam");
+    expect(main.className).toContain("--color-bg");
     expect(screen.getByText("page content")).not.toBeNull();
   });
 
-  it("renders the app mark as a two-block lockup per the visual identity (Visual Logo, turn 3)", () => {
+  it("centres the card on the page and renders no app mark of its own", () => {
     render(
       <AuthLayout>
         <p>page content</p>
       </AuthLayout>,
     );
 
-    const one = screen.getByText("One");
-    const team = screen.getByText("Team");
+    const main = screen.getByRole("main");
+    expect(main.className).toContain("items-center");
+    expect(main.className).toContain("justify-center");
+    expect(main.querySelector("svg")).toBeNull();
+    expect(screen.queryByText("One Team")).toBeNull();
+  });
 
-    expect(one.className).toContain("bg-[var(--color-text)]");
-    expect(one.className).toContain("text-white");
-    expect(team.className).toContain("bg-[var(--color-accent)]");
-    expect(team.className).toContain("text-white");
-    expect(one.parentElement?.className).toContain("uppercase");
-    expect(one.parentElement?.className).toContain("font-black");
+  it("renders the card with a 2px divider border, no radius and the page's own background", () => {
+    render(
+      <AuthLayout>
+        <p>page content</p>
+      </AuthLayout>,
+    );
+
+    const card = screen.getByText("page content").closest("div");
+    expect(card?.className).toContain("border-2");
+    expect(card?.className).toContain("border-[var(--color-divider)]");
+    expect(card?.className).toContain("bg-[var(--color-bg)]");
   });
 
   it("is a Server Component holding no state, and imports nothing from react-aria-components", () => {

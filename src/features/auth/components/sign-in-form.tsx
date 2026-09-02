@@ -3,11 +3,14 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { Button } from "react-aria-components/Button";
-import { FieldError } from "react-aria-components/FieldError";
 import { Form } from "react-aria-components/Form";
-import { Input } from "react-aria-components/Input";
-import { Label } from "react-aria-components/Label";
-import { TextField } from "react-aria-components/TextField";
+import { Banner } from "./banner";
+import { CardFooterNote } from "./card-footer-note";
+import { EmailField } from "./email-field";
+import { validateEmail } from "./email-validation";
+import { BanIcon, LockIcon, XCircleIcon } from "./icons";
+import { PasswordField } from "./password-field";
+import { primaryButtonClasses } from "./primary-button-classes";
 
 type SignInResponse =
   | { result: "ok" }
@@ -15,19 +18,11 @@ type SignInResponse =
   | { result: "deactivated"; contact: string | null }
   | { result: "throttled"; retryAfterSeconds: number };
 
-type Outcome = { message: string } | null;
-
-const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-function validateEmail(value: string): string | null {
-  if (value.length === 0) {
-    return "Enter your email address.";
-  }
-  if (!EMAIL_SHAPE.test(value)) {
-    return "Enter a valid email address.";
-  }
-  return null;
-}
+type Outcome =
+  | { kind: "rejected" }
+  | { kind: "deactivated"; contact: string | null }
+  | { kind: "throttled"; minutes: number }
+  | null;
 
 function validatePassword(value: string): string | null {
   if (value.length === 0) {
@@ -80,81 +75,107 @@ export function SignInForm() {
           return;
         }
         if (body.result === "rejected") {
-          setOutcome({ message: "That email and password don't match." });
+          setOutcome({ kind: "rejected" });
           return;
         }
         if (body.result === "throttled") {
           const minutes = Math.ceil(body.retryAfterSeconds / 60);
-          setOutcome({
-            message: `Too many attempts. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`,
-          });
+          setOutcome({ kind: "throttled", minutes });
           return;
         }
-        setOutcome({
-          message: `This account has been deactivated. Contact ${body.contact ?? "your One Team administrator"}.`,
-        });
+        setOutcome({ kind: "deactivated", contact: body.contact });
       })
       .finally(() => {
         setSubmitting(false);
       });
   }
 
+  const locked = outcome?.kind === "throttled";
+  const rejected = outcome?.kind === "rejected";
+
   return (
     <Form
       validationBehavior="aria"
       onSubmit={handleSubmit}
-      className="flex flex-col gap-6">
-      <TextField
+      className="flex flex-col gap-[14px]">
+      {outcome?.kind === "rejected" && (
+        <Banner icon={XCircleIcon}>That email and password don&apos;t match.</Banner>
+      )}
+      {outcome?.kind === "deactivated" && (
+        <Banner icon={BanIcon}>
+          This account has been closed.{" "}
+          {outcome.contact ? (
+            <>
+              Ask <b className="text-[var(--color-text)]">{outcome.contact}</b> to reopen it.
+            </>
+          ) : (
+            "Contact your One Team administrator."
+          )}
+        </Banner>
+      )}
+      {outcome?.kind === "throttled" && (
+        <Banner icon={LockIcon}>
+          Too many attempts for this address. Sign-in is locked for another{" "}
+          <b className="text-[var(--color-text)]">
+            {outcome.minutes} minute{outcome.minutes === 1 ? "" : "s"}
+          </b>
+          .
+        </Banner>
+      )}
+
+      <EmailField
         name="email"
-        type="email"
+        label="Email"
+        placeholder="you@company.com"
         value={email}
         onChange={setEmail}
-        isInvalid={emailError !== null}
         onBlur={() => setEmailError(validateEmail(email))}
-        className="flex flex-col gap-1.5">
-        <Label className="text-small font-medium text-[var(--color-text)]">Email</Label>
-        <Input
-          ref={emailRef}
-          className="h-[var(--size-field)] border border-[var(--color-border-control)] bg-[var(--color-surface)] px-3 text-control text-[var(--color-text)] data-[invalid]:border-[var(--color-danger)]"
-        />
-        <FieldError className="text-small text-[var(--color-danger)]">{emailError}</FieldError>
-      </TextField>
+        isInvalid={emailError !== null || rejected}
+        errorMessage={emailError ?? undefined}
+        isDisabled={locked}
+        inputRef={emailRef}
+      />
 
-      <TextField
+      <PasswordField
         name="password"
-        type="password"
+        label="Password"
+        placeholder="••••••••••••"
+        labelExtra={
+          <a
+            href="/reset"
+            className="text-[12px]">
+            Forgot password?
+          </a>
+        }
         value={password}
         onChange={setPassword}
-        isInvalid={passwordError !== null}
         onBlur={() => setPasswordError(validatePassword(password))}
-        className="flex flex-col gap-1.5">
-        <Label className="text-small font-medium text-[var(--color-text)]">Password</Label>
-        <Input
-          ref={passwordRef}
-          className="h-[var(--size-field)] border border-[var(--color-border-control)] bg-[var(--color-surface)] px-3 text-control text-[var(--color-text)] data-[invalid]:border-[var(--color-danger)]"
-        />
-        <FieldError className="text-small text-[var(--color-danger)]">{passwordError}</FieldError>
-      </TextField>
-
-      {outcome && (
-        <div
-          role="alert"
-          className="break-words text-small text-[var(--color-danger)]">
-          {outcome.message}
-        </div>
-      )}
+        isInvalid={passwordError !== null || rejected}
+        errorMessage={passwordError ?? undefined}
+        isDisabled={locked}
+        inputRef={passwordRef}
+      />
 
       <Button
         type="submit"
-        className="h-[var(--size-field)] bg-[var(--color-accent)] font-medium text-white data-[hovered]:bg-[var(--color-accent-hover)] data-[pressed]:bg-[var(--color-accent-pressed)]">
-        {submitting ? "Signing in…" : "Sign in"}
+        isDisabled={locked}
+        className={`mt-[6px] ${primaryButtonClasses({ pending: submitting })}`}>
+        {locked ? (
+          `Locked for ${outcome.minutes} minute${outcome.minutes === 1 ? "" : "s"}`
+        ) : submitting ? (
+          <>
+            <span
+              aria-hidden="true"
+              className="h-3 w-3 flex-none animate-spin rounded-full border-2 border-[color-mix(in_srgb,var(--color-bg)_40%,transparent)] border-t-[var(--color-bg)]"
+            />
+            Signing in…
+          </>
+        ) : (
+          "Sign in"
+        )}
       </Button>
 
-      <a
-        href="/reset"
-        className="text-small text-[var(--color-accent-text)]">
-        Forgot password?
-      </a>
+      {locked && <CardFooterNote>A reset link still works while an address is locked.</CardFooterNote>}
     </Form>
   );
 }

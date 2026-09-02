@@ -190,9 +190,48 @@ describe("SignInForm — interaction contract (FR-081…FR-086, FR-027, research
     expect(outcome.className).toContain("break-words");
   });
 
-  it("carries no animation or transition classes", () => {
+  it("carries no animation or transition classes at rest", () => {
     const { container } = render(<SignInForm />);
 
     expect(container.innerHTML).not.toMatch(/transition|animate/);
+  });
+
+  it("shows a spinning indicator only while submitting, and nothing else animates", async () => {
+    let resolveFetch: (value: Response) => void = () => {};
+    vi.mocked(fetch).mockReturnValue(
+      new Promise<Response>((resolve) => {
+        resolveFetch = resolve;
+      }),
+    );
+    const { container } = render(<SignInForm />);
+    fillValidForm();
+
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+    await waitFor(() => expect(screen.getByText(/Signing in/i)).not.toBeNull());
+
+    const animated = container.querySelectorAll('[class*="animate-"]');
+    expect(animated).toHaveLength(1);
+    expect(animated[0]?.className).toContain("animate-spin");
+
+    resolveFetch(
+      new Response(JSON.stringify({ result: "ok" }), { headers: { "content-type": "application/json" } }),
+    );
+  });
+});
+
+describe("SignInForm — throttled lockout", () => {
+  it("locks both fields, removes the reveal button and relabels the submit control", async () => {
+    vi.mocked(fetch).mockReturnValue(jsonResponse({ result: "throttled", retryAfterSeconds: 720 }));
+    render(<SignInForm />);
+    fillValidForm();
+
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+
+    await screen.findByRole("alert");
+    expect((screen.getByLabelText("Email") as HTMLInputElement).disabled).toBe(true);
+    expect((screen.getByLabelText("Password") as HTMLInputElement).disabled).toBe(true);
+    expect(screen.queryByRole("button", { name: /password/i })).toBeNull();
+    expect(screen.getByRole("button", { name: /Locked for 12 minutes/i })).not.toBeNull();
+    expect(screen.getByText("A reset link still works while an address is locked.")).not.toBeNull();
   });
 });

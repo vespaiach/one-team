@@ -3,6 +3,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { resetToken } from "@/db/schema";
 import { digestToken, issueToken } from "./crypto";
+import { classifyToken } from "./token-state";
 
 const RESET_TOKEN_LIFETIME_MS = 60 * 60 * 1000;
 
@@ -47,13 +48,7 @@ export async function resolveResetTokenState(
   if (!row) {
     return { state: "unknown", resetToken: null };
   }
-  if (row.usedAt !== null) {
-    return { state: "used", resetToken: row };
-  }
-  if (row.expiresAt <= now) {
-    return { state: "expired", resetToken: row };
-  }
-  return { state: "valid", resetToken: row };
+  return { state: classifyToken({ spentAt: row.usedAt, expiresAt: row.expiresAt }, now), resetToken: row };
 }
 
 export async function spendResetToken(

@@ -6,6 +6,12 @@
 the tokens are all settled and are not open to redesign. What is open is listed in §11 and nowhere
 else.
 
+**Superseded by the Modernist system.** §3 below describes the R1-era palette (`#5b5bd6` accent, the
+warm neutral ramp, six named type steps) as "the whole palette." The product has since moved to the
+Modernist system in `src/app/globals.css` — monochrome red-orange, a nine-step neutral ramp, nine
+named type steps — and §3 is rewritten to match. The project/board-column/label palette this brief's
+§2.6 refers to no longer exists at all: those identities are told apart by name alone (spec §7).
+
 **Product**: *One Team* — a self-hosted issue tracker for one small team. There is no public sign-up:
 an installation begins with exactly one seeded admin, and every other account exists because an admin
 invited an address and someone took the offer. These two screens are that entire path.
@@ -59,9 +65,10 @@ unconsidered default will violate every one of them.
 5. **No avatar fallback.** A user without an avatar URL, and one whose avatar fails to load, both
    render **the display name alone** — no initials circle, no silhouette, no generated colour block
    (R2 `FR-017`). This is explicit, and it is the rule most likely to be broken by habit.
-6. **One accent colour.** `#5b5bd6`. The blue / green / violet / amber / grey ramps in the theme are
-   reserved for project, label and board-column identity and carry **no interface meaning** — never
-   use them for chrome, state or emphasis on these screens.
+6. **Monochrome.** Two red-orange families (`--color-accent` and the muted `--color-accent-2`) plus a
+   neutral ramp are the whole hue set. There is no separate palette for project, label or
+   board-column identity — those are told apart by name alone (spec §7) — so nothing on these screens
+   ever reaches for a colour outside the two accent families and the neutral ramp.
 7. **Never state anything by colour alone.** Expired invitations, the transient row highlight, field
    errors, toast kinds — each needs text, or an icon plus text, carrying the same information.
 8. **Interaction behaviour comes from `react-aria-components`**, which ships unstyled. You are
@@ -81,38 +88,45 @@ the whole type scale — there is no second sheet.
 
 | Token | Resolves to | Used for |
 | --- | --- | --- |
-| `--color-page` | `#f4f2f0` | the page ground, and the sidebar fill |
-| `--color-surface` | `#ffffff` | the content region, cards, modals |
-| `--color-surface-sunken` | `#fbfaf9` | recessed areas |
-| `--color-border` | `#d7d3cf` | dividers, card edges |
-| `--color-border-control` | `#8f8a86` | input and control edges |
-| `--color-border-strong` | `#24211f` | |
-| `--color-text` | `#24211f` | |
-| `--color-text-muted` | `#6e6a66` | secondary text **on `--color-surface` only** |
-| `--color-text-placeholder` | `#6e6a66` | |
-| `--color-text-disabled` | `#b3aeaa` | |
-| `--color-accent` | `#5b5bd6` | the one accent — primary controls, focus ring |
-| `--color-accent-hover` / `-pressed` | `#4a4ac0` / `#3c3c9c` | |
-| `--color-accent-text` | `#3c3c9c` | links, and accent-coloured text |
-| `--color-danger` / `-fill` / `-text` | `#c8453c` / `#fbe4e2` / `#8c2b25` | errors, destructive |
-| `--color-success` / `-fill` / `-text` | `#3a9d5d` / `#e7f4ec` / `#27713f` | |
-| `--color-advisory` / `-fill` / `-text` | `#d4a017` / `#fbf2dc` / `#8a6708` | warnings |
+| `--color-bg` | `#f3f2f2` | the page ground, and the sidebar fill |
+| `--color-surface` | `#eae9e9` | the content region, cards, modals |
+| `--color-surface-sunken` | `#f8f4f4` | recessed areas |
+| `--color-border` | translucent mix of `#201e1d` | dividers, card edges |
+| `--color-border-control` | `#7d7979` | input and control edges |
+| `--color-border-strong` | `#2d2b2b` | |
+| `--color-text` | `#201e1d` | |
+| `--color-text-muted` | `#605d5d` | secondary text — clears AA on **both** `--color-bg` and `--color-surface` |
+| `--color-text-placeholder` | `#605d5d` | |
+| `--color-text-disabled` | `#bab6b6` | |
+| `--color-accent` | `#ec3013` | the focus ring, and non-text accents — **not** a filled control's text-bearing fill, see below |
+| `--color-accent-fill` / `-hover` / `-pressed` | `#dd2b0f` / `#ae1800` / `#7c1405` | primary controls, from rest |
+| `--color-accent-text` | `#ae1800` | links, and accent-coloured text |
+| `--color-on-accent` | `#ffffff` | text/icon colour on a filled accent control |
+| `--color-danger` / `-fill` / `-text` | `#ae1800` / `#fff2ef` / `#ae1800` | errors, destructive |
+| `--color-success` / `-fill` / `-text` | `#2d2b2b` / `#f8f4f4` / `#2d2b2b` | no hue — ink on a neutral tint |
+| `--color-advisory` / `-fill` / `-text` | `#c94b39` / `#fff2ef` / `#71261b` | warnings — the muted accent-2 family, not amber |
 
-`--color-text-muted` measures 4.36:1 on `--color-page` — below AA — so it is only safe on
-`--color-surface`. That covers this whole screen: the content region is white and the only
-page-coloured ground is the sidebar, which you are not designing. (A `--color-text-muted-on-page`
-token is specified for that case and does not exist in the stylesheet yet.)
+**White text on the raw `--color-accent` role measures 4.20:1 — under the 4.5:1 AA floor for text.**
+A filled control (a primary button, any solid accent block carrying text) uses `--color-accent-fill`
+instead, one ramp step darker, and pairs it with `--color-on-accent` rather than a literal `white`.
+`--color-accent` itself stays reserved for the focus ring and other non-text accents, where its
+3.47–3.76:1 clears the 3:1 floor that applies there.
 
-### Type — Archivo, six steps
+`--color-text-muted` measures 5.38:1 on `--color-surface` and 5.83:1 on `--color-bg` — both clear AA
+with room, unlike the earlier ramp where the page-background pairing was the tight one. There is no
+`--color-text-muted-on-page` token and none is needed.
+
+### Type — Archivo, nine named steps
 
 | Step | Size / line | Weight & tracking | Where |
 | --- | --- | --- | --- |
-| `micro` | 11 / 16 | 600, `+0.08em` | table column headers, eyebrow labels |
-| `small` | 13 / 20 | — | field labels, helper and error text, table cell secondary |
-| `body` | 15 / 24 | — | body copy, table cells |
-| `control` | 16 / 24 | — | text **inside** inputs and buttons |
-| `title` | 22 / 28 | `-0.01em` | screen title, dialog title |
-| `display` | 32 / 36 | `-0.02em` | the wordmark on the auth card |
+| `label` | 12 / 20 | — | table column headers, field labels, helper and error text, table cell secondary |
+| `body` | 15 / 1.55 | — | body copy, table cells |
+| `control` | 14 / 24 | — | text **inside** inputs and buttons |
+| `h3` | 25 / 1.12 | 800, `-0.015em` | screen title, dialog title |
+| `h2` | 32 / 1.12 | 800, `-0.015em` | the wordmark on the auth card |
+
+`h1`, `h4`–`h6` and `caption` are declared and unused on these screens.
 
 ### Space and geometry
 
@@ -120,9 +134,10 @@ token is specified for that case and does not exist in the stylesheet yet.)
   the text annotating it.
 - `--size-field: 44px` — the height of every input and every button.
 - `--size-card: 440px` — the auth-card width, which is what `/invite/accept` sits in.
-- `--radius-none: 0px` — the only radius.
+- `--radius-none: 0px` — the only radius. `--radius-full` exists for a circular affordance if one is
+  ever needed, but nothing on these screens uses it.
 - Focus: **2px solid accent, 2px offset**, one global rule, on every focusable thing.
-- Links: accent text, underlined, 2px underline offset.
+- Links: accent text, underlined, 3px underline offset.
 
 ---
 
@@ -139,7 +154,7 @@ it, and do not redesign it.
 │  262px       │  fill: --color-surface                       │
 │  fill:       │  ┌────────────────────────────────────────┐  │
 │  --color-    │  │ banner slot (empty on this screen      │  │
-│  page        │  │ unless the connection drops)           │  │
+│  bg          │  │ unless the connection drops)           │  │
 │              │  ├────────────────────────────────────────┤  │
 │  1px border  │  │ <ScreenHeader name="Accounts" />       │  │
 │  on the      │  │   h1 + optional context line           │  │
@@ -158,7 +173,7 @@ space and never shows a placeholder.
 ### `/invite/accept` sits outside the shell
 
 It reuses the existing sign-in card exactly: page-coloured ground, `max(12vh, 96px)` of top padding,
-a 440px column, the wordmark **One**(text) **Team**(accent) at `display`, then a white card with a
+a 440px column, the wordmark **One**(text) **Team**(accent-fill) at `h2`, then a card with a
 1px `--color-border` edge, 32px padding and 24px between its children. No sidebar, no header, no app
 navigation — the only link any of these states carries is the one route onward on the three dead-link
 screens.
@@ -448,10 +463,11 @@ a choice and the choice becomes the product's convention.
 8. **Toast width, stacking gap, and whether the four kinds differ by more than an icon.**
 9. **Skeleton treatment** — a static tint or an animated shimmer. Nothing in the system has motion yet,
    so this sets a precedent.
-10. **The screen title's type step.** The scale offers `title` (22px). The shipped sign-in page uses a
-    `text-heading` class for its `h1` and **no `--text-heading` token exists**, so that heading is
-    currently rendering at the browser default. Whatever you choose here should also settle what
-    sign-in's heading was meant to be.
+10. **The screen title's type step.** The scale offers `h3` (25px). This one is no longer fully open:
+    the dead `text-heading` class this point originally flagged on the sign-in page's `h1` has been
+    fixed — sign-in now renders `<h1 className="text-h3">`, relying on `globals.css`'s base-layer
+    heading rule for weight and family. Whether `h3` is the right step for **this** screen's title,
+    rather than a taller one, is still open.
 
 ---
 

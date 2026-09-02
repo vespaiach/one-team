@@ -5,7 +5,7 @@ import { verifyPassword } from "@/features/auth/server/crypto";
 import { parseEmail, parsePassword } from "@/features/auth/server/input";
 import { logRefusedSignIn, logUnhandledServerError } from "@/features/auth/server/log";
 import { assertSameOrigin, ForbiddenOriginError } from "@/features/auth/server/origin";
-import { issueSession, SESSION_COOKIE_NAME, SESSION_LIFETIME_MS } from "@/features/auth/server/sessions";
+import { issueSession, SESSION_COOKIE_NAME, SESSION_COOKIE_OPTIONS } from "@/features/auth/server/sessions";
 import {
   assertNotThrottled,
   clearSignInAttempts,
@@ -80,13 +80,7 @@ export async function POST(request: Request): Promise<Response> {
     const { token } = await issueSession({ userId: candidate.userId, ipAddress, userAgent });
 
     const response = NextResponse.json<SignInResult>({ result: "ok" });
-    response.cookies.set(SESSION_COOKIE_NAME, token, {
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-      maxAge: SESSION_LIFETIME_MS / 1000,
-      secure: process.env.NODE_ENV === "production",
-    });
+    response.cookies.set(SESSION_COOKIE_NAME, token, SESSION_COOKIE_OPTIONS);
 
     return response;
   } catch (error) {

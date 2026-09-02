@@ -24,7 +24,7 @@ function columnOf(columns: ColumnRow[], name: string): ColumnRow {
 }
 
 describe("schema conventions (FR-001, OT-DATA-001)", () => {
-  const tables = ["user", "credential", "session", "reset_token", "auth_attempt"] as const;
+  const tables = ["user", "credential", "session", "reset_token", "auth_attempt", "invite"] as const;
 
   it.each(tables)("%s.id is a server-generated uuid with no database default", async (table) => {
     const columns = await columnsOf(table);
@@ -75,5 +75,61 @@ describe("schema conventions (FR-001, OT-DATA-001)", () => {
   it.each(instants)("%s.%s is timestamptz", async (table, column) => {
     const columns = await columnsOf(table);
     expect(columnOf(columns, column).data_type).toBe("timestamp with time zone");
+  });
+});
+
+describe("invite table shape (data-model §1)", () => {
+  it("has exactly the eight specified columns", async () => {
+    const columns = await columnsOf("invite");
+    const names = columns.map((column) => column.column_name).sort();
+    expect(names).toEqual(
+      [
+        "id",
+        "email",
+        "invited_by",
+        "token_digest",
+        "expires_at",
+        "accepted_at",
+        "created_at",
+        "updated_at",
+      ].sort(),
+    );
+  });
+
+  it("id is a server-generated uuid with no database default", async () => {
+    const columns = await columnsOf("invite");
+    const id = columnOf(columns, "id");
+    expect(id.data_type).toBe("uuid");
+    expect(id.column_default).toBeNull();
+  });
+
+  it("invited_by is a uuid", async () => {
+    const columns = await columnsOf("invite");
+    expect(columnOf(columns, "invited_by").data_type).toBe("uuid");
+  });
+
+  it.each(["email", "token_digest"])("%s is text", async (column) => {
+    const columns = await columnsOf("invite");
+    expect(columnOf(columns, column).data_type).toBe("text");
+  });
+
+  it.each(["expires_at", "accepted_at", "created_at", "updated_at"])("%s is timestamptz", async (column) => {
+    const columns = await columnsOf("invite");
+    expect(columnOf(columns, column).data_type).toBe("timestamp with time zone");
+  });
+
+  it("accepted_at is the only nullable column", async () => {
+    const columns = await testSql<{ column_name: string; is_nullable: string }[]>`
+      SELECT column_name, is_nullable
+      FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'invite'
+    `;
+    for (const column of columns) {
+      if (column.column_name === "accepted_at") {
+        expect(column.is_nullable).toBe("YES");
+      } else {
+        expect(column.is_nullable).toBe("NO");
+      }
+    }
   });
 });

@@ -1,11 +1,12 @@
 "use server";
 
 import { eq, TransactionRollbackError } from "drizzle-orm";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { user } from "@/db/schema";
 import { touched } from "@/db/touched";
+import { requireActor } from "./server/actor";
 import { clientIp } from "./server/client-ip";
 import { findResetCandidate, setCredentialPassword } from "./server/credentials";
 import { hashPassword } from "./server/crypto";
@@ -14,7 +15,7 @@ import { sendPasswordResetMail } from "./server/mail";
 import { assertSameOrigin } from "./server/origin";
 import { assertPasswordPolicy, type PasswordPolicyFailure } from "./server/password-policy";
 import { issueResetToken, resolveResetTokenState, spendResetToken } from "./server/reset-tokens";
-import { deleteAllSessionsForUser } from "./server/sessions";
+import { deleteAllSessionsForUser, deleteSession, SESSION_COOKIE_NAME } from "./server/sessions";
 import { assertNotThrottled, recordFailure, ThrottledError } from "./server/throttle";
 
 export type RequestPasswordResetState =
@@ -69,6 +70,40 @@ export async function requestPasswordReset(
       await sendPasswordResetMail({ to: email, token });
     }
   }
+
+  return { status: "sent" };
+}
+
+export type RequestOwnPasswordResetResult =
+  | { status: "sent" }
+  | { status: "throttled"; retryAfterSeconds: number };
+
+export async function requestOwnPasswordReset(): Promise<RequestOwnPasswordResetResult> {
+  const requestHeaders = await headers();
+  assertSameOrigin({ headers: requestHeaders });
+  const actor = await requireActor();
+
+  const [owner] = await db.select({ email: user.email }).from(user).where(eq(user.id, actor.id));
+  if (!owner) {
+    return { status: "sent" };
+  }
+
+  const ip = clientIp(requestHeaders);
+
+  try {
+    await assertNotThrottled({ flow: "reset", email: owner.email, ip });
+  } catch (error) {
+    if (error instanceof ThrottledError) {
+      await recordFailure({ flow: "reset", email: owner.email, ip });
+      return { status: "throttled", retryAfterSeconds: error.retryAfterSeconds };
+    }
+    throw error;
+  }
+
+  await recordFailure({ flow: "reset", email: owner.email, ip });
+
+  const { token } = await issueResetToken({ userId: actor.id });
+  await sendPasswordResetMail({ to: owner.email, token });
 
   return { status: "sent" };
 }
@@ -141,4 +176,18 @@ export async function completePasswordReset(
   }
 
   redirect("/signin?reset=done");
+}
+
+export async function signOut(): Promise<void> {
+  assertSameOrigin({ headers: await headers() });
+
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+
+  if (token) {
+    await deleteSession(token);
+  }
+
+  cookieStore.delete(SESSION_COOKIE_NAME);
+  redirect("/signin");
 }

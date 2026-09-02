@@ -3,10 +3,11 @@ import nodemailer from "nodemailer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { authAttempt, credential, resetToken, session, user } from "@/db/schema";
 import { testDb, truncateTestDatabase } from "@/db/test-database";
-import { completePasswordReset, requestPasswordReset } from "./actions";
-import { hashPassword, verifyPassword } from "./server/crypto";
+import { completePasswordReset, requestOwnPasswordReset, requestPasswordReset, signOut } from "./actions";
+import { digestToken, hashPassword, verifyPassword } from "./server/crypto";
 import { issueResetToken } from "./server/reset-tokens";
-import { issueSession } from "./server/sessions";
+import { issueSession, SESSION_COOKIE_NAME } from "./server/sessions";
+import { assertNotThrottled, recordFailure } from "./server/throttle";
 
 const ORIGINAL_ENV = {
   APP_URL: process.env.APP_URL,
@@ -15,9 +16,19 @@ const ORIGINAL_ENV = {
 };
 
 let currentOrigin: string | undefined = "https://app.example.com";
+const cookieJar = new Map<string, string>();
 
 vi.mock("next/headers", () => ({
   headers: async () => new Headers(currentOrigin ? { origin: currentOrigin } : {}),
+  cookies: async () => ({
+    get: (name: string) => (cookieJar.has(name) ? { value: cookieJar.get(name) } : undefined),
+    set: (name: string, value: string) => {
+      cookieJar.set(name, value);
+    },
+    delete: (name: string) => {
+      cookieJar.delete(name);
+    },
+  }),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -32,6 +43,7 @@ beforeEach(async () => {
   process.env.SMTP_URL = "smtp://localhost:1025";
   process.env.MAIL_FROM = "no-reply@example.com";
   currentOrigin = "https://app.example.com";
+  cookieJar.clear();
 });
 
 afterEach(() => {
@@ -229,6 +241,134 @@ describe("requestPasswordReset — throttle (FR-032, FR-039, FR-040, scenario 8)
   });
 });
 
+describe("requestOwnPasswordReset (FR-019, FR-026, FR-028, OT-SEC-017)", () => {
+  async function signInAs(userId: string) {
+    const { token } = await issueSession({ userId, ipAddress: "203.0.113.4", userAgent: null });
+    cookieJar.set(SESSION_COOKIE_NAME, token);
+  }
+
+  it("mails the signed-in user's own address, read by id, with no address supplied by the caller", async () => {
+    const owner = await insertUser();
+    await insertCredential(owner.id);
+    await signInAs(owner.id);
+    const sendMail = mockTransport();
+
+    const result = await requestOwnPasswordReset();
+
+    expect(result).toEqual({ status: "sent" });
+    expect(sendMail).toHaveBeenCalledTimes(1);
+    const call = sendMail.mock.calls[0]?.[0];
+    expect(call.to).toBe(owner.email);
+    expect(call.html ?? call.text).toContain("/reset?token=");
+  });
+
+  it("records an auth_attempt row for the reset flow on every press", async () => {
+    const owner = await insertUser();
+    await insertCredential(owner.id);
+    await signInAs(owner.id);
+    mockTransport();
+
+    await requestOwnPasswordReset();
+
+    const rows = await testDb.select().from(authAttempt).where(eq(authAttempt.flow, "reset"));
+    expect(rows.map((row) => row.kind).sort()).toEqual(["email", "ip"]);
+  });
+
+  it("issues two valid reset tokens and mails two links for two presses made in succession", async () => {
+    const owner = await insertUser();
+    await insertCredential(owner.id);
+    await signInAs(owner.id);
+    const sendMail = mockTransport();
+
+    await requestOwnPasswordReset();
+    await requestOwnPasswordReset();
+
+    expect(sendMail).toHaveBeenCalledTimes(2);
+    const rows = await testDb.select().from(resetToken).where(eq(resetToken.userId, owner.id));
+    expect(rows).toHaveLength(2);
+    expect(rows.every((row) => row.usedAt === null)).toBe(true);
+  });
+
+  it("refuses the sixth press within the window with the time remaining, and mails nothing", async () => {
+    const owner = await insertUser();
+    await insertCredential(owner.id);
+    await signInAs(owner.id);
+    const sendMail = mockTransport();
+
+    for (let i = 0; i < 5; i += 1) {
+      await requestOwnPasswordReset();
+    }
+    sendMail.mockClear();
+    const result = await requestOwnPasswordReset();
+
+    expect(result.status).toBe("throttled");
+    expect((result as { status: "throttled"; retryAfterSeconds: number }).retryAfterSeconds).toBeGreaterThan(
+      0,
+    );
+    expect(sendMail).not.toHaveBeenCalled();
+  });
+
+  it("still records an attempt row for a press refused by the throttle", async () => {
+    const owner = await insertUser();
+    await insertCredential(owner.id);
+    await signInAs(owner.id);
+    mockTransport();
+
+    for (let i = 0; i < 6; i += 1) {
+      await requestOwnPasswordReset();
+    }
+
+    const rows = await testDb.select().from(authAttempt).where(eq(authAttempt.flow, "reset"));
+    expect(rows.filter((row) => row.kind === "email")).toHaveLength(6);
+  });
+
+  it("refuses a request whose Origin does not match, before anything is read", async () => {
+    const owner = await insertUser();
+    await insertCredential(owner.id);
+    await signInAs(owner.id);
+    currentOrigin = "https://evil.example.com";
+    const sendMail = mockTransport();
+
+    await expect(requestOwnPasswordReset()).rejects.toThrow();
+
+    expect(sendMail).not.toHaveBeenCalled();
+  });
+
+  it("redirects to sign-in when there is no signed-in actor", async () => {
+    mockTransport();
+
+    await expect(requestOwnPasswordReset()).rejects.toThrow("NEXT_REDIRECT:/signin");
+  });
+
+  it("keeps the reset counter separate from sign-in: an address throttled at sign-in can still press this link", async () => {
+    const owner = await insertUser();
+    await insertCredential(owner.id);
+    await signInAs(owner.id);
+    mockTransport();
+    for (let i = 0; i < 5; i += 1) {
+      await recordFailure({ flow: "signin", email: owner.email, ip: "203.0.113.9" });
+    }
+
+    const result = await requestOwnPasswordReset();
+
+    expect(result).toEqual({ status: "sent" });
+  });
+
+  it("keeps the reset counter separate from sign-in: a throttled reset press cannot block a sign-in for that address", async () => {
+    const owner = await insertUser();
+    await insertCredential(owner.id);
+    await signInAs(owner.id);
+    mockTransport();
+    for (let i = 0; i < 6; i += 1) {
+      await requestOwnPasswordReset();
+    }
+
+    await expect(
+      assertNotThrottled({ flow: "signin", email: owner.email, ip: "203.0.113.9" }),
+    ).resolves.toBeUndefined();
+  });
+});
+
 describe("completePasswordReset (FR-035, FR-027, FR-038, FR-050, FR-066, SC-008)", () => {
   it("returns mismatch when the two fields differ and writes nothing", async () => {
     const owner = await insertUser();
@@ -384,5 +524,106 @@ describe("completePasswordReset (FR-035, FR-027, FR-038, FR-050, FR-066, SC-008)
         }),
       ),
     ).rejects.toThrow();
+  });
+});
+
+describe("signOut (FR-018, OT-SEC-009, OT-AUTHZ-004)", () => {
+  it("deletes the live session's row, clears the cookie, and redirects to /signin (s11)", async () => {
+    const owner = await insertUser();
+    const { token } = await issueSession({ userId: owner.id, ipAddress: "203.0.113.4", userAgent: null });
+    cookieJar.set(SESSION_COOKIE_NAME, token);
+
+    await expect(signOut()).rejects.toThrow("NEXT_REDIRECT:/signin");
+
+    const rows = await testDb
+      .select()
+      .from(session)
+      .where(eq(session.tokenDigest, digestToken(token)));
+    expect(rows).toHaveLength(0);
+    expect(cookieJar.has(SESSION_COOKIE_NAME)).toBe(false);
+  });
+
+  it("succeeds and reports nothing when called a second time", async () => {
+    const owner = await insertUser();
+    const { token } = await issueSession({ userId: owner.id, ipAddress: "203.0.113.4", userAgent: null });
+    cookieJar.set(SESSION_COOKIE_NAME, token);
+
+    await expect(signOut()).rejects.toThrow("NEXT_REDIRECT:/signin");
+    cookieJar.set(SESSION_COOKIE_NAME, token);
+    await expect(signOut()).rejects.toThrow("NEXT_REDIRECT:/signin");
+  });
+
+  it("succeeds, clears the cookie, and redirects for a cookie naming no row", async () => {
+    cookieJar.set(SESSION_COOKIE_NAME, "not-a-real-token");
+
+    await expect(signOut()).rejects.toThrow("NEXT_REDIRECT:/signin");
+
+    expect(cookieJar.has(SESSION_COOKIE_NAME)).toBe(false);
+  });
+
+  it("refuses a foreign Origin before anything is read or written, leaving the caller signed in", async () => {
+    const owner = await insertUser();
+    const { token } = await issueSession({ userId: owner.id, ipAddress: "203.0.113.4", userAgent: null });
+    cookieJar.set(SESSION_COOKIE_NAME, token);
+    currentOrigin = "https://evil.example.com";
+
+    await expect(signOut()).rejects.toThrow();
+
+    const rows = await testDb
+      .select()
+      .from(session)
+      .where(eq(session.tokenDigest, digestToken(token)));
+    expect(rows).toHaveLength(1);
+    expect(cookieJar.get(SESSION_COOKIE_NAME)).toBe(token);
+  });
+
+  it("refuses a request with no Origin at all, leaving the caller signed in", async () => {
+    const owner = await insertUser();
+    const { token } = await issueSession({ userId: owner.id, ipAddress: "203.0.113.4", userAgent: null });
+    cookieJar.set(SESSION_COOKIE_NAME, token);
+    currentOrigin = undefined;
+
+    await expect(signOut()).rejects.toThrow();
+
+    const rows = await testDb
+      .select()
+      .from(session)
+      .where(eq(session.tokenDigest, digestToken(token)));
+    expect(rows).toHaveLength(1);
+  });
+
+  it("leaves another live session for the same user present afterwards (s12)", async () => {
+    const owner = await insertUser();
+    const { token: firstToken } = await issueSession({
+      userId: owner.id,
+      ipAddress: "203.0.113.4",
+      userAgent: null,
+    });
+    const { token: secondToken } = await issueSession({
+      userId: owner.id,
+      ipAddress: "203.0.113.5",
+      userAgent: null,
+    });
+    cookieJar.set(SESSION_COOKIE_NAME, firstToken);
+
+    await expect(signOut()).rejects.toThrow("NEXT_REDIRECT:/signin");
+
+    const remaining = await testDb
+      .select()
+      .from(session)
+      .where(eq(session.tokenDigest, digestToken(secondToken)));
+    expect(remaining).toHaveLength(1);
+  });
+
+  it("leaves a request replaying the old cookie resolving no actor (SC-013)", async () => {
+    const owner = await insertUser();
+    const { token } = await issueSession({ userId: owner.id, ipAddress: "203.0.113.4", userAgent: null });
+    cookieJar.set(SESSION_COOKIE_NAME, token);
+
+    await expect(signOut()).rejects.toThrow("NEXT_REDIRECT:/signin");
+    cookieJar.set(SESSION_COOKIE_NAME, token);
+
+    const { loadActor } = await import("./server/actor");
+    await expect(loadActor()).resolves.toBeNull();
   });
 });

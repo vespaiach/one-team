@@ -32,13 +32,13 @@ function contrastRatio(foreground: string, background: string): number {
 }
 
 const textPairs = [
-  ["--color-text", "--color-page"],
+  ["--color-text", "--color-bg"],
   ["--color-text", "--color-surface"],
-  ["--color-text-muted", "--color-page"],
+  ["--color-text-muted", "--color-bg"],
   ["--color-text-muted", "--color-surface"],
   ["--color-text-placeholder", "--color-surface"],
   ["--color-accent-text", "--color-surface"],
-  ["--color-surface", "--color-accent"],
+  ["--color-on-accent", "--color-accent-fill"],
   ["--color-danger-text", "--color-danger-fill"],
   ["--color-success-text", "--color-success-fill"],
   ["--color-advisory-text", "--color-advisory-fill"],
@@ -48,7 +48,7 @@ const controlBoundaryPairs = [
   ["--color-border-control", "--color-surface"],
   ["--color-danger", "--color-surface"],
   ["--color-accent", "--color-surface"],
-  ["--color-accent", "--color-page"],
+  ["--color-accent", "--color-bg"],
 ] as const;
 
 describe("globals.css meets WCAG 2.2 AA (FR-012)", () => {
