@@ -99,7 +99,9 @@ WORKTREE_SPEC_DIR="$WORKTREE_DIR/specs/$SPEC_NAME"
 
 cd "$WORKTREE_DIR"
 
-COMPLETED_STEPS="$(git rev-list --count "$BASE_SHA..HEAD")"
+STEP_COMMIT_PREFIX="spec-to-tasks: step"
+
+COMPLETED_STEPS="$(git log --format=%s "$BASE_SHA..HEAD" | grep -c "^$STEP_COMMIT_PREFIX " || true)"
 
 if [ -n "$(git status --porcelain)" ]; then
   ABANDONED_STEP=$((COMPLETED_STEPS + 1))
@@ -136,6 +138,7 @@ PROMPTS=(
   "Run the speckit-tasks skill for specs/$SPEC_NAME to generate tasks.md based on the updated spec."
   "Run the speckit-analyze skill for specs/$SPEC_NAME to evaluate documentation consistency."
   "Review the speckit-analyze report for specs/$SPEC_NAME. Directly update spec.md, plan.md, and tasks.md to resolve any identified conflicts, gaps, or ambiguities."
+  "Using the speckit-implement skill, execute the implementation tasks defined in specs/$SPEC_NAME/tasks.md. You must strictly adhere to the following execution strategy: Sequential Processing: execute the document in strict order, starting from the first phase and proceeding sequentially to the final phase. Sub-Agent Delegation: for each phase, you must spawn a sub-agent using the exact command \`/speckit-implement execute phase {phase-number}\` to handle the implementation of all tasks within that specific phase. Automated Commits: after a sub-agent fully completes, verifies, and reports success on its phase, it must automatically create a git commit containing all changes made during that phase before control returns to the orchestrator. Blocking Execution: wait for the sub-agent to fully complete, verify, create its commit, and report success on the current phase before you spawn the next sub-agent for the subsequent phase."
 )
 
 for PROMPT_INDEX in "${!PROMPTS[@]}"; do
@@ -152,7 +155,7 @@ for PROMPT_INDEX in "${!PROMPTS[@]}"; do
   verify_step_artifact "$STEP_NUMBER"
 
   git add -A
-  git commit --quiet --allow-empty --message "spec-to-tasks: step $STEP_NUMBER for $SPEC_NAME"
+  git commit --quiet --allow-empty --message "$STEP_COMMIT_PREFIX $STEP_NUMBER for $SPEC_NAME"
 done
 
 echo "Task building complete."
@@ -176,8 +179,8 @@ else
     --repo vespaiach/one-team \
     --base main \
     --head "$BRANCH" \
-    --title "Build tasks for $SPEC_NAME" \
-    --body "Automated checklist resolution and task generation for \`specs/$SPEC_NAME\`."
+    --title "Build and implement tasks for $SPEC_NAME" \
+    --body "Automated checklist resolution, task generation, and phase-by-phase implementation for \`specs/$SPEC_NAME\`."
 fi
 
 rm -f "$STATE_FILE"
