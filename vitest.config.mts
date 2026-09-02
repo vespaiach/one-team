@@ -36,7 +36,7 @@ export default defineConfig({
           name: "ui",
           environment: "jsdom",
           include: ["**/*.test.tsx"],
-          setupFiles: ["./src/test-setup-ui.tsx"],
+          setupFiles: ["./src/db/test-env-setup.ts", "./src/test-setup-ui.tsx"],
           env: authInterruptsEnv,
         },
       },
