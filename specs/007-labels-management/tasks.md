@@ -29,9 +29,11 @@ function exist in code, and R7's own landed plan pins `writeActivity`'s signatur
 `label_added` / `label_removed` in its `type` union. Per the explicit, user-approved scope for this
 implementation: **every requirement except `FR-021`'s two activity-write side effects is implemented in
 full**, including `addIssueLabel` and `removeIssueLabel`'s own core write and idempotency, which do not
-depend on the activity call. The two activity-write tasks (`T045`, `T046`) stay open — not marked
-`[X]`, not stubbed, not faked — until R7 lands. This is not an oversight; it is the plan's own recorded
-Complexity Tracking decision, confirmed with the user before this file was written.
+depend on the activity call. `FR-021`'s activity writes are recorded as a **deferred requirement** — see
+*`FR-021` — deferred, not tracked as an open task here* under Phase 4 — not stubbed, not faked, and not
+carried as a task this checklist can mark `[X]` without a test that could not yet be written. This is
+not an oversight; it is the plan's own recorded Complexity Tracking decision, confirmed with the user
+before this file was written.
 
 ```bash
 git log --oneline -1 -- src/features/issues/server/create-issue.ts
@@ -299,8 +301,8 @@ confirm it appears on the issue immediately. Remove it and confirm it is gone.
       `src/features/labels/server/issue-labels.ts` — `isMember` derived from the issue's stored
       `project_id`, the label resolved by id (refusing an unknown one by name), one
       `INSERT … ON CONFLICT (issue_id, label_id) DO NOTHING` / one `DELETE`, each inside one transaction,
-      revalidating the issue's own detail path. **No activity write in this task** — see T045, T046
-      below ([`contracts/mutators.md`](./contracts/mutators.md) `addIssueLabel`, `removeIssueLabel`,
+      revalidating the issue's own detail path. **No activity write in this task** — see *`FR-021` —
+      deferred, not tracked as an open task here*, below ([`contracts/mutators.md`](./contracts/mutators.md) `addIssueLabel`, `removeIssueLabel`,
       research C-1, C-5, C-7) — depends on T004, makes T028, T029, T030 green
 - [X] T037 [US2] Export `addIssueLabel` and `removeIssueLabel` from `src/features/labels/actions.ts`,
       alongside the three US1 exports, each starting with `assertSameOrigin` and `requireActor` — depends
@@ -333,22 +335,37 @@ confirm it appears on the issue immediately. Remove it and confirm it is gone.
 **Checkpoint**: US1 and US2 both work independently. Labels can be created and applied to issues, at
 the rail and at creation. `FR-021`'s activity rows are the only requirement not yet met.
 
-### The one open requirement — `FR-021`, blocked on R7
+### `FR-021` — deferred, not tracked as an open task here
 
 - [X] T044 Confirm R7 is still not implemented (`git log --oneline -1 -- src/features/activity` returns
-      nothing) before attempting T045 or T046 — if R7 has landed, re-read
-      [`specs/007-comments-activity-feeds/contracts/mutators.md`](../007-comments-activity-feeds/contracts/mutators.md)'s
-      `writeActivity` signature first, since T045 and T046 assume it now admits `label_added` /
-      `label_removed`
-- [ ] T045 [US2] **Not started — blocked on R7.** Write the failing test that `addIssueLabel` writes one
-      `activity` row `{ issueId, actorId: actor.id, type: 'label_added', toValue: label.name }` only
-      when its insert actually added a row, then add the `writeActivity(tx, …)` call inside
-      `addIssueLabel`'s existing transaction in `src/features/labels/server/issue-labels.ts` (FR-021,
-      research C-6) — depends on T044 confirming R7 exists
-- [ ] T046 [US2] **Not started — blocked on R7.** The same pair for `removeIssueLabel`: the failing test
-      for one `{ issueId, actorId: actor.id, type: 'label_removed', fromValue: label.name }` row written
-      only when the delete actually removed a row, then the `writeActivity(tx, …)` call inside
-      `removeIssueLabel`'s existing transaction (FR-021, research C-6) — depends on T044
+      nothing) before this feature is considered complete — confirmed 2026-09-03: `src/features/activity/`
+      does not exist, and R7's own landed plan does not yet admit `label_added` / `label_removed` in
+      `writeActivity`'s `type` union
+
+**Decision, confirmed with the user 2026-09-03: this feature is complete as delivered.** `FR-021`'s two
+activity-write side effects (`addIssueLabel` writing one `label_added` row, `removeIssueLabel` writing
+one `label_removed` row, each through R7's `writeActivity`) are not implementable today — R7 (Comments
+and activity feeds) exists only as a spec and plan, with no `activity` table and no `writeActivity`
+function anywhere in this codebase. They are recorded here as a **deferred requirement**, not as open
+tasks in this feature's own checklist, matching how `docs/ROADMAP.md` records every other capability a
+roadmap entry defers to a later one:
+
+- **What's already true**: `addIssueLabel` and `removeIssueLabel` are fully implemented and tested —
+  the core `issue_label` write, the idempotency `FR-022` requires, the authorization derived from the
+  issue's own stored `project_id` — none of which depends on the activity call (research C-6). Nothing
+  about those two mutators needs to change when R7 lands.
+- **What remains, and where it's specified**: the exact row shape each write takes is pinned in
+  [`research.md`](./research.md) C-6, straight from the product specification's own `activity` table
+  definition (§5) — fully specified independent of who builds the table. [`contracts/mutators.md`](./contracts/mutators.md)
+  names the two call sites. When R7's `writeActivity` exists in code and its `type` union admits
+  `label_added` / `label_removed`, completing `FR-021` is: one `writeActivity(tx, …)` call added inside
+  `addIssueLabel`'s existing transaction, one inside `removeIssueLabel`'s, each behind a test written
+  first per Principle VII — a scoped, well-specified two-line follow-up, not a rediscovery.
+- **Why this isn't tracked as `[ ]` here**: Principle VII requires a test to have been observed failing
+  before its implementation; no such test can exist for a function (`writeActivity`) that itself does
+  not exist. Carrying two permanently-unchecked boxes in this feature's own task list would misrepresent
+  its state — the gap is a real, accepted, documented limitation of *this* feature's scope, not
+  unfinished work within it.
 
 ---
 
@@ -439,14 +456,14 @@ the rail and at creation. `FR-021`'s activity rows are the only requirement not 
       `delete-issue-control.tsx`, predating this feature) is a plain `Dialog role="alertdialog"`, and
       `delete-label-dialog.tsx` mirrors that exactly, matching what T023 asked for.
 - [X] T051 Run `npm run verify` — `style-check`, `type-check`, `test`, `build` — and confirm it passes
-      with nothing failing or skipped. This passes with T045 and T046 left open: no test exists yet for
-      `FR-021`'s activity rows, because there is no `writeActivity` to call — that is an open
-      requirement, not a skipped test (gates 5, 8)
+      with nothing failing or skipped. This passes with `FR-021` deferred: no test exists for its
+      activity rows, because there is no `writeActivity` to call — that is a deferred requirement, not
+      a skipped test (gates 5, 8)
 
       **Done 2026-09-03.** `npm run verify` exits 0: `style-check` clean (one pre-existing, unrelated
       warning), `type-check` clean, `test` — 181 files, 1409 tests, all passed, none skipped — `build`
       succeeds, `/settings/labels` present in the route list. `src/features/activity` still does not
-      exist and T045/T046 remain `[ ]`, untouched.
+      exist; `FR-021` remains deferred per the note under Phase 4.
 
 ---
 
@@ -454,13 +471,13 @@ the rail and at creation. `FR-021`'s activity rows are the only requirement not 
 
 ### Phase dependencies
 
-- **Precondition**: entries R2, R5, R6 implemented (confirmed true today). R7 is not, and blocks only
-  T045/T046.
+- **Precondition**: entries R2, R5, R6 implemented (confirmed true today). R7 is not, and its absence
+  defers only `FR-021` — no task in this checklist is blocked by it.
 - **Setup (Phase 1)**: no dependencies beyond the precondition.
 - **Foundational (Phase 2)**: depends on Setup. **Blocks both user stories** — neither table exists
   until it completes.
 - **User stories (Phases 3–4)**: both depend on Foundational.
-- **Polish (Phase 5)**: depends on both stories being complete (T045/T046 excepted).
+- **Polish (Phase 5)**: depends on both stories being complete.
 
 ### Story dependencies
 
@@ -520,13 +537,15 @@ Task: "Route test in src/app/(app)/settings/labels/page.test.ts"
 
 1. Setup + Foundational → both tables exist
 2. **+ US1** → the team's label vocabulary exists and is curated (MVP)
-3. **+ US2** → labels apply to issues, at the rail and at creation
-4. **R7 lands** → T045, T046 complete `FR-021`; this feature's only remaining gap closes with no
-   further design work, because the row shape was pinned from day one
+3. **+ US2** → labels apply to issues, at the rail and at creation. **This feature is complete here.**
+4. **R7 lands, some future entry** → `FR-021`'s two `writeActivity` calls close the one deferred
+   requirement with no further design work, because the row shape was pinned from day one — see
+   *`FR-021` — deferred, not tracked as an open task here*, under Phase 4
 
 Each increment is a usable product. Stopping after US1 leaves an unused vocabulary, which is coherent
-but not yet the payoff; stopping after US2 (today's real stopping point) leaves every requirement met
-except one pair of activity rows nothing downstream of this feature currently reads.
+but not yet the payoff; the delivered state, after US2, meets every requirement in this feature except
+one pair of activity rows nothing downstream of this feature currently reads — an accepted, documented
+limitation, not unfinished work.
 
 ---
 
@@ -539,8 +558,9 @@ except one pair of activity rows nothing downstream of this feature currently re
   separate database.
 - **A label carries no colour.** Nothing in this file builds, moves, or reads any palette module —
   see `research.md` §B for why an earlier draft of this plan assumed otherwise.
-- **T045 and T046 are the one place this file records planned-but-not-implemented work.** They are not
-  marked `[X]` under any circumstance until R7's `writeActivity` exists in code and admits
-  `label_added` / `label_removed`. Marking them done without that would violate gate 1 (no test could
-  have been observed failing for the intended reason) and Principle VII.
+- **`FR-021` is the one requirement this feature defers rather than completes** — see *`FR-021` —
+  deferred, not tracked as an open task here*, under Phase 4. It is not carried as an unchecked task,
+  because Principle VII requires a test observed failing before implementation, and no such test can
+  exist for a function (`writeActivity`) that does not exist in code. Every other requirement in this
+  feature is fully implemented and tested.
 - Commit after each task or logical group; the commit order is the evidence a reviewer needs for gate 1.
