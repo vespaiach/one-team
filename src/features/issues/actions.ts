@@ -1,12 +1,15 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { requireActor } from "@/features/auth/server/actor";
 import { assertSameOrigin } from "@/features/auth/server/origin";
 import { type CreateIssueResult, createIssue as runCreateIssue } from "./server/create-issue";
+import { updateIssue as runUpdateIssue, type UpdateIssueResult } from "./server/update-issue";
 
 export type CreateIssueState = CreateIssueResult | { status: "idle" };
+export type { UpdateIssueResult };
 
 export async function createIssue(
   _prevState: CreateIssueState,
@@ -36,4 +39,40 @@ export async function createIssue(
   }
 
   redirect(`/projects/${result.projectKey}/issues/${result.number}/details`);
+}
+
+export type UpdateIssuePayload = {
+  issueId: unknown;
+  title?: unknown;
+  description?: unknown;
+  columnId?: unknown;
+  priority?: unknown;
+  assigneeId?: unknown;
+  dueDate?: unknown;
+};
+
+export async function updateIssue(input: UpdateIssuePayload): Promise<UpdateIssueResult> {
+  assertSameOrigin({ headers: await headers() });
+  const actor = await requireActor();
+
+  if (typeof input.issueId !== "string") {
+    return { status: "not-found" };
+  }
+
+  const result = await runUpdateIssue({
+    issueId: input.issueId,
+    actor,
+    ...("title" in input ? { title: input.title } : {}),
+    ...("description" in input ? { description: input.description } : {}),
+    ...("columnId" in input ? { columnId: input.columnId } : {}),
+    ...("priority" in input ? { priority: input.priority } : {}),
+    ...("assigneeId" in input ? { assigneeId: input.assigneeId } : {}),
+    ...("dueDate" in input ? { dueDate: input.dueDate } : {}),
+  });
+
+  if (result.status === "ok") {
+    refresh();
+  }
+
+  return result;
 }

@@ -10,11 +10,17 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("@/features/issues/server/issue-queries", () => ({
   loadIssueView: vi.fn(),
+  listProjectColumns: vi.fn(),
+  listAssigneePool: vi.fn(),
+}));
+vi.mock("@/features/projects/server/queries", () => ({
+  loadProjectByKey: vi.fn(),
 }));
 
 import { notFound } from "next/navigation";
 import { requireActor } from "@/features/auth/server/actor";
-import { loadIssueView } from "@/features/issues/server/issue-queries";
+import { listAssigneePool, listProjectColumns, loadIssueView } from "@/features/issues/server/issue-queries";
+import { loadProjectByKey } from "@/features/projects/server/queries";
 import IssueDetailsPage from "./page";
 
 const ACTOR = {
@@ -59,6 +65,18 @@ const ISSUE_VIEW = {
   updatedAt: new Date(),
 };
 
+const PROJECT_ROW = {
+  id: "project-1",
+  key: "WEB",
+  name: "Website Redesign",
+  description: null,
+  status: "active" as const,
+  startDate: null,
+  targetDate: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+};
+
 function params(projectKey: string, issueNumber: string) {
   return { params: Promise.resolve({ projectKey, issueNumber }) };
 }
@@ -97,6 +115,9 @@ describe("/projects/:projectKey/issues/:issueNumber/details page (FR-041, FR-046
   it("resolves the issue from the pair of project key and issue number", async () => {
     vi.mocked(requireActor).mockResolvedValue(ACTOR);
     vi.mocked(loadIssueView).mockResolvedValue(ISSUE_VIEW);
+    vi.mocked(loadProjectByKey).mockResolvedValue(PROJECT_ROW);
+    vi.mocked(listProjectColumns).mockResolvedValue([]);
+    vi.mocked(listAssigneePool).mockResolvedValue([]);
 
     await IssueDetailsPage(params("WEB", "142"));
 
@@ -106,6 +127,9 @@ describe("/projects/:projectKey/issues/:issueNumber/details page (FR-041, FR-046
   it("renders the issue for any signed-in user, including a non-member, with no Forbidden path", async () => {
     vi.mocked(requireActor).mockResolvedValue(NON_MEMBER_ACTOR);
     vi.mocked(loadIssueView).mockResolvedValue(ISSUE_VIEW);
+    vi.mocked(loadProjectByKey).mockResolvedValue(PROJECT_ROW);
+    vi.mocked(listProjectColumns).mockResolvedValue([]);
+    vi.mocked(listAssigneePool).mockResolvedValue([]);
 
     const jsx = await IssueDetailsPage(params("WEB", "142"));
 

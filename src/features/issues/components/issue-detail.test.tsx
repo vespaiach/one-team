@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import type { IssueView } from "../server/issue-queries";
+import type { AssigneeOption, IssueColumnOption, IssueView } from "../server/issue-queries";
 import { IssueDetail } from "./issue-detail";
 
 function makeIssueView(overrides: Partial<IssueView> = {}): IssueView {
@@ -39,16 +39,32 @@ function makeIssueView(overrides: Partial<IssueView> = {}): IssueView {
   };
 }
 
+const COLUMNS: IssueColumnOption[] = [{ id: "col-1", name: "In progress" }];
+
+const ASSIGNEE_POOL: AssigneeOption[] = [
+  { id: "user-2", firstName: "Alan", lastName: "Turing", avatarUrl: null, jobTitle: null },
+];
+
+function renderDetail(issue: IssueView) {
+  return render(
+    <IssueDetail
+      issue={issue}
+      columns={COLUMNS}
+      assigneePool={ASSIGNEE_POOL}
+    />,
+  );
+}
+
 describe("IssueDetail — layout (FR-042, FR-043, FR-045, US2 s1)", () => {
   it("renders a main column and a 262px meta rail", () => {
-    render(<IssueDetail issue={makeIssueView()} />);
+    renderDetail(makeIssueView());
 
     const rail = screen.getByRole("complementary", { name: "Issue details" });
     expect(rail.className).toContain("262px");
   });
 
   it("puts the key first in document order, then the title, then the description", () => {
-    render(<IssueDetail issue={makeIssueView()} />);
+    renderDetail(makeIssueView());
 
     const key = screen.getByText("WEB-142");
     const title = screen.getByText("Fix the header");
@@ -59,24 +75,25 @@ describe("IssueDetail — layout (FR-042, FR-043, FR-045, US2 s1)", () => {
   });
 
   it("shows column, priority, assignee and due date in the rail", () => {
-    render(<IssueDetail issue={makeIssueView()} />);
+    renderDetail(makeIssueView());
 
-    expect(screen.getByText("In progress")).toBeDefined();
-    expect(screen.getByText("High")).toBeDefined();
-    expect(screen.getByText("Alan Turing")).toBeDefined();
-    expect(screen.getByText("2026-02-01")).toBeDefined();
+    expect(screen.getByLabelText("Column").textContent).toContain("In progress");
+    expect(screen.getByLabelText("Priority").textContent).toContain("High");
+    expect(screen.getByLabelText("Assignee").textContent).toContain("Alan Turing");
+    expect((screen.getByLabelText("Due date") as HTMLInputElement).value).toBe("2026-02-01");
   });
 
-  it("shows project, created-by and timestamps as values rather than controls", () => {
-    const { container } = render(<IssueDetail issue={makeIssueView()} />);
+  it("shows project and created-by as values rather than controls", () => {
+    renderDetail(makeIssueView());
 
     expect(screen.getByText("Website Redesign")).toBeDefined();
     expect(screen.getByText("Grace Hopper")).toBeDefined();
-    expect(container.querySelectorAll("select, input, textarea")).toHaveLength(0);
+    expect(screen.getByText("Website Redesign").closest("button, select, input, textarea")).toBeNull();
+    expect(screen.getByText("Grace Hopper").closest("button, select, input, textarea")).toBeNull();
   });
 
   it("renders no Activity section and no label control anywhere", () => {
-    render(<IssueDetail issue={makeIssueView()} />);
+    renderDetail(makeIssueView());
 
     expect(screen.queryByText(/^activity$/i)).toBeNull();
     expect(screen.queryByText(/^labels?$/i)).toBeNull();

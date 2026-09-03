@@ -1,15 +1,10 @@
 import type { ReactNode } from "react";
-import type { IssueView } from "../server/issue-queries";
+import { updateIssue } from "../actions";
+import type { AssigneeOption, IssueColumnOption, IssueView } from "../server/issue-queries";
 import { CopyableKey } from "./copyable-key";
+import { EditableText } from "./editable-text";
 import { IssueDescription } from "./issue-description";
-
-const PRIORITY_LABELS: Record<IssueView["priority"], string> = {
-  none: "No priority",
-  low: "Low",
-  medium: "Medium",
-  high: "High",
-  urgent: "Urgent",
-};
+import { IssueRail } from "./issue-rail";
 
 const TIMESTAMP_FORMAT = new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "UTC" });
 
@@ -22,23 +17,53 @@ function RailField({ label, children }: { label: string; children: ReactNode }) 
   );
 }
 
-export function IssueDetail({ issue }: { issue: IssueView }) {
+export function IssueDetail({
+  issue,
+  columns,
+  assigneePool,
+}: {
+  issue: IssueView;
+  columns: IssueColumnOption[];
+  assigneePool: AssigneeOption[];
+}) {
   return (
     <div className="flex gap-6 p-4">
       <div className="flex min-w-0 flex-1 flex-col gap-4">
         <CopyableKey issueKey={issue.key} />
-        <h1 className="text-h4">{issue.title}</h1>
-        <IssueDescription description={issue.description} />
+        <h1 className="text-h4">
+          <EditableText
+            label="Title"
+            field="title"
+            issueId={issue.id}
+            value={issue.title}
+            maxLength={200}
+            updateIssueAction={updateIssue}
+          />
+        </h1>
+        <EditableText
+          label="Description"
+          field="description"
+          issueId={issue.id}
+          value={issue.description ?? ""}
+          multiline
+          maxLength={10000}
+          renderValue={(value) => <IssueDescription description={value} />}
+          updateIssueAction={updateIssue}
+        />
       </div>
       <aside
         aria-label="Issue details"
         className="flex w-[262px] shrink-0 flex-col gap-4">
-        <RailField label="Column">{issue.column.name}</RailField>
-        <RailField label="Priority">{PRIORITY_LABELS[issue.priority]}</RailField>
-        <RailField label="Assignee">
-          {issue.assignee ? `${issue.assignee.firstName} ${issue.assignee.lastName}` : "Unassigned"}
-        </RailField>
-        <RailField label="Due date">{issue.dueDate ?? "No due date"}</RailField>
+        <IssueRail
+          issueId={issue.id}
+          column={issue.column}
+          priority={issue.priority}
+          assignee={issue.assignee}
+          dueDate={issue.dueDate}
+          columns={columns}
+          assigneePool={assigneePool}
+          updateIssueAction={updateIssue}
+        />
         <RailField label="Project">{issue.project.name}</RailField>
         <RailField label="Created by">
           {issue.createdBy.firstName} {issue.createdBy.lastName}
