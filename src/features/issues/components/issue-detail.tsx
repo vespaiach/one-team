@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
-import { updateIssue } from "../actions";
+import { deleteIssue, updateIssue } from "../actions";
 import type { AssigneeOption, IssueColumnOption, IssueView } from "../server/issue-queries";
 import { CopyableKey } from "./copyable-key";
+import { DeleteIssueControl } from "./delete-issue-control";
 import { EditableText } from "./editable-text";
 import { IssueDescription } from "./issue-description";
 import { IssueRail } from "./issue-rail";
@@ -23,12 +24,16 @@ export function IssueDetail({
   assigneePool,
   canWrite,
   writeReason,
+  canDelete = false,
+  deleteReason = "",
 }: {
   issue: IssueView;
   columns: IssueColumnOption[];
   assigneePool: AssigneeOption[];
   canWrite: boolean;
   writeReason: string;
+  canDelete?: boolean;
+  deleteReason?: string;
 }) {
   return (
     <div className="flex gap-6 p-4">
@@ -73,6 +78,15 @@ export function IssueDetail({
           canWrite={canWrite}
           writeReason={writeReason}
           updateIssueAction={updateIssue}
+        />
+        <DeleteIssueControl
+          issueId={issue.id}
+          issueKey={issue.key}
+          issueTitle={issue.title}
+          projectKey={issue.project.key}
+          canDelete={canDelete}
+          deleteReason={deleteReason}
+          deleteIssueAction={deleteIssue}
         />
         <RailField label="Project">{issue.project.name}</RailField>
         <RailField label="Created by">

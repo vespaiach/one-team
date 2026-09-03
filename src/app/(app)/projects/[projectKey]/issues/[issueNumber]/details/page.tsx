@@ -8,6 +8,7 @@ import {
   listAssigneePool,
   listProjectColumns,
   loadIssueView,
+  resolveIssueDeleteAccess,
   resolveIssueWriteAccess,
 } from "@/features/issues/server/issue-queries";
 import { loadProjectByKey } from "@/features/projects/server/queries";
@@ -42,6 +43,7 @@ export default async function IssueDetailsPage({
     resolveIssueWriteAccess(actor, project, "edit"),
     resolveIssueWriteAccess(actor, project, "create"),
   ]);
+  const deleteAccess = resolveIssueDeleteAccess(actor, project);
 
   return (
     <>
@@ -62,6 +64,8 @@ export default async function IssueDetailsPage({
           assigneePool={assigneePool}
           canWrite={writeAccess.canWrite}
           writeReason={writeAccess.writeReason}
+          canDelete={deleteAccess.canDelete}
+          deleteReason={deleteAccess.deleteReason}
         />
       </Suspense>
     </>

@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { boardColumn, issue, project, projectMember, user } from "@/db/schema";
 import type { Actor } from "@/features/auth/server/actor";
 import { publicUser } from "@/features/auth/server/projections";
-import { isMember } from "@/features/projects/server/authorization";
+import { isAdmin, isMember } from "@/features/projects/server/authorization";
 import { formatIssueKey } from "../issue-key";
 import type { IssuePriority } from "./input";
 
@@ -155,4 +155,18 @@ export async function resolveIssueWriteAccess(
 ): Promise<IssueWriteAccess> {
   const canWrite = await isMember(actor, project.id);
   return { canWrite, writeReason: canWrite ? "" : buildIssueWriteReason(action, project.name) };
+}
+
+export type IssueDeleteAccess = {
+  canDelete: boolean;
+  deleteReason: string;
+};
+
+export function buildIssueDeleteReason(projectName: string): string {
+  return `Only admins can delete issues in ${projectName}.`;
+}
+
+export function resolveIssueDeleteAccess(actor: Actor, project: { name: string }): IssueDeleteAccess {
+  const canDelete = isAdmin(actor);
+  return { canDelete, deleteReason: canDelete ? "" : buildIssueDeleteReason(project.name) };
 }

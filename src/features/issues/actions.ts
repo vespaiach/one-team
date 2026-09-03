@@ -1,15 +1,17 @@
 "use server";
 
-import { refresh } from "next/cache";
+import { refresh, revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { requireActor } from "@/features/auth/server/actor";
 import { assertSameOrigin } from "@/features/auth/server/origin";
 import { type CreateIssueResult, createIssue as runCreateIssue } from "./server/create-issue";
+import { type DeleteIssueResult, deleteIssue as runDeleteIssue } from "./server/delete-issue";
 import { updateIssue as runUpdateIssue, type UpdateIssueResult } from "./server/update-issue";
 
 export type CreateIssueState = CreateIssueResult | { status: "idle" };
 export type { UpdateIssueResult };
+export type { DeleteIssueResult };
 
 export async function createIssue(
   _prevState: CreateIssueState,
@@ -72,6 +74,28 @@ export async function updateIssue(input: UpdateIssuePayload): Promise<UpdateIssu
 
   if (result.status === "ok") {
     refresh();
+  }
+
+  return result;
+}
+
+export type DeleteIssuePayload = {
+  issueId: unknown;
+  projectKey: unknown;
+};
+
+export async function deleteIssue(input: DeleteIssuePayload): Promise<DeleteIssueResult> {
+  assertSameOrigin({ headers: await headers() });
+  const actor = await requireActor();
+
+  if (typeof input.issueId !== "string") {
+    return { status: "not-found" };
+  }
+
+  const result = await runDeleteIssue({ issueId: input.issueId, actor });
+
+  if (result.status === "ok" && typeof input.projectKey === "string") {
+    revalidatePath(`/projects/${input.projectKey}/details`);
   }
 
   return result;

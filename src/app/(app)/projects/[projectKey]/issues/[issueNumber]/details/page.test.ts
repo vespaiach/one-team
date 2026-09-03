@@ -13,6 +13,7 @@ vi.mock("@/features/issues/server/issue-queries", () => ({
   listProjectColumns: vi.fn(),
   listAssigneePool: vi.fn(),
   resolveIssueWriteAccess: vi.fn().mockResolvedValue({ canWrite: true, writeReason: "" }),
+  resolveIssueDeleteAccess: vi.fn().mockReturnValue({ canDelete: false, deleteReason: "" }),
 }));
 vi.mock("@/features/projects/server/queries", () => ({
   loadProjectByKey: vi.fn(),
