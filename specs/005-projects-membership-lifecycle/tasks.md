@@ -155,12 +155,12 @@ removing them takes that write access and nothing else.
 account cannot write. Add them from the roster and confirm they can write on their next request with
 no sign-out. Remove them and confirm the write is refused again while every row they authored survives.
 
-- [ ] T054 [US3] Write failing persistence tests for `src/features/projects/server/membership.test.ts` — an add writes one row, a remove deletes one row and nothing else, removing the last roster row succeeds with no guardrail, an admin never added explicitly still passes `isMember`, and an admin added then removed still passes
-- [ ] T055 [US3] Implement `src/features/projects/server/membership.ts` with `addProjectMember` and `removeProjectMember` as one statement each
-- [ ] T056 [US3] Write failing tests for the two entry points in `src/features/projects/actions.test.ts` — origin, actor, `isAdmin`, the project derived from the stored row, and typed results
-- [ ] T057 [US3] Implement `addProjectMember` and `removeProjectMember` in `src/features/projects/actions.ts`
-- [ ] T058 [US3] Write failing jsdom tests for the roster controls in `src/features/projects/components/members-section.test.tsx` — add and remove offered to admins only and disabled with a reason for everyone else, the Add picker excluding deactivated accounts and existing members but **not** the acting admin, no invitation path, and a refused add returning the roster to its previous state with a message
-- [ ] T059 [US3] Add the add and remove controls to `src/features/projects/components/members-section.tsx`, applying optimistically
+- [X] T054 [US3] Write failing persistence tests for `src/features/projects/server/membership.test.ts` — an add writes one row, a remove deletes one row and nothing else, removing the last roster row succeeds with no guardrail, an admin never added explicitly still passes `isMember`, and an admin added then removed still passes
+- [X] T055 [US3] Implement `src/features/projects/server/membership.ts` with `addProjectMember` and `removeProjectMember` as one statement each
+- [X] T056 [US3] Write failing tests for the two entry points in `src/features/projects/actions.test.ts` — origin, actor, `isAdmin`, the project derived from the stored row, and typed results
+- [X] T057 [US3] Implement `addProjectMember` and `removeProjectMember` in `src/features/projects/actions.ts`
+- [X] T058 [US3] Write failing jsdom tests for the roster controls in `src/features/projects/components/members-section.test.tsx` — add and remove offered to admins only and disabled with a reason for everyone else, the Add picker excluding deactivated accounts and existing members but **not** the acting admin, no invitation path, and a refused add returning the roster to its previous state with a message
+- [X] T059 [US3] Add the add and remove controls to `src/features/projects/components/members-section.tsx`, applying optimistically
 
 **Checkpoint**: the write boundary is complete and every later entry can read it.
 

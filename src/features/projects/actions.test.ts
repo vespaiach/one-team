@@ -364,3 +364,106 @@ describe("updateProject (FR-014, FR-016, FR-028, FR-036)", () => {
     expect(JSON.stringify(result)).not.toMatch(/select|insert|constraint/i);
   });
 });
+
+describe("addProjectMember (FR-014, FR-015, FR-045)", () => {
+  it("asserts the origin before reading anything else", async () => {
+    currentOrigin = undefined;
+    const { addProjectMember } = await import("./actions");
+
+    await expect(addProjectMember({ projectKey: "WR", userId: "any" })).rejects.toThrow("forbidden_origin");
+  });
+
+  it("redirects an unauthenticated caller to /signin", async () => {
+    mockCookie(undefined);
+    const { addProjectMember } = await import("./actions");
+
+    await expect(addProjectMember({ projectKey: "WR", userId: "any" })).rejects.toThrow(
+      "NEXT_REDIRECT:/signin",
+    );
+  });
+
+  it("returns forbidden for a signed-in non-admin", async () => {
+    await signInAs({ role: "member" });
+    const { addProjectMember } = await import("./actions");
+
+    await expect(addProjectMember({ projectKey: "WR", userId: "any" })).resolves.toEqual({
+      status: "forbidden",
+    });
+  });
+
+  it("calls notFound() rather than forbidden() for a project the module did not find", async () => {
+    await signInAs({ role: "admin" });
+    const { addProjectMember } = await import("./actions");
+
+    await expect(addProjectMember({ projectKey: "NOPE", userId: "any" })).rejects.toThrow("NEXT_NOT_FOUND");
+    expect(notFoundMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("adds the member to the project derived from the stored row, and refreshes", async () => {
+    await signInAs({ role: "admin" });
+    const proj = await insertProject();
+    const target = await insertUser({ firstName: "Grace", lastName: "Hopper" });
+    const { addProjectMember } = await import("./actions");
+
+    const result = await addProjectMember({ projectKey: proj.key, userId: target.id });
+
+    expect(result).toEqual({ status: "saved" });
+    expect(refreshMock).toHaveBeenCalledTimes(1);
+    const memberships = await testDb.select().from(projectMember).where(eq(projectMember.projectId, proj.id));
+    expect(memberships.map((row) => row.userId)).toEqual([target.id]);
+  });
+});
+
+describe("removeProjectMember (FR-014, FR-015, FR-019)", () => {
+  it("asserts the origin before reading anything else", async () => {
+    currentOrigin = undefined;
+    const { removeProjectMember } = await import("./actions");
+
+    await expect(removeProjectMember({ projectKey: "WR", userId: "any" })).rejects.toThrow(
+      "forbidden_origin",
+    );
+  });
+
+  it("redirects an unauthenticated caller to /signin", async () => {
+    mockCookie(undefined);
+    const { removeProjectMember } = await import("./actions");
+
+    await expect(removeProjectMember({ projectKey: "WR", userId: "any" })).rejects.toThrow(
+      "NEXT_REDIRECT:/signin",
+    );
+  });
+
+  it("returns forbidden for a signed-in non-admin", async () => {
+    await signInAs({ role: "member" });
+    const { removeProjectMember } = await import("./actions");
+
+    await expect(removeProjectMember({ projectKey: "WR", userId: "any" })).resolves.toEqual({
+      status: "forbidden",
+    });
+  });
+
+  it("calls notFound() rather than forbidden() for a project the module did not find", async () => {
+    await signInAs({ role: "admin" });
+    const { removeProjectMember } = await import("./actions");
+
+    await expect(removeProjectMember({ projectKey: "NOPE", userId: "any" })).rejects.toThrow(
+      "NEXT_NOT_FOUND",
+    );
+    expect(notFoundMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("removes the member from the project derived from the stored row, and refreshes", async () => {
+    await signInAs({ role: "admin" });
+    const proj = await insertProject();
+    const target = await insertUser({ firstName: "Grace", lastName: "Hopper" });
+    await addMember(proj.id, target.id);
+    const { removeProjectMember } = await import("./actions");
+
+    const result = await removeProjectMember({ projectKey: proj.key, userId: target.id });
+
+    expect(result).toEqual({ status: "saved" });
+    expect(refreshMock).toHaveBeenCalledTimes(1);
+    const memberships = await testDb.select().from(projectMember).where(eq(projectMember.projectId, proj.id));
+    expect(memberships).toHaveLength(0);
+  });
+});

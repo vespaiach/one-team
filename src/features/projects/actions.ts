@@ -8,6 +8,10 @@ import { assertSameOrigin } from "@/features/auth/server/origin";
 import { isValidProjectKey } from "./key";
 import { requireAdmin } from "./server/authorization";
 import { createProject as runCreateProject } from "./server/create-project";
+import {
+  addProjectMember as runAddProjectMember,
+  removeProjectMember as runRemoveProjectMember,
+} from "./server/membership";
 import { findProjectKeyHolder, loadProjectByKey } from "./server/queries";
 import { updateProject as runUpdateProject, type UpdateProjectChanges } from "./server/update-project";
 
@@ -147,4 +151,44 @@ export async function updateProject(input: UpdateProjectPayload): Promise<Update
 
   refresh();
   return result;
+}
+
+export type MembershipPayload = { projectKey: string; userId: string };
+
+export type MembershipState = { status: "saved" } | { status: "forbidden" };
+
+export async function addProjectMember(input: MembershipPayload): Promise<MembershipState> {
+  assertSameOrigin({ headers: await headers() });
+  const actor = await requireActor();
+  if (actor.role !== "admin") {
+    return { status: "forbidden" };
+  }
+
+  const project = await loadProjectByKey(input.projectKey);
+  if (!project) {
+    notFound();
+  }
+
+  await runAddProjectMember(project.id, input.userId);
+
+  refresh();
+  return { status: "saved" };
+}
+
+export async function removeProjectMember(input: MembershipPayload): Promise<MembershipState> {
+  assertSameOrigin({ headers: await headers() });
+  const actor = await requireActor();
+  if (actor.role !== "admin") {
+    return { status: "forbidden" };
+  }
+
+  const project = await loadProjectByKey(input.projectKey);
+  if (!project) {
+    notFound();
+  }
+
+  await runRemoveProjectMember(project.id, input.userId);
+
+  refresh();
+  return { status: "saved" };
 }
