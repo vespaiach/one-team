@@ -223,3 +223,4 @@ in the diff.
 | Constitution re-check | this file | complete — pass, one item in Complexity Tracking |
 | 2 — Tasks | [`tasks.md`](./tasks.md) | generated — `/speckit-tasks` |
 | Implementation | — | R2, R5, R6 implemented; `FR-021`'s activity write stays **blocked on R7's code existing** (R7 has a plan, no implementation) |
+| 3–5 — US1, US2, Polish | [`tasks.md`](./tasks.md) T007–T051 | complete — `npm run verify` green (1409 tests, none skipped); `T045`/`T046` (`FR-021`'s activity rows) remain the one open pair, still blocked on R7 |

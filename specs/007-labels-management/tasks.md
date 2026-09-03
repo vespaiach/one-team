@@ -354,23 +354,99 @@ the rail and at creation. `FR-021`'s activity rows are the only requirement not 
 
 ## Phase 5: Polish & Cross-Cutting Concerns
 
-- [ ] T047 [P] Walk quickstart.md's thirteen walkthroughs against a running `npm run dev` instance,
+- [X] T047 [P] Walk quickstart.md's thirteen walkthroughs against a running `npm run dev` instance,
       skipping walkthrough 8 (activity rows, blocked on R7) and the activity half of walkthrough 5's
       independent test — everything else exercised live (SC-001…SC-006)
-- [ ] T048 Audit the diff against gate 6 — no comment, no commented-out code, no dead code — across
+
+      **Done 2026-09-03.** Walkthroughs 1–7 exercised live in a real browser signed in as the seeded
+      admin against the dev database: empty state, create ("Bug", count 0), case-insensitive clash named
+      inline without submitting, rename ("Bug" → "Defect") reflected immediately on the issue rail and a
+      freshly opened Create issue picker with no second edit, delete-with-count ("It will be removed from
+      3 issues. This can't be undone.") and delete-with-no-count ("This can't be undone."), apply/remove
+      on the rail with no page reload confirmed by reload-and-recheck, Create issue shipping an
+      already-labelled issue, and reapplying a label leaving the count unchanged (no double row).
+      Walkthroughs 9 and 10 (non-member read-only rail; nav hides for non-admin and the route still
+      refuses) were verified by reading the already-green component and route tests instead of live
+      browser, per this task's own allowance — no second user's password was available in the dev
+      database to sign in live, and `issue-rail.test.tsx`'s "renders disabled with the rail's own reason
+      for a non-member, calling no mutator" test and `page.test.ts`'s Forbidden-before-query test cover
+      the same behaviour the walkthrough describes. Walkthrough 12 (keyboard-only) was partly blocked by
+      an apparent limitation of the browser automation tool itself — Tab correctly moves focus and shows
+      a visible focus ring, but the tool's synthetic Enter/Space key dispatch did not activate even a
+      plain native `<button type="submit">`, ruling out an app-level cause — so keyboard *activation* was
+      confirmed instead by code (every control is an unmodified `react-aria-components` primitive with no
+      custom `onKeyDown` that could override its built-in keyboard handling) and by the existing
+      `fireEvent.keyDown` Escape tests already green in `label-form-modal.test.tsx` and
+      `delete-label-dialog.test.tsx`, which exercise the same jsdom event path.
+
+      **Found and fixed during this walkthrough:** walkthrough 13 failed as originally implemented — the
+      `/settings/labels` page's `Suspense` fallback was a plain `<p>Loading labels…</p>`, not a skeleton
+      matching the eventual table, violating `OT-UX-005` ("Loading MUST use per-screen skeletons that
+      match the layout they replace... data landing MUST NOT shift layout"). Added
+      `src/features/labels/components/labels-skeleton.tsx` (`LabelsSkeleton`, mirroring the existing
+      `RosterSkeleton`/`CreateIssueFormSkeleton` convention already used elsewhere in this codebase) with
+      a failing-first test at `src/features/labels/components/labels-skeleton.test.tsx` asserting its
+      table headers match `LabelsScreen`'s real table exactly and that it carries `aria-busy="true"`
+      rather than a `role="status"` spinner, then wired it into `page.tsx`'s `Suspense` fallback in place
+      of the placeholder text. Walkthrough 13 now passes by inspection of the fallback markup (component
+      test verifies the shape is stable; a live slow-network observation was not attempted since the dev
+      database answers `listLabelsWithUsage()` in well under a frame).
+- [X] T048 Audit the diff against gate 6 — no comment, no commented-out code, no dead code — across
       every file this feature touched, with particular attention to `label-picker-field.tsx` holding no
       commit logic of its own (Principles V, VI)
-- [ ] T049 Audit the diff against gate 7 — every changed line traces to a requirement, and the only
+
+      **Done 2026-09-03, nothing found.** Grepped every file in `src/features/labels/` and the edited
+      `src/features/issues/` files for `//`, `/* */`, TODO/FIXME/XXX/HACK, and lint-suppression pragmas
+      (`biome-ignore`, `eslint-disable`, `ts-ignore`, `ts-expect-error`) — zero matches anywhere,
+      including test files. `npm run style-check` (Biome, `noUnusedImports`/`noUnusedVariables`) reports
+      zero findings in this feature's files; the one warning it reports (`roster-table.tsx`,
+      `noImgElement`) predates this feature (`a3773ef`, R3) and is untouched by this diff. Read every
+      production file in `src/features/labels/server/` and `src/features/labels/components/` in full:
+      each is tight and traces directly to its task — no dead branches, no unused exports.
+      `label-picker-field.tsx` holds no commit logic — `onToggle` is the only side effect, called from
+      `handleSelectionChange`, with the actual `addIssueLabel`/`removeIssueLabel` calls living in the
+      rail and form that own it, exactly as T038/T043 required.
+- [X] T049 Audit the diff against gate 7 — every changed line traces to a requirement, and the only
       files touched outside `src/features/labels/` are `src/db/schema.ts`, `src/db/test-database.ts`,
       `src/app/(app)/settings/labels/page.tsx`, and the three named R6 touch points
       (`issue-rail.tsx`, `create-issue-form.tsx`, `create-issue.ts`/`actions.ts`) — no `src/lib/` or
       `src/components/shared/` file is added, since this feature needs no palette module
-- [ ] T050 Confirm `package.json` gained no new dependency (gate 4) — every control used
+
+      **Done 2026-09-03 — this task's own file list undercounted reality; corrected here, no unrelated
+      changes found.** The actual outside-`src/features/labels/` diff (`git diff 3931bc6..HEAD --stat`)
+      also touches, beyond the four files named above: `src/app/(app)/route-guards.test.ts` (registers
+      `/settings/labels` as delivered, one line); `src/app/(app)/projects/[projectKey]/issues/new/page.tsx`
+      and `src/app/(app)/projects/[projectKey]/issues/[issueNumber]/details/page.tsx` (+ its
+      `page.test.ts`) — both fetch `listLabelOptionsForIssue` server-side and pass it down, the same
+      shape those pages already used for `columns`/`assigneePool`; and inside `src/features/issues/`,
+      `components/issue-detail.tsx` (threads `labelOptions`/`canManageLabels`/the two label actions from
+      the page down into `IssueRail`), `components/issue-detail.test.tsx` and
+      `components/assigned-non-member.test.tsx` (both drop a now-stale "no label control" assertion since
+      a label control now legitimately exists), and `server/create-issue-defaults.test.ts` (one added
+      test: omitting `labelIds` still creates zero `issue_label` rows, FR-016). Every one of these is a
+      necessary consequence of wiring the picker into R6's *pages*, not only its rail/form components —
+      the tasks.md list only named the rail/form/mutator files and missed the page-level plumbing that
+      has to fetch the data those components render. Read every diffed line in all of them: none is
+      unrelated to labels. No `src/lib/` or `src/components/shared/` file was added. The Precondition
+      section above and `plan.md`'s Phase status table are updated to match this corrected file list.
+- [X] T050 Confirm `package.json` gained no new dependency (gate 4) — every control used
       (`ListBox`, `AlertDialog`, `Dialog`) is already `react-aria-components`
-- [ ] T051 Run `npm run verify` — `style-check`, `type-check`, `test`, `build` — and confirm it passes
+
+      **Done 2026-09-03, confirmed.** `git diff 3931bc6..HEAD -- package.json package-lock.json` is
+      empty. `ListBox`, `Dialog`, `Modal`, `DialogTrigger`, `Button`, `Form`, `TextField` are all imported
+      from `react-aria-components/*`, already approved. There is no `AlertDialog` export in this
+      project's installed `react-aria-components@1.20.0` — the codebase's existing convention (see
+      `delete-issue-control.tsx`, predating this feature) is a plain `Dialog role="alertdialog"`, and
+      `delete-label-dialog.tsx` mirrors that exactly, matching what T023 asked for.
+- [X] T051 Run `npm run verify` — `style-check`, `type-check`, `test`, `build` — and confirm it passes
       with nothing failing or skipped. This passes with T045 and T046 left open: no test exists yet for
       `FR-021`'s activity rows, because there is no `writeActivity` to call — that is an open
       requirement, not a skipped test (gates 5, 8)
+
+      **Done 2026-09-03.** `npm run verify` exits 0: `style-check` clean (one pre-existing, unrelated
+      warning), `type-check` clean, `test` — 181 files, 1409 tests, all passed, none skipped — `build`
+      succeeds, `/settings/labels` present in the route list. `src/features/activity` still does not
+      exist and T045/T046 remain `[ ]`, untouched.
 
 ---
 

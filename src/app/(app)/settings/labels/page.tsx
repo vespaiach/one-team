@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { requireActor } from "@/features/auth/server/actor";
 import { checkLabelNameAvailable, createLabel, deleteLabel, updateLabel } from "@/features/labels/actions";
 import { LabelsScreen } from "@/features/labels/components/labels-screen";
+import { LabelsSkeleton } from "@/features/labels/components/labels-skeleton";
 import { listLabelsWithUsage } from "@/features/labels/server/queries";
 import { ScreenHeader } from "@/features/shell/components/screen-header";
 
@@ -28,7 +29,7 @@ export default async function LabelsPage() {
   return (
     <>
       <ScreenHeader name="Labels" />
-      <Suspense fallback={<p>Loading labels…</p>}>
+      <Suspense fallback={<LabelsSkeleton />}>
         <LabelsScreenData />
       </Suspense>
     </>
