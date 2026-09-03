@@ -55,13 +55,26 @@ Both non-empty confirms R6 and R5 have landed, matching what this file assumes.
 **Purpose**: confirm the two reconciliation points [`quickstart.md`](./quickstart.md) calls out before
 any code is written.
 
-- [ ] T001 Run both precondition checks above, then reconcile against what they show: (1) confirm
+- [X] T001 Run both precondition checks above, then reconcile against what they show: (1) confirm
       `src/features/issues/server/create-issue.ts`'s `CreateIssueInput` is still a plain object this
       feature can add an optional `labelIds` field to without restructuring the mutator; (2) confirm
       R7's `writeActivity` (in [`specs/007-comments-activity-feeds/contracts/mutators.md`](../007-comments-activity-feeds/contracts/mutators.md))
       still lives at `src/features/activity/server/write-activity.ts`, still does not exist in code, and
       its `type` union still does not admit `label_added` / `label_removed` — record any drift found
       here before Phase 2 starts (quickstart.md, *Reconcile before implementing*, research C-6)
+
+      **Reconciled 2026-09-03, no drift.** Both precondition checks are non-empty (`3e8fceb` for
+      `create-issue.ts`, `6ffa32a` for `authorization.ts`). (1) `CreateIssueInput` at
+      `src/features/issues/server/create-issue.ts:21-30` is still a plain object literal type
+      (`projectId`, `actor`, `title`, `description`, `columnId`, `priority`, `assigneeId`, `dueDate`) —
+      an optional `labelIds: unknown` field can be added to it without restructuring `createIssue`. (2)
+      `src/features/activity/` does not exist anywhere in the tree — `write-activity.ts` still does not
+      exist in code. `specs/007-comments-activity-feeds/contracts/mutators.md` still pins `writeActivity`
+      at `src/features/activity/server/write-activity.ts` with `type` restricted to `"created" |
+      "field_changed" | "member_added" | "member_removed" | "archived" | "reopened" | "comment"` — no
+      `label_added` / `label_removed`. `src/features/labels/` also does not exist yet, and
+      `src/db/schema.ts` has no `label` or `issue_label` table, both consistent with Phase 2 not having
+      started. Everything this file and quickstart.md assume is still current.
 
 **On gate 1 for this phase.** T001 adds no behaviour of its own — a verification step, not an
 implementation. No test is written for it and none is skipped.
