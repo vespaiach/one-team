@@ -16,8 +16,9 @@ against the *Independent Test* its phase states.
 
 ## Precondition — R2, R5 and R6, corrected against what actually shipped
 
-**`plan.md`'s Technical Context calls entries R2, R5 and R6 unimplemented and marks this feature
-blocked on them. That is no longer true of this tree.** All three have landed:
+**`plan.md`'s Technical Context now states directly that entries R2, R5 and R6 have landed and that
+implementation is not blocked**, matching this tree rather than the tree the plan was originally
+written against. All three have landed:
 
 ```bash
 git log --oneline -1 -- 'src/app/(app)'                                   # R2's shell
@@ -31,7 +32,8 @@ Both return commits, not nothing — `src/features/labels/` (R8) has landed too,
 into this feature's writer, not a task this feature performs).
 
 T001 below is where the plan's own assumptions about R5's and R6's shipped shape are checked against
-the code and corrected — this feature's version of the check R6's own `tasks.md` T001 ran against R5.
+the code, confirming the corrections already applied to `spec.md` and `plan.md` — this feature's
+version of the check R6's own `tasks.md` T001 ran against R5.
 
 ---
 
@@ -49,21 +51,21 @@ the code and corrected — this feature's version of the check R6's own `tasks.m
 every later phase's persistence tests assume.
 
 - [ ] T001 Read `src/features/projects/server/update-project.ts`, `create-project.ts`,
-  `project-status.ts`, `membership.ts` and `src/features/issues/server/update-issue.ts` and confirm or
-  correct these five facts before any later task depends on them:
+  `project-status.ts`, `membership.ts` and `src/features/issues/server/update-issue.ts` and confirm
+  these five facts, already corrected into `spec.md` and `plan.md` directly, before any later task
+  depends on them:
   - `user.feed_filter` already exists exactly as `FR-006` describes (`src/db/schema.ts`, `feedFilter`
     column) — this feature's migration touches no column on `user` (research A-7).
-  - `project` carries **no `colour` column**. `FR-051`'s five-field list — `name`, `description`,
-    `start_date`, `target_date`, `colour` — is **four fields in the shipped schema**; `colour` has no
-    call site anywhere in this feature's diff, and `FR-009`'s palette-name rule accordingly has nothing
-    to apply to. This is a divergence between the plan (written against a `project` shape that included
-    a colour field) and what R5 actually shipped, recorded here rather than discovered mid-diff.
+  - `project` carries **no `colour` column**, matching `spec.md`'s Assumptions section and `FR-051`'s
+    now-four-field list — `name`, `description`, `start_date`, `target_date`. `colour` has no call site
+    anywhere in this feature's diff, and the palette-naming rule this spec previously numbered FR-009 is
+    retired rather than renumbered, per [`docs/product/specifications.md`](../../docs/product/specifications.md)
+    §7's own Palette section, which states no per-project, per-column or per-label colour exists at all.
   - `updateProject`'s stored-row read is **already unconditional** — it runs on every call, for the
     membership check, not only when a date field is named — but it is **not** `FOR UPDATE` locked, and
-    the mutator writes whichever fields `changes` names with **no comparison** to the row it just read.
-    Research D-2 states a lock already exists for the date pair; it does not. This feature still adds
-    the lock, the diff and the no-op short-circuit (`T040`); it does **not** need to widen an already
-    -conditional read, because the read was never conditional to begin with.
+    the mutator writes whichever fields `changes` names with **no comparison** to the row it just read,
+    matching `plan.md`'s Complexity Tracking. This feature still adds the lock, the diff and the no-op
+    short-circuit (`T040`).
   - `updateIssue`'s delta is computed exactly where research D-6 says it is — the `fields` object,
     compared field-by-field against the locked `row` — confirmed additive, no correction needed.
   - `createProject`, `setProjectStatus`, `addProjectMember` and `removeProjectMember` accept **no actor
@@ -73,8 +75,8 @@ every later phase's persistence tests assume.
     **unmodified**, and those files call all four with today's signature. `T039`–`T042` therefore add an
     **optional trailing `actorId`** rather than a required one, gate the `writeActivity` call on its
     presence, and wrap the three single-statement mutators in `db.transaction` so their write and their
-    activity row commit together — a fourth Complexity Tracking item beyond the two `plan.md` already
-    records, named here so it is met once rather than found in the diff.
+    activity row commit together — `plan.md`'s Complexity Tracking third item, met once here rather than
+    found in the diff.
 - [ ] T002 [P] Add `"comment"` and `"activity"` to `TRUNCATED_TABLES` in `src/db/test-database.ts`,
   ahead of `"issue"`, `"project"` and `"user"` — the tables they reference — so every persistence test
   from `T003` onward starts clean (R6 research E-3's precedent)
