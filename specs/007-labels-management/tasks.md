@@ -89,29 +89,37 @@ implementation. No test is written for it and none is skipped.
 
 **⚠️ CRITICAL**: no user story work can begin until this phase is complete.
 
-- [ ] T002 [P] Write the failing shape and bound tests in `src/db/label-constraints.test.ts`, against
+- [X] T002 [P] Write the failing shape and bound tests in `src/db/label-constraints.test.ts`, against
       the real PostgreSQL instance `TEST_DATABASE_URL` names: a name of exactly 200 characters accepted
       and 201 refused; `name` refused when null; two labels named identically except for case refused
       by the unique index — created through two concurrent connections, asserting exactly one succeeds
       (FR-006, FR-007, research A-5, A-6, E-1)
-- [ ] T003 [P] Write the failing composite-key and cascade tests in
+- [X] T003 [P] Write the failing composite-key and cascade tests in
       `src/db/issue-label-constraints.test.ts`: inserting the same `(issue_id, label_id)` pair twice is
       refused by the primary key; deleting the referenced issue removes its `issue_label` rows;
       deleting the referenced label removes its `issue_label` rows — each cascade asserted from a
       second connection outside the transaction that ran the delete (FR-012, FR-022, data-model.md §2,
       §4, research A-2, A-3)
-- [ ] T004 Implement `label` and `issue_label` in `src/db/schema.ts`, appended after R6's `issue` per
+- [X] T004 Implement `label` and `issue_label` in `src/db/schema.ts`, appended after R6's `issue` per
       [`data-model.md`](./data-model.md) §1–2 — `label`: UUIDv7 key, `name` with its 200-character
       `CHECK` and `uniqueIndex("label_name_lower_idx").on(sql\`lower(name)\`)`, `createdAt`/`updatedAt`;
       `issue_label`: composite `(issueId, labelId)` primary key, both foreign keys `ON DELETE CASCADE`,
       and `index("issue_label_label_id_idx").on(labelId)` — no `color` column on `label`, no
       `deletedAt`, no synthetic id or timestamps on `issue_label` (FR-006, FR-007, FR-012, FR-019,
       FR-022, research A-1…A-4) — makes T002, T003 green
-- [ ] T005 Run `npm run db:generate`, read the generated SQL to confirm both `CHECK`s, the functional
+- [X] T005 Run `npm run db:generate`, read the generated SQL to confirm both `CHECK`s, the functional
       unique index, the composite primary key and both `ON DELETE CASCADE` foreign keys are present
       exactly as written, and commit the migration with its metadata (`AGENTS.md` → Drizzle) — depends
       on T004
-- [ ] T006 [P] Add `"issue_label"` and `"label"` to `TRUNCATED_TABLES` in `src/db/test-database.ts`,
+
+      **Done 2026-09-03.** `drizzle/0005_mature_typhoid_mary.sql` generated and inspected: one `CHECK`
+      (`label_name_length`, `char_length("label"."name") <= 200` — `data-model.md` §1 lists exactly one
+      `CHECK` on this table), the functional unique index (`label_name_lower_idx` on `lower("name")`),
+      the composite primary key (`issue_label_issue_id_label_id_pk` on `(issue_id, label_id)`), and both
+      `ON DELETE CASCADE` foreign keys (`issue_label_issue_id_issue_id_fk`,
+      `issue_label_label_id_label_id_fk`) plus `issue_label_label_id_idx` are all present exactly as
+      `data-model.md` §1–2 specifies.
+- [X] T006 [P] Add `"issue_label"` and `"label"` to `TRUNCATED_TABLES` in `src/db/test-database.ts`,
       immediately after `"issue"` (research E-2)
 
 **On gate 1 for this phase.** T006 adds no behaviour of its own, proved by every persistence test from

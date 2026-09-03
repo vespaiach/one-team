@@ -283,3 +283,35 @@ export const issue = pgTable(
     check("issue_priority_valid", sql`${table.priority} in ('none', 'low', 'medium', 'high', 'urgent')`),
   ],
 );
+
+export const label = pgTable(
+  "label",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .$defaultFn(() => uuidv7()),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("label_name_lower_idx").on(sql`lower(${table.name})`),
+    check("label_name_length", sql`char_length(${table.name}) <= 200`),
+  ],
+);
+
+export const issueLabel = pgTable(
+  "issue_label",
+  {
+    issueId: uuid("issue_id")
+      .notNull()
+      .references(() => issue.id, { onDelete: "cascade" }),
+    labelId: uuid("label_id")
+      .notNull()
+      .references(() => label.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.issueId, table.labelId] }),
+    index("issue_label_label_id_idx").on(table.labelId),
+  ],
+);

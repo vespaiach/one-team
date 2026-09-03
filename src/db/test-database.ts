@@ -23,6 +23,8 @@ const TRUNCATED_TABLES = [
   "credential",
   "invite",
   "issue",
+  "issue_label",
+  "label",
   "issue_counter",
   "board_column",
   "project_member",
