@@ -50,7 +50,7 @@ version of the check R6's own `tasks.md` T001 ran against R5.
 **Purpose**: reconcile the plan against the shipped code, and prepare the one shared test fixture
 every later phase's persistence tests assume.
 
-- [ ] T001 Read `src/features/projects/server/update-project.ts`, `create-project.ts`,
+- [X] T001 Read `src/features/projects/server/update-project.ts`, `create-project.ts`,
   `project-status.ts`, `membership.ts` and `src/features/issues/server/update-issue.ts` and confirm
   these five facts, already corrected into `spec.md` and `plan.md` directly, before any later task
   depends on them:
@@ -77,7 +77,7 @@ every later phase's persistence tests assume.
     presence, and wrap the three single-statement mutators in `db.transaction` so their write and their
     activity row commit together — `plan.md`'s Complexity Tracking third item, met once here rather than
     found in the diff.
-- [ ] T002 [P] Add `"comment"` and `"activity"` to `TRUNCATED_TABLES` in `src/db/test-database.ts`,
+- [X] T002 [P] Add `"comment"` and `"activity"` to `TRUNCATED_TABLES` in `src/db/test-database.ts`,
   ahead of `"issue"`, `"project"` and `"user"` — the tables they reference — so every persistence test
   from `T003` onward starts clean (R6 research E-3's precedent)
 
