@@ -6,6 +6,7 @@ import { Label } from "react-aria-components/Label";
 import { ListBox, ListBoxItem } from "react-aria-components/ListBox";
 import { Popover } from "react-aria-components/Popover";
 import { Select, SelectValue } from "react-aria-components/Select";
+import { Text } from "react-aria-components/Text";
 import { showToast } from "@/features/shell/components/toast-region";
 import type { UpdateIssuePayload, UpdateIssueResult } from "../actions";
 import type { IssuePriority } from "../server/input";
@@ -50,6 +51,8 @@ export function IssueRail({
   dueDate,
   columns,
   assigneePool,
+  canWrite = true,
+  writeReason = "",
   updateIssueAction,
 }: {
   issueId: string;
@@ -59,6 +62,8 @@ export function IssueRail({
   dueDate: string | null;
   columns: IssueColumnOption[];
   assigneePool: AssigneeOption[];
+  canWrite?: boolean;
+  writeReason?: string;
   updateIssueAction: (input: UpdateIssuePayload) => Promise<UpdateIssueResult>;
 }) {
   const [optimisticColumnId, setOptimisticColumnId] = useOptimistic(column.id);
@@ -127,11 +132,13 @@ export function IssueRail({
       <Select
         selectedKey={optimisticColumnId}
         onSelectionChange={(key) => handleColumnChange(String(key))}
+        isDisabled={!canWrite}
         className="flex flex-col gap-[5px]">
         <Label>Column</Label>
         <Button>
           <SelectValue />
         </Button>
+        {!canWrite ? <Text slot="description">{writeReason}</Text> : null}
         <Popover>
           <ListBox>
             {columns.map((option) => (
@@ -149,11 +156,13 @@ export function IssueRail({
       <Select
         selectedKey={optimisticPriority}
         onSelectionChange={(key) => handlePriorityChange(key as IssuePriority)}
+        isDisabled={!canWrite}
         className="flex flex-col gap-[5px]">
         <Label>Priority</Label>
         <Button>
           <SelectValue />
         </Button>
+        {!canWrite ? <Text slot="description">{writeReason}</Text> : null}
         <Popover>
           <ListBox>
             {PRIORITIES.map((option) => (
@@ -171,11 +180,13 @@ export function IssueRail({
       <Select
         selectedKey={optimisticAssigneeId}
         onSelectionChange={(key) => handleAssigneeChange(String(key))}
+        isDisabled={!canWrite}
         className="flex flex-col gap-[5px]">
         <Label>Assignee</Label>
         <Button>
           <SelectValue />
         </Button>
+        {!canWrite ? <Text slot="description">{writeReason}</Text> : null}
         <Popover>
           <ListBox>
             <ListBoxItem
@@ -206,8 +217,17 @@ export function IssueRail({
           type="date"
           value={optimisticDueDate}
           onChange={(event) => handleDueDateChange(event.target.value)}
+          disabled={!canWrite}
+          aria-describedby={canWrite ? undefined : "issue-rail-due-date-reason"}
           className="h-[36px] border border-(--color-divider) bg-(--color-surface) px-3 text-control text-(--color-text)"
         />
+        {!canWrite ? (
+          <p
+            id="issue-rail-due-date-reason"
+            className="text-label text-(--color-text-muted)">
+            {writeReason}
+          </p>
+        ) : null}
       </div>
     </div>
   );

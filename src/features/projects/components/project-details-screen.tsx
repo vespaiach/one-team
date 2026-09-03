@@ -1,6 +1,7 @@
 "use client";
 
 import { type CalendarDate, parseDate } from "@internationalized/date";
+import type { ReactNode } from "react";
 import { DateInput, DatePicker, DateSegment, Group } from "react-aria-components/DatePicker";
 import type {
   DeleteProjectPayload,
@@ -60,10 +61,12 @@ export function ProjectDetailsScreen({
   details,
   updateProjectAction,
   admin,
+  newIssue,
 }: {
   details: ProjectDetails;
   updateProjectAction: (input: UpdateProjectPayload) => Promise<UpdateProjectState>;
   admin?: ProjectDetailsScreenAdmin;
+  newIssue?: ReactNode;
 }) {
   const { record, columns, roster, canEditRecord } = details;
   const disabledReason = canEditRecord ? undefined : `Join ${record.name} to make changes.`;
@@ -98,6 +101,7 @@ export function ProjectDetailsScreen({
         projectKey={record.key}
         name={record.name}
         current="details"
+        newIssue={newIssue}
       />
       <div className="flex flex-col gap-6 p-4">
         <section className="flex flex-col gap-3">

@@ -12,9 +12,13 @@ vi.mock("@/features/issues/server/issue-queries", () => ({
   loadIssueView: vi.fn(),
   listProjectColumns: vi.fn(),
   listAssigneePool: vi.fn(),
+  resolveIssueWriteAccess: vi.fn().mockResolvedValue({ canWrite: true, writeReason: "" }),
 }));
 vi.mock("@/features/projects/server/queries", () => ({
   loadProjectByKey: vi.fn(),
+}));
+vi.mock("@/features/projects/server/authorization", () => ({
+  isMember: vi.fn().mockResolvedValue(true),
 }));
 
 import { notFound } from "next/navigation";

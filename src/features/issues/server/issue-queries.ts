@@ -2,7 +2,9 @@ import "server-only";
 import { and, asc, eq, exists, inArray, isNull, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { boardColumn, issue, project, projectMember, user } from "@/db/schema";
+import type { Actor } from "@/features/auth/server/actor";
 import { publicUser } from "@/features/auth/server/projections";
+import { isMember } from "@/features/projects/server/authorization";
 import { formatIssueKey } from "../issue-key";
 import type { IssuePriority } from "./input";
 
@@ -135,4 +137,22 @@ export async function loadIssueView(projectKey: string, number: number): Promise
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
+}
+
+export type IssueWriteAccess = {
+  canWrite: boolean;
+  writeReason: string;
+};
+
+export function buildIssueWriteReason(action: "create" | "edit", projectName: string): string {
+  return `Only project members can ${action} issues in ${projectName}.`;
+}
+
+export async function resolveIssueWriteAccess(
+  actor: Actor,
+  project: { id: string; name: string },
+  action: "create" | "edit" = "edit",
+): Promise<IssueWriteAccess> {
+  const canWrite = await isMember(actor, project.id);
+  return { canWrite, writeReason: canWrite ? "" : buildIssueWriteReason(action, project.name) };
 }

@@ -51,6 +51,8 @@ function renderDetail(issue: IssueView) {
       issue={issue}
       columns={COLUMNS}
       assigneePool={ASSIGNEE_POOL}
+      canWrite={true}
+      writeReason=""
     />,
   );
 }

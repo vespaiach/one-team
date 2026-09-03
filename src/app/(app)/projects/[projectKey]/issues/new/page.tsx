@@ -4,6 +4,7 @@ import { requireActor } from "@/features/auth/server/actor";
 import { createIssue } from "@/features/issues/actions";
 import { CreateIssueForm } from "@/features/issues/components/create-issue-form";
 import { CreateIssueFormSkeleton } from "@/features/issues/components/issue-skeletons";
+import { NewIssueControl } from "@/features/issues/components/new-issue-control";
 import { listAssigneePool, listProjectColumns } from "@/features/issues/server/issue-queries";
 import { isMember } from "@/features/projects/server/authorization";
 import { loadProjectByKey } from "@/features/projects/server/queries";
@@ -41,7 +42,16 @@ export default async function NewIssuePage({ params }: { params: Promise<{ proje
 
   return (
     <>
-      <ScreenHeader name="New issue" />
+      <ScreenHeader
+        name="New issue"
+        newIssue={
+          <NewIssueControl
+            projectKey={project.key}
+            canWrite={true}
+            writeReason=""
+          />
+        }
+      />
       <Suspense fallback={<CreateIssueFormSkeleton />}>
         <CreateIssueFormData
           projectId={project.id}

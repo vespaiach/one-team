@@ -3,15 +3,22 @@ import { Suspense } from "react";
 import { requireActor } from "@/features/auth/server/actor";
 import { IssueDetail } from "@/features/issues/components/issue-detail";
 import { IssueDetailSkeleton } from "@/features/issues/components/issue-skeletons";
-import { listAssigneePool, listProjectColumns, loadIssueView } from "@/features/issues/server/issue-queries";
+import { NewIssueControl } from "@/features/issues/components/new-issue-control";
+import {
+  listAssigneePool,
+  listProjectColumns,
+  loadIssueView,
+  resolveIssueWriteAccess,
+} from "@/features/issues/server/issue-queries";
 import { loadProjectByKey } from "@/features/projects/server/queries";
+import { ScreenHeader } from "@/features/shell/components/screen-header";
 
 export default async function IssueDetailsPage({
   params,
 }: {
   params: Promise<{ projectKey: string; issueNumber: string }>;
 }) {
-  await requireActor();
+  const actor = await requireActor();
   const { projectKey, issueNumber } = await params;
 
   const number = Number(issueNumber);
@@ -29,18 +36,34 @@ export default async function IssueDetailsPage({
     notFound();
   }
 
-  const [columns, assigneePool] = await Promise.all([
+  const [columns, assigneePool, writeAccess, createAccess] = await Promise.all([
     listProjectColumns(project.id),
     listAssigneePool(project.id),
+    resolveIssueWriteAccess(actor, project, "edit"),
+    resolveIssueWriteAccess(actor, project, "create"),
   ]);
 
   return (
-    <Suspense fallback={<IssueDetailSkeleton />}>
-      <IssueDetail
-        issue={issue}
-        columns={columns}
-        assigneePool={assigneePool}
+    <>
+      <ScreenHeader
+        name={project.name}
+        newIssue={
+          <NewIssueControl
+            projectKey={project.key}
+            canWrite={createAccess.canWrite}
+            writeReason={createAccess.writeReason}
+          />
+        }
       />
-    </Suspense>
+      <Suspense fallback={<IssueDetailSkeleton />}>
+        <IssueDetail
+          issue={issue}
+          columns={columns}
+          assigneePool={assigneePool}
+          canWrite={writeAccess.canWrite}
+          writeReason={writeAccess.writeReason}
+        />
+      </Suspense>
+    </>
   );
 }

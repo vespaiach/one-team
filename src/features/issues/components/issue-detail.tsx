@@ -21,10 +21,14 @@ export function IssueDetail({
   issue,
   columns,
   assigneePool,
+  canWrite,
+  writeReason,
 }: {
   issue: IssueView;
   columns: IssueColumnOption[];
   assigneePool: AssigneeOption[];
+  canWrite: boolean;
+  writeReason: string;
 }) {
   return (
     <div className="flex gap-6 p-4">
@@ -37,6 +41,8 @@ export function IssueDetail({
             issueId={issue.id}
             value={issue.title}
             maxLength={200}
+            canWrite={canWrite}
+            writeReason={writeReason}
             updateIssueAction={updateIssue}
           />
         </h1>
@@ -48,6 +54,8 @@ export function IssueDetail({
           multiline
           maxLength={10000}
           renderValue={(value) => <IssueDescription description={value} />}
+          canWrite={canWrite}
+          writeReason={writeReason}
           updateIssueAction={updateIssue}
         />
       </div>
@@ -62,6 +70,8 @@ export function IssueDetail({
           dueDate={issue.dueDate}
           columns={columns}
           assigneePool={assigneePool}
+          canWrite={canWrite}
+          writeReason={writeReason}
           updateIssueAction={updateIssue}
         />
         <RailField label="Project">{issue.project.name}</RailField>

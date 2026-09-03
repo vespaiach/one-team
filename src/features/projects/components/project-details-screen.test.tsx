@@ -231,4 +231,16 @@ describe("ProjectDetailsScreen — status and delete (FR-041, FR-042, FR-047, FR
       expect(setProjectStatusAction).toHaveBeenCalledWith({ projectKey: "WR", status: "archived" }),
     );
   });
+
+  it("renders the header's New issue slot when the page supplies it (FR-028)", () => {
+    render(
+      <ProjectDetailsScreen
+        details={makeDetails()}
+        updateProjectAction={vi.fn()}
+        newIssue={<span>New issue control</span>}
+      />,
+    );
+
+    expect(screen.getByText("New issue control")).not.toBeNull();
+  });
 });

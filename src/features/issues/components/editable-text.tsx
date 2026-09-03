@@ -36,6 +36,8 @@ export function EditableText({
   multiline = false,
   maxLength,
   renderValue,
+  canWrite = true,
+  writeReason = "",
   updateIssueAction,
 }: {
   label: string;
@@ -45,6 +47,8 @@ export function EditableText({
   multiline?: boolean;
   maxLength: number;
   renderValue?: (value: string) => ReactNode;
+  canWrite?: boolean;
+  writeReason?: string;
   updateIssueAction: (input: UpdateIssuePayload) => Promise<UpdateIssueResult>;
 }) {
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
@@ -190,13 +194,26 @@ export function EditableText({
     );
   }
 
+  const reasonId = canWrite ? undefined : `${field}-write-reason`;
+
   return (
-    <Button
-      ref={buttonRef}
-      onPress={openEdit}
-      aria-label={label}
-      className="block w-full whitespace-pre-wrap text-start text-control text-(--color-text)">
-      {renderValue ? renderValue(optimisticValue) : optimisticValue}
-    </Button>
+    <>
+      <Button
+        ref={buttonRef}
+        onPress={openEdit}
+        isDisabled={!canWrite}
+        aria-label={label}
+        aria-describedby={reasonId}
+        className="block w-full whitespace-pre-wrap text-start text-control text-(--color-text) disabled:text-(--color-text-muted)">
+        {renderValue ? renderValue(optimisticValue) : optimisticValue}
+      </Button>
+      {!canWrite ? (
+        <p
+          id={reasonId}
+          className="text-label text-(--color-text-muted)">
+          {writeReason}
+        </p>
+      ) : null}
+    </>
   );
 }
