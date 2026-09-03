@@ -1,15 +1,22 @@
 import "server-only";
-import { desc, eq, sql, TransactionRollbackError } from "drizzle-orm";
+import { desc, eq, inArray, sql, TransactionRollbackError } from "drizzle-orm";
 import { generateKeyBetween } from "fractional-indexing";
 import { db } from "@/db";
-import { issue, issueCounter, project } from "@/db/schema";
+import { issue, issueCounter, issueLabel, label, project } from "@/db/schema";
 import { touched } from "@/db/touched";
 import type { Actor } from "@/features/auth/server/actor";
 import { isMember } from "@/features/projects/server/authorization";
 import { type IssuePriority, parseDescription, parseDueDate, parsePriority, parseTitle } from "./input";
 import { listAssigneePool, listProjectColumns } from "./issue-queries";
 
-export type CreateIssueField = "title" | "description" | "priority" | "columnId" | "assigneeId" | "dueDate";
+export type CreateIssueField =
+  | "title"
+  | "description"
+  | "priority"
+  | "columnId"
+  | "assigneeId"
+  | "dueDate"
+  | "labelIds";
 
 export type CreateIssueInvalidReason =
   | "required"
@@ -27,6 +34,7 @@ export type CreateIssueInput = {
   priority: unknown;
   assigneeId: unknown;
   dueDate: unknown;
+  labelIds?: unknown;
 };
 
 export type CreateIssueResult =
@@ -106,6 +114,25 @@ export async function createIssue(input: CreateIssueInput): Promise<CreateIssueR
     dueDate = parsedDueDate;
   }
 
+  let labelIds: string[] = [];
+  if (input.labelIds !== undefined) {
+    if (!Array.isArray(input.labelIds) || input.labelIds.some((id) => typeof id !== "string")) {
+      return { status: "invalid", field: "labelIds", reason: "malformed" };
+    }
+    const uniqueLabelIds = Array.from(new Set(input.labelIds));
+    if (uniqueLabelIds.length > 0) {
+      const foundLabels = await db
+        .select({ id: label.id })
+        .from(label)
+        .where(inArray(label.id, uniqueLabelIds));
+      const foundLabelIds = new Set(foundLabels.map((row) => row.id));
+      if (uniqueLabelIds.some((id) => !foundLabelIds.has(id))) {
+        return { status: "invalid", field: "labelIds", reason: "unknown-value" };
+      }
+    }
+    labelIds = uniqueLabelIds;
+  }
+
   const now = new Date();
 
   try {
@@ -129,21 +156,34 @@ export async function createIssue(input: CreateIssueInput): Promise<CreateIssueR
 
       const sortOrder = generateKeyBetween(highest?.sortOrder ?? null, null);
 
-      await tx.insert(issue).values(
-        touched({
-          projectId: projectRow.id,
-          number: counterRow.lastNumber,
-          title,
-          description: description === "" ? null : description,
-          columnId,
-          priority,
-          assigneeId,
-          dueDate,
-          createdBy: input.actor.id,
-          sortOrder,
-          createdAt: now,
-        }),
-      );
+      const [insertedIssue] = await tx
+        .insert(issue)
+        .values(
+          touched({
+            projectId: projectRow.id,
+            number: counterRow.lastNumber,
+            title,
+            description: description === "" ? null : description,
+            columnId,
+            priority,
+            assigneeId,
+            dueDate,
+            createdBy: input.actor.id,
+            sortOrder,
+            createdAt: now,
+          }),
+        )
+        .returning({ id: issue.id });
+
+      if (!insertedIssue) {
+        throw new Error("createIssue produced no issue row");
+      }
+
+      if (labelIds.length > 0) {
+        await tx
+          .insert(issueLabel)
+          .values(labelIds.map((labelId) => ({ issueId: insertedIssue.id, labelId })));
+      }
 
       return counterRow.lastNumber;
     });

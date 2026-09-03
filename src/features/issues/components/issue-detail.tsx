@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import { addIssueLabel, removeIssueLabel } from "@/features/labels/actions";
+import type { LabelOption } from "@/features/labels/server/queries";
 import { deleteIssue, updateIssue } from "../actions";
 import type { AssigneeOption, IssueColumnOption, IssueView } from "../server/issue-queries";
 import { CopyableKey } from "./copyable-key";
@@ -25,6 +27,8 @@ export function IssueDetail({
   writeReason,
   canDelete = false,
   deleteReason = "",
+  labelOptions = [],
+  canManageLabels = false,
 }: {
   issue: IssueView;
   columns: IssueColumnOption[];
@@ -33,6 +37,8 @@ export function IssueDetail({
   writeReason: string;
   canDelete?: boolean;
   deleteReason?: string;
+  labelOptions?: LabelOption[];
+  canManageLabels?: boolean;
 }) {
   return (
     <div className="flex gap-6 p-4">
@@ -77,6 +83,10 @@ export function IssueDetail({
           canWrite={canWrite}
           writeReason={writeReason}
           updateIssueAction={updateIssue}
+          labelOptions={labelOptions}
+          canManageLabels={canManageLabels}
+          addIssueLabelAction={addIssueLabel}
+          removeIssueLabelAction={removeIssueLabel}
         />
         <DeleteIssueControl
           issueId={issue.id}

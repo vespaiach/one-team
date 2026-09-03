@@ -8,6 +8,8 @@ import { ListBox, ListBoxItem } from "react-aria-components/ListBox";
 import { Popover } from "react-aria-components/Popover";
 import { Select, SelectValue } from "react-aria-components/Select";
 import { FieldError, Input, Label, TextArea, TextField } from "react-aria-components/TextField";
+import { LabelPickerField } from "@/features/labels/components/label-picker-field";
+import type { LabelOption } from "@/features/labels/server/queries";
 import type { CreateIssueState } from "../actions";
 import type { AssigneeOption, IssueColumnOption } from "../server/issue-queries";
 
@@ -48,12 +50,16 @@ export function CreateIssueForm({
   columns,
   assigneePool,
   createIssueAction,
+  labelOptions = [],
+  canManageLabels = false,
 }: {
   projectId: string;
   projectKey: string;
   columns: IssueColumnOption[];
   assigneePool: AssigneeOption[];
   createIssueAction: (prevState: CreateIssueState, formData: FormData) => Promise<CreateIssueState>;
+  labelOptions?: LabelOption[];
+  canManageLabels?: boolean;
 }) {
   const router = useRouter();
   const [, formAction, isPending] = useActionState(createIssueAction, INITIAL_STATE);
@@ -66,6 +72,7 @@ export function CreateIssueForm({
   const [priority, setPriority] = useState<"none" | "low" | "medium" | "high" | "urgent">("none");
   const [assigneeId, setAssigneeId] = useState(UNASSIGNED);
   const [dueDate, setDueDate] = useState("");
+  const [selectedLabelIds, setSelectedLabelIds] = useState<Set<string>>(new Set());
   const [submitted, setSubmitted] = useState(false);
 
   const titleRef = useRef<HTMLInputElement>(null);
@@ -88,6 +95,23 @@ export function CreateIssueForm({
   function handleCancel() {
     router.push(`/projects/${projectKey}/details`);
   }
+
+  function handleLabelToggle(labelId: string, applied: boolean) {
+    setSelectedLabelIds((current) => {
+      const next = new Set(current);
+      if (applied) {
+        next.add(labelId);
+      } else {
+        next.delete(labelId);
+      }
+      return next;
+    });
+  }
+
+  const pickerOptions = labelOptions.map((option) => ({
+    ...option,
+    applied: selectedLabelIds.has(option.id),
+  }));
 
   return (
     <Form
@@ -174,6 +198,20 @@ export function CreateIssueForm({
           </ListBox>
         </Popover>
       </Select>
+
+      <LabelPickerField
+        options={pickerOptions}
+        onToggle={handleLabelToggle}
+        canManageLabels={canManageLabels}
+      />
+      {Array.from(selectedLabelIds).map((id) => (
+        <input
+          key={id}
+          type="hidden"
+          name="labelIds"
+          value={id}
+        />
+      ))}
 
       <Select
         name="assigneeId"

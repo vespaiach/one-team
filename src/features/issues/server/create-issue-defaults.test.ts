@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
-import { boardColumn, issue, issueCounter, project, projectMember, user } from "@/db/schema";
+import { boardColumn, issue, issueCounter, issueLabel, project, projectMember, user } from "@/db/schema";
 import { testDb, truncateTestDatabase } from "@/db/test-database";
 import type { Actor } from "@/features/auth/server/actor";
 import { createIssue } from "./create-issue";
@@ -172,5 +172,27 @@ describe("createIssue — defaults when a field is absent (FR-003, FR-032, FR-03
 
     const rows = await testDb.select().from(issue).where(eq(issue.projectId, proj.id));
     expect(rows).toHaveLength(1);
+  });
+
+  it("omitting labelIds carries no issue_label row, unchanged from before this feature (FR-016)", async () => {
+    const { proj } = await insertProjectWithColumns();
+    const member = await insertUser();
+    await addMember(proj.id, member.id);
+
+    await createIssue({
+      projectId: proj.id,
+      actor: actorFor(member),
+      title: "Fix the header",
+      description: null,
+      columnId: null,
+      priority: null,
+      assigneeId: null,
+      dueDate: null,
+    });
+
+    const [createdIssue] = await testDb.select().from(issue).where(eq(issue.projectId, proj.id));
+    if (!createdIssue) throw new Error("expected an issue row");
+    const rows = await testDb.select().from(issueLabel).where(eq(issueLabel.issueId, createdIssue.id));
+    expect(rows).toHaveLength(0);
   });
 });

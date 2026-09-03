@@ -11,6 +11,7 @@ import {
   resolveIssueDeleteAccess,
   resolveIssueWriteAccess,
 } from "@/features/issues/server/issue-queries";
+import { listLabelOptionsForIssue } from "@/features/labels/server/queries";
 import { loadProjectByKey } from "@/features/projects/server/queries";
 import { ScreenHeader } from "@/features/shell/components/screen-header";
 
@@ -37,11 +38,12 @@ export default async function IssueDetailsPage({
     notFound();
   }
 
-  const [columns, assigneePool, writeAccess, createAccess] = await Promise.all([
+  const [columns, assigneePool, writeAccess, createAccess, labelOptions] = await Promise.all([
     listProjectColumns(project.id),
     listAssigneePool(project.id),
     resolveIssueWriteAccess(actor, project, "edit"),
     resolveIssueWriteAccess(actor, project, "create"),
+    listLabelOptionsForIssue(issue.id),
   ]);
   const deleteAccess = resolveIssueDeleteAccess(actor, project);
 
@@ -66,6 +68,8 @@ export default async function IssueDetailsPage({
           writeReason={writeAccess.writeReason}
           canDelete={deleteAccess.canDelete}
           deleteReason={deleteAccess.deleteReason}
+          labelOptions={labelOptions}
+          canManageLabels={actor.role === "admin"}
         />
       </Suspense>
     </>

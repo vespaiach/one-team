@@ -34,6 +34,7 @@ export async function createIssue(
     priority: formData.get("priority"),
     assigneeId: formData.get("assigneeId"),
     dueDate: formData.get("dueDate"),
+    labelIds: formData.getAll("labelIds"),
   });
 
   if (result.status !== "ok") {

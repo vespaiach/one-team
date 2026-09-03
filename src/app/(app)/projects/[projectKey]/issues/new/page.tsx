@@ -6,14 +6,24 @@ import { CreateIssueForm } from "@/features/issues/components/create-issue-form"
 import { CreateIssueFormSkeleton } from "@/features/issues/components/issue-skeletons";
 import { NewIssueControl } from "@/features/issues/components/new-issue-control";
 import { listAssigneePool, listProjectColumns } from "@/features/issues/server/issue-queries";
+import { listLabelOptionsForIssue } from "@/features/labels/server/queries";
 import { isMember } from "@/features/projects/server/authorization";
 import { loadProjectByKey } from "@/features/projects/server/queries";
 import { ScreenHeader } from "@/features/shell/components/screen-header";
 
-async function CreateIssueFormData({ projectId, projectKey }: { projectId: string; projectKey: string }) {
-  const [columns, assigneePool] = await Promise.all([
+async function CreateIssueFormData({
+  projectId,
+  projectKey,
+  canManageLabels,
+}: {
+  projectId: string;
+  projectKey: string;
+  canManageLabels: boolean;
+}) {
+  const [columns, assigneePool, labelOptions] = await Promise.all([
     listProjectColumns(projectId),
     listAssigneePool(projectId),
+    listLabelOptionsForIssue(),
   ]);
 
   return (
@@ -23,6 +33,8 @@ async function CreateIssueFormData({ projectId, projectKey }: { projectId: strin
       columns={columns}
       assigneePool={assigneePool}
       createIssueAction={createIssue}
+      labelOptions={labelOptions}
+      canManageLabels={canManageLabels}
     />
   );
 }
@@ -56,6 +68,7 @@ export default async function NewIssuePage({ params }: { params: Promise<{ proje
         <CreateIssueFormData
           projectId={project.id}
           projectKey={project.key}
+          canManageLabels={actor.role === "admin"}
         />
       </Suspense>
     </>

@@ -1,17 +1,22 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { refresh, revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { requireActor } from "@/features/auth/server/actor";
 import { assertSameOrigin } from "@/features/auth/server/origin";
 import { requireAdmin } from "@/features/projects/server/authorization";
 import { createLabel as runCreateLabel } from "./server/create-label";
 import { type DeleteLabelResult, deleteLabel as runDeleteLabel } from "./server/delete-label";
+import {
+  type IssueLabelResult,
+  addIssueLabel as runAddIssueLabel,
+  removeIssueLabel as runRemoveIssueLabel,
+} from "./server/issue-labels";
 import type { LabelView } from "./server/queries";
 import { checkLabelNameAvailable as runCheckLabelNameAvailable } from "./server/queries";
 import { updateLabel as runUpdateLabel } from "./server/update-label";
 
-export type { DeleteLabelResult };
+export type { DeleteLabelResult, IssueLabelResult };
 
 const LABELS_SCREEN_PATH = "/settings/labels";
 
@@ -68,6 +73,41 @@ export async function deleteLabel(id: string): Promise<DeleteLabelResult> {
   const result = await runDeleteLabel({ actor, id });
   if (result.ok) {
     revalidatePath(LABELS_SCREEN_PATH);
+  }
+  return result;
+}
+
+export type IssueLabelPayload = {
+  issueId: unknown;
+  labelId: unknown;
+};
+
+export async function addIssueLabel(input: IssueLabelPayload): Promise<IssueLabelResult> {
+  assertSameOrigin({ headers: await headers() });
+  const actor = await requireActor();
+
+  if (typeof input.issueId !== "string" || typeof input.labelId !== "string") {
+    return { ok: false, error: "not_found" };
+  }
+
+  const result = await runAddIssueLabel({ actor, issueId: input.issueId, labelId: input.labelId });
+  if (result.ok) {
+    refresh();
+  }
+  return result;
+}
+
+export async function removeIssueLabel(input: IssueLabelPayload): Promise<IssueLabelResult> {
+  assertSameOrigin({ headers: await headers() });
+  const actor = await requireActor();
+
+  if (typeof input.issueId !== "string" || typeof input.labelId !== "string") {
+    return { ok: false, error: "not_found" };
+  }
+
+  const result = await runRemoveIssueLabel({ actor, issueId: input.issueId, labelId: input.labelId });
+  if (result.ok) {
+    refresh();
   }
   return result;
 }

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { boardColumn, issue, issueLabel, label, project, user } from "@/db/schema";
 import { testDb, truncateTestDatabase } from "@/db/test-database";
-import { checkLabelNameAvailable, listLabelsWithUsage } from "./queries";
+import { checkLabelNameAvailable, listLabelOptionsForIssue, listLabelsWithUsage } from "./queries";
 
 beforeEach(async () => {
   await truncateTestDatabase();
@@ -150,5 +150,38 @@ describe("checkLabelNameAvailable (FR-007, research C-3)", () => {
     const holder = await checkLabelNameAvailable("Feature");
 
     expect(holder).toBeNull();
+  });
+});
+
+describe("listLabelOptionsForIssue (FR-015, FR-016, FR-017, data-model.md §3)", () => {
+  it("returns every team label, applied true only for the ones a LEFT JOIN against this issue's issue_label rows matches", async () => {
+    const { proj, column } = await insertProjectWithColumn();
+    const creator = await insertUser();
+    const targetIssue = await insertIssue(proj.id, column.id, creator.id, "a0");
+    const otherIssue = await insertIssue(proj.id, column.id, creator.id, "a1");
+    const carried = await insertLabel({ name: "Bug" });
+    const carriedElsewhere = await insertLabel({ name: "Feature" });
+    const carriedByNothing = await insertLabel({ name: "Urgent" });
+    await testDb.insert(issueLabel).values([
+      { issueId: targetIssue.id, labelId: carried.id },
+      { issueId: otherIssue.id, labelId: carriedElsewhere.id },
+    ]);
+
+    const options = await listLabelOptionsForIssue(targetIssue.id);
+
+    expect(options.find((option) => option.id === carried.id)?.applied).toBe(true);
+    expect(options.find((option) => option.id === carriedElsewhere.id)?.applied).toBe(false);
+    expect(options.find((option) => option.id === carriedByNothing.id)?.applied).toBe(false);
+    expect(options).toHaveLength(3);
+  });
+
+  it("every option comes back applied: false when called with no issueId", async () => {
+    await insertLabel({ name: "Bug" });
+    await insertLabel({ name: "Feature" });
+
+    const options = await listLabelOptionsForIssue();
+
+    expect(options).toHaveLength(2);
+    expect(options.every((option) => option.applied === false)).toBe(true);
   });
 });

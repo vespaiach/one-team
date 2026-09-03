@@ -88,7 +88,7 @@ describe("IssueDetail — a non-member assigned to their own issue (FR-023, SC-0
       />,
     );
 
-    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(screen.queryByRole("option")).toBeNull();
     expect(screen.getAllByText(REASON).length).toBeGreaterThan(0);
   });
 });

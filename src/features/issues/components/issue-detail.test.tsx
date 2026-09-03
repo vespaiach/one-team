@@ -94,10 +94,9 @@ describe("IssueDetail — layout (FR-042, FR-043, FR-045, US2 s1)", () => {
     expect(screen.getByText("Grace Hopper").closest("button, select, input, textarea")).toBeNull();
   });
 
-  it("renders no Activity section and no label control anywhere", () => {
+  it("renders no Activity section", () => {
     renderDetail(makeIssueView());
 
     expect(screen.queryByText(/^activity$/i)).toBeNull();
-    expect(screen.queryByText(/^labels?$/i)).toBeNull();
   });
 });

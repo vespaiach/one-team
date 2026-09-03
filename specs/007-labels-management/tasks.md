@@ -250,41 +250,41 @@ confirm it appears on the issue immediately. Remove it and confirm it is gone.
 
 ### Tests for User Story 2 (write first, observe failing) ⚠️
 
-- [ ] T027 [P] [US2] Write the failing tests in `src/features/labels/server/queries.test.ts` (extending
+- [X] T027 [P] [US2] Write the failing tests in `src/features/labels/server/queries.test.ts` (extending
       T007's file): `listLabelOptionsForIssue(issueId)` returns every team label with `applied: true`
       only for the ones a `LEFT JOIN` against that issue's `issue_label` rows matches; called with no
       `issueId` (Create issue's case), every option comes back `applied: false` (FR-015, FR-016, FR-017,
       data-model.md §3)
-- [ ] T028 [P] [US2] Write the failing tests in `src/features/labels/server/issue-labels.test.ts`:
+- [X] T028 [P] [US2] Write the failing tests in `src/features/labels/server/issue-labels.test.ts`:
       `addIssueLabel` requires `isMember` derived from the issue's own stored `project_id`, never from a
       client-supplied value; a non-member is refused; adding a label already present is a no-op that
       still returns `{ ok: true, applied: true }` and inserts no second row; an unknown `labelId` is
       refused by name rather than throwing (FR-019, FR-020, FR-022, research C-1, C-5)
-- [ ] T029 [P] [US2] Write the failing concurrency test in
+- [X] T029 [P] [US2] Write the failing concurrency test in
       `src/features/labels/server/issue-labels-race.test.ts`: two `addIssueLabel` calls for the same
       issue and label on **two separate `postgres` connections** — the table holds exactly one row
       afterward and neither call raises, proving `ON CONFLICT DO NOTHING` under real concurrency rather
       than one connection's serialized queue (FR-022, research C-5, quickstart.md *What a browser cannot
       show you*)
-- [ ] T030 [P] [US2] Write the failing tests in `src/features/labels/server/issue-labels.test.ts`
+- [X] T030 [P] [US2] Write the failing tests in `src/features/labels/server/issue-labels.test.ts`
       (extending T028's file) for `removeIssueLabel`: the same `isMember` derivation; removing a label
       not present is a no-op returning `{ ok: true, applied: false }` and matches zero rows without
       raising (FR-019, FR-020, FR-022, research C-5)
-- [ ] T031 [P] [US2] Write the failing tests in
+- [X] T031 [P] [US2] Write the failing tests in
       `src/features/labels/components/label-picker-field.test.tsx`: every team label renders with its
       applied state as a checked selection; toggling reports the selection change to the caller; "Manage
       labels" links to `/settings/labels` and renders only when `role === 'admin'`, absent — not
       disabled — otherwise (FR-015, FR-016, FR-017, FR-018, research D-4, D-6)
-- [ ] T032 [P] [US2] Write the failing rail tests, extending `src/features/issues/components/issue-rail.test.tsx`:
+- [X] T032 [P] [US2] Write the failing rail tests, extending `src/features/issues/components/issue-rail.test.tsx`:
       the rail renders `LabelPickerField` as a fifth control; toggling a label calls `addIssueLabel` or
       `removeIssueLabel` immediately, applied optimistically and rolled back with a toast on refusal; for
       a non-member the field renders disabled with the rail's own inline reason and no mutator is called
       (FR-015, FR-019, research D-4)
-- [ ] T033 [P] [US2] Write the failing form tests, extending
+- [X] T033 [P] [US2] Write the failing form tests, extending
       `src/features/issues/components/create-issue-form.test.tsx`: the form renders `LabelPickerField`
       between Priority and Assignee; toggling a label updates local selection only, calling no mutator;
       on submit, every selected label id rides inside the `createIssue` call (FR-016, research D-4)
-- [ ] T034 [P] [US2] Write the failing tests, extending
+- [X] T034 [P] [US2] Write the failing tests, extending
       `src/features/issues/server/create-issue.test.ts` and `create-issue-defaults.test.ts`: `createIssue`
       accepts an optional `labelIds: unknown`; a valid array inserts one `issue_label` row per id in the
       same transaction as the `issue` insert; an id naming no existing label is refused, named, and
@@ -293,39 +293,39 @@ confirm it appears on the issue immediately. Remove it and confirm it is gone.
 
 ### Implementation for User Story 2
 
-- [ ] T035 [US2] Implement `listLabelOptionsForIssue` in `src/features/labels/server/queries.ts` (FR-015,
+- [X] T035 [US2] Implement `listLabelOptionsForIssue` in `src/features/labels/server/queries.ts` (FR-015,
       FR-016, FR-017, data-model.md §3) — depends on T016, makes T027 green
-- [ ] T036 [US2] Implement `addIssueLabel` and `removeIssueLabel` in
+- [X] T036 [US2] Implement `addIssueLabel` and `removeIssueLabel` in
       `src/features/labels/server/issue-labels.ts` — `isMember` derived from the issue's stored
       `project_id`, the label resolved by id (refusing an unknown one by name), one
       `INSERT … ON CONFLICT (issue_id, label_id) DO NOTHING` / one `DELETE`, each inside one transaction,
       revalidating the issue's own detail path. **No activity write in this task** — see T045, T046
       below ([`contracts/mutators.md`](./contracts/mutators.md) `addIssueLabel`, `removeIssueLabel`,
       research C-1, C-5, C-7) — depends on T004, makes T028, T029, T030 green
-- [ ] T037 [US2] Export `addIssueLabel` and `removeIssueLabel` from `src/features/labels/actions.ts`,
+- [X] T037 [US2] Export `addIssueLabel` and `removeIssueLabel` from `src/features/labels/actions.ts`,
       alongside the three US1 exports, each starting with `assertSameOrigin` and `requireActor` — depends
       on T036
-- [ ] T038 [P] [US2] Implement `src/features/labels/components/label-picker-field.tsx` as a `"use client"`
+- [X] T038 [P] [US2] Implement `src/features/labels/components/label-picker-field.tsx` as a `"use client"`
       presentational `ListBox` with `selectionMode="multiple"`, no commit logic of its own, taking
       `options`, `onToggle` and `canManageLabels` (FR-015, FR-016, FR-017, FR-018, research D-4, D-5, D-6)
       — makes T031 green
-- [ ] T039 [US2] Wire `LabelPickerField` into `src/features/issues/components/issue-rail.tsx` as a fifth
+- [X] T039 [US2] Wire `LabelPickerField` into `src/features/issues/components/issue-rail.tsx` as a fifth
       control, each toggle calling `addIssueLabelAction` or `removeIssueLabelAction` inside the same
       `useOptimistic`/`useTransition` pattern the four existing controls already use, rolled back with
       `showToast` on refusal, disabled with the rail's existing `writeReason` for a non-member (FR-015,
       FR-019, research D-4) — depends on T035, T037, T038, makes T032 green
-- [ ] T040 [US2] Extend `CreateIssueInput` and `createIssue` in
+- [X] T040 [US2] Extend `CreateIssueInput` and `createIssue` in
       `src/features/issues/server/create-issue.ts` with an optional `labelIds: unknown` field — validated
       against `label` rows that actually exist, inserting the matching `issue_label` rows inside the same
       transaction as the `issue` insert, immediately after it (FR-016, contracts/screens.md) — depends on
       T004, makes T034 green
-- [ ] T041 [US2] Thread `labelIds` through `src/features/issues/actions.ts`'s `createIssue` form action
+- [X] T041 [US2] Thread `labelIds` through `src/features/issues/actions.ts`'s `createIssue` form action
       via `formData.getAll("labelIds")` — depends on T040
-- [ ] T042 [US2] Wire `LabelPickerField` into
+- [X] T042 [US2] Wire `LabelPickerField` into
       `src/features/issues/components/create-issue-form.tsx` between Priority and Assignee, as local
       component state rendered into the submission as one hidden `<input name="labelIds">` per selected
       id (FR-016, research D-4) — depends on T035, T038, T041, makes T033 green
-- [ ] T043 [US2] Refactor with the tests green across `issue-labels.ts`, `queries.ts`,
+- [X] T043 [US2] Refactor with the tests green across `issue-labels.ts`, `queries.ts`,
       `label-picker-field.tsx`, `issue-rail.tsx`, `create-issue-form.tsx` and `create-issue.ts`: no
       comment added, no dead code, `LabelPickerField` still holds no commit logic of its own (gates 2, 6;
       Principle I)
@@ -335,7 +335,7 @@ the rail and at creation. `FR-021`'s activity rows are the only requirement not 
 
 ### The one open requirement — `FR-021`, blocked on R7
 
-- [ ] T044 Confirm R7 is still not implemented (`git log --oneline -1 -- src/features/activity` returns
+- [X] T044 Confirm R7 is still not implemented (`git log --oneline -1 -- src/features/activity` returns
       nothing) before attempting T045 or T046 — if R7 has landed, re-read
       [`specs/007-comments-activity-feeds/contracts/mutators.md`](../007-comments-activity-feeds/contracts/mutators.md)'s
       `writeActivity` signature first, since T045 and T046 assume it now admits `label_added` /
