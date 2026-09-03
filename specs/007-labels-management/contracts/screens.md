@@ -25,7 +25,7 @@ LabelsScreen                          synchronous — guard has already run in t
 └── (labels exist)
     ├── NewLabelButton                 "use client" — opens LabelFormModal with no `label` prop
     └── LabelTable
-        └── LabelRow × n                colour swatch · name · issueCount · Edit · Delete
+        └── LabelRow × n                name · issueCount · Edit · Delete
             ├── opens LabelFormModal    with this row's `label` prop                    FR-009
             └── opens DeleteLabelDialog                                                 FR-011, FR-012
 
@@ -46,10 +46,8 @@ LabelPickerField                      "use client" — presentational, no commit
 
 ## `LabelFormModal` — Create and Edit, one component
 
-- **Fields**: name (`TextField`, required, trimmed, validated on blur against `checkLabelNameAvailable`),
-  colour (`RadioGroup` of seven swatches, from the shared `src/components/shared/palette-field.tsx`
-  [`research.md`](../research.md) B-1) — pre-selected to the accent on Create, to the label's current
-  colour on Edit.
+- **Fields**: name (`TextField`, required, trimmed, validated on blur against `checkLabelNameAvailable`)
+  — the label's only field (§3.10).
 - **Submit**: `createLabel` or `updateLabel`, chosen by whether a `label` prop was passed in
   ([`research.md`](../research.md) D-2). Stays enabled through a missing or clashing name and reports
   the problem inline (`OT-UX-011`); disables only while its own request is in flight.
@@ -70,7 +68,7 @@ LabelPickerField                      "use client" — presentational, no commit
 ## `LabelPickerField` — the shared picker
 
 A multi-select list of every team label (`listLabelOptionsForIssue`, [`../data-model.md`](../data-model.md)
-§3), each option showing its swatch and name, `applied` rendering as a checked state
+§3), each option showing its name, `applied` rendering as a checked state
 (`ListBox` with `selectionMode="multiple"`). At its foot, **Manage labels** — a link to
 `/settings/labels`, rendered only when `actor.role === 'admin'` (`FR-018`, `OT-UX-003`,
 [`research.md`](../research.md) D-6).

@@ -18,7 +18,6 @@ row.
 | --- | --- | :---: | --- | --- |
 | `id` | `uuid` | no | `uuidv7()` server-side | `OT-DATA-001` |
 | `name` | `text` | no | — | required, trimmed, unique case-insensitively, `FR-006`, `FR-007` |
-| `color` | `text` | no | — | one of the seven palette values, `FR-014`, `OT-DATA-013` |
 | `created_at` | `timestamptz` | no | written by the mutator | §5 |
 | `updated_at` | `timestamptz` | no | written by `touched()` | §5 |
 
@@ -32,7 +31,6 @@ Each absence is asserted by a test, because each is a requirement rather than an
 | Constraint | Form | Requirement |
 | --- | --- | --- |
 | Name bound | `CHECK (char_length(name) <= 200)` | `FR-007`, §5 conventions ([research.md](./research.md) A-7) |
-| Colour set | `CHECK (color IN ('#5b5bd6','#8b909a','#2f7fc4','#d4a017','#3a9d5d','#c8453c','#9b5de5'))` | `FR-014`, `OT-DATA-013` — the literal R5's research A-7 already wrote, reused ([research.md](./research.md) A-6) |
 | Name uniqueness | `uniqueIndex("label_name_lower_idx").on(sql\`lower(name)\`)` | `FR-007`, `OT-INV-016` ([research.md](./research.md) A-5) |
 
 ### Indexes
@@ -86,13 +84,11 @@ has no concept of.
 LabelView                                  — /settings/labels, one row per label
   id            string
   name          string                                                  FR-003
-  color         string          one of the seven palette hex values     FR-003
   issueCount    integer         COUNT(*) over issue_label, this label   FR-003, FR-011
 
 LabelOption                                — the picker, one entry per team label
   id            string
   name          string                                                  FR-017
-  color         string                                                  FR-017
   applied       boolean         true on the issue the picker is open for  FR-022
 ```
 

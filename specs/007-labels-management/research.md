@@ -20,7 +20,6 @@ to create — nothing upstream defines either.
 label
   id            uuid PK, $defaultFn(uuidv7)
   name          text NOT NULL
-  color         text NOT NULL
   created_at    timestamptz NOT NULL
   updated_at    timestamptz NOT NULL
 
@@ -76,16 +75,7 @@ index("issue_label_label_id_idx").on(table.labelId)
 the two precedents for the same shape: `uniqueIndex("label_name_lower_idx").on(sql\`lower(${table.name})\`)`.
 A plain `.unique()` would let `Bug` and `bug` coexist, which FR-007 forbids.
 
-### A-6. Colour is the seven-value `CHECK` R5 already wrote, not a new literal
-
-R5's research A-7 pins `CHECK (color IN ('#5b5bd6','#8b909a','#2f7fc4','#d4a017','#3a9d5d','#c8453c','#9b5de5'))`
-for `project.color` and `board_column.color`. `OT-DATA-013` names labels in the same sentence as those
-two tables — "project, board column, label" — so `label.color` carries the identical constraint, not a
-third literal a reader would have to diff against the first two to trust. §5, *Stack → Palette* is the
-one place the seven values are stated in prose; this feature does not restate them, it reuses the
-constraint R5 already wrote against that same prose.
-
-### A-7. `label.name` is bounded at 200 characters, the same convention as every other short field
+### A-6. `label.name` is bounded at 200 characters, the same convention as every other short field
 
 §5: "every free-text column is length-bounded by a `CHECK`: 200 characters for names, titles, keys and
 handles". `label.name` is a name. `char_length(name) <= 200`, refused inline per FR-007's clash-and-length
@@ -93,44 +83,15 @@ validation and the edge case the spec states — nothing is truncated.
 
 ---
 
-## B. The palette moves to a shared module — this is its second feature
+## B. A label carries no colour
 
-R5's plan put the seven values and their names at `src/features/projects/palette.ts`, and the swatch
-`RadioGroup` at `src/features/projects/components/palette-field.tsx` — deliberately *not* promoted,
-because R5's own two uses (`project.color`, `board_column.color`) are both inside R5's own feature, and
-`AGENTS.md`'s Structure section reserves `src/components/shared` and `src/lib` for "a real second use,"
-which within one feature directory is not yet the bar Principle I sets.
-
-### B-1. `label.color` is the second *feature*, and that is the bar Principle I actually draws
-
-The line in `AGENTS.md` is "a pattern must appear at two call sites before it is extracted into a
-shared component, hook, or module" — not two call sites in one feature. R5's internal reuse already
-satisfied that bar for R5's own purposes without crossing a feature boundary, which is why R5 kept it
-local. `label.color` is a second, independent feature needing the identical seven values, the identical
-names, and the identical swatch-picking interaction with no label-specific behaviour mixed in. This
-feature therefore **moves, not copies**:
-
-- `src/features/projects/palette.ts` → `src/lib/palette.ts` — pure data, no JSX, which is exactly what
-  `AGENTS.md`'s `src/lib` is for.
-- `src/features/projects/components/palette-field.tsx` → `src/components/shared/palette-field.tsx` —
-  the mirror of R6's own move of R5's markdown renderer to `src/components/shared/markdown/`, the same
-  reasoning applied to a second recurring pattern rather than a novel one.
-
-Both moves repoint two existing imports inside R5's feature; neither changes what R5 renders or the
-`CHECK` constraints A-6 already reuses byte for byte. This is a reach-back into R5's inherited work
-and is recorded in [`plan.md`](./plan.md)'s Complexity Tracking, the same way R6 recorded its move of
-R5's markdown module.
-
-**Rejected**: a second, label-scoped copy of the seven values and the swatch picker. Two literals that
-must be kept in lockstep by hand is precisely the drift Principle I extracts to prevent, and R9's board
-columns are a third caller already named in the roadmap — leaving the pattern local here would only
-move the same decision one entry later, at higher cost, since the ninth entry did not write either
-copy.
-
-**Rejected**: waiting for R9 to be the one that promotes it, since R9 is also a real caller. R9 has no
-spec yet, its build order is independent of R8's (roadmap §3: "R8 and R9 are independent of each other
-and may be built in parallel once R7 lands"), and a shared module that is not shared until a third
-caller shows up would leave R8's own second-caller obligation unmet in the meantime.
+The Modernist design system (§7, *Palette*) retired per-project, per-column and per-label colour
+product-wide: "there is no per-project, per-column or per-label colour: those three identities are
+told apart by name alone, never by a swatch." §3.10 restates it for this feature specifically — "a
+label has one field and nothing else: name." This closes what an earlier draft of this plan assumed
+(a seven-value `label.color`, moved from R5's inherited palette module) — R5's actual build never
+carried a colour column either, so there is nothing to move and no palette module anywhere in the
+tree. Nothing in this feature reads or writes a colour.
 
 ---
 
@@ -146,7 +107,7 @@ by name.
 
 ### C-2. `createLabel` and `updateLabel` take typed arguments, not a form action
 
-Both live in a modal that never navigates (§3.10: "a modal with a name field and a colour picker"), so
+Both live in a modal that never navigates (§3.10: "a modal with a name field and nothing else"), so
 there is no route to redirect to on success and no full-page `useActionState` submission to model. Each
 is a Server Action called from a client wrapper — `useActionState` bound to the modal's local state,
 reporting the per-field, on-blur validation `OT-UX-011` requires (required, trimmed, unique) without a
@@ -252,8 +213,8 @@ R2's own guard-only placeholder convention (R6's D-1) rather than reinventing on
 ### D-2. Create and Edit are one component, populated conditionally
 
 §3.10 states it as the spec's own words: "Edit — the same modal, populated." `LabelFormModal` takes an
-optional `label` prop; its absence is Create, its presence is Edit — one name field, one colour picker,
-one submit path (C-2), and the two call sites (the page's **New label** button, each row's **Edit**)
+optional `label` prop; its absence is Create, its presence is Edit — one name field, one submit path
+(C-2), and the two call sites (the page's **New label** button, each row's **Edit**)
 differ only in what they pass in. This mirrors R5's own precedent of a single `EditableField` serving
 five callers on the day it lands, not a rule invented for this feature.
 
@@ -268,10 +229,9 @@ not a placeholder waiting for a later entry to fill in.
 
 `LabelPickerField` — a multi-select control over the team's existing labels — serves the issue rail
 (FR-015) and the Create issue form (FR-016) from the moment this feature lands, not a hypothetical
-future second caller. This is the same shape R5's `palette-field.tsx` and `EditableField` were built
-under: two call sites visible on day one is what licenses one shared presentational component under
-Principle I, not a guess at a shape a second caller has not confirmed. The two callers differ only in
-how a change commits:
+future second caller. This is the same shape R5's `EditableField` was built under: two call sites
+visible on day one is what licenses one shared presentational component under Principle I, not a guess
+at a shape a second caller has not confirmed. The two callers differ only in how a change commits:
 
 - **The rail** (an existing issue): each toggle calls `addIssueLabel` or `removeIssueLabel` immediately,
   applied optimistically and rolled back on refusal — the same optimistic-apply convention every other
@@ -288,10 +248,10 @@ shared rather than shaped around one caller's commit strategy.
 
 Both of `LabelPickerField`'s callers — the issue rail, the Create issue form — live inside R6's
 `src/features/issues/`, reading across the feature boundary into `src/features/labels/`. That is not
-the condition B-1 used to promote the palette: there, two *independent* features each needed the exact
-same domain-neutral seven-value picker. Here, one feature (`issues`) needs a `labels`-domain component
-to decorate its own screens, the same shape R6 already established by reading R5's project and column
-data directly rather than promoting those reads to `shared`. `src/features/labels/components/label-picker-field.tsx`
+the two-*independent*-features condition Principle I sets for promotion to `src/components/shared` —
+here, one feature (`issues`) needs a `labels`-domain component to decorate its own screens, the same
+shape R6 already established by reading R5's project and column data directly rather than promoting
+those reads to `shared`. `src/features/labels/components/label-picker-field.tsx`
 exports it; R6's `issue-rail.tsx` and `create-issue-form.tsx` import it, matching the cross-feature
 import pattern `AGENTS.md`'s Structure section already permits (feature code may be read by another
 feature; only `src/components/ui` and genuinely feature-agnostic modules move to a shared location).
@@ -315,10 +275,10 @@ resolves `isAdmin` first, then wraps only the label list's query in `Suspense`.
 
 ### E-1. Server tests assert schema constraints by attempting the violating write
 
-The same convention R6's E-4 already established: `char_length(name) <= 200`, the seven-colour `CHECK`,
-the case-insensitive uniqueness, and the composite-key idempotency are each proven by writing the
-violating (or repeated) row against the real `TEST_DATABASE_URL` instance and reading the refusal (or
-the silent no-op), never by a mock.
+The same convention R6's E-4 already established: `char_length(name) <= 200`, the case-insensitive
+uniqueness, and the composite-key idempotency are each proven by writing the violating (or repeated)
+row against the real `TEST_DATABASE_URL` instance and reading the refusal (or the silent no-op), never
+by a mock.
 
 ### E-2. `label` and `issue_label` join `TRUNCATED_TABLES`
 
@@ -337,12 +297,10 @@ connection serialize through that connection's own query queue and never actuall
 
 ## Assumptions carried forward
 
-- **The activity writer's function signature and module path are undetermined until R7's plan lands**
-  (C-6). This is the one place this plan's design could change without any fault of its own reasoning —
-  once R7's plan exists, `T0xx`'s reconciliation task (mirroring R6's `T001`) confirms `recordActivity`'s
-  actual shape against what this plan pinned, exactly as R6's `T001` confirmed `issue_counter` against
-  R5's landed plan.
-- **The palette move (B-1) is a reach-back into R5's inherited feature directory.** If R5's plan has, by
-  the time this feature is implemented, already moved `palette.ts` and `palette-field.tsx` somewhere
-  else (for its own reasons, or because R9 got there first), this feature's task list retargets its
-  import paths rather than re-deciding where the module belongs.
+- **The activity writer's function exists only as a pinned plan, not as code, until R7 is implemented**
+  (C-6). R7's plan now fixes `writeActivity`'s module path and signature, but its `type` union does not
+  yet include `label_added` / `label_removed`, and no table or function exists to call. This is the one
+  place this plan's design could change without any fault of its own reasoning — once R7 is implemented
+  (and its `type` union widened to admit these two values), a reconciliation task confirms
+  `writeActivity`'s actual shape against what this plan pinned, exactly as R6's `T001` confirmed
+  `issue_counter` against R5's landed plan.

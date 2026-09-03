@@ -3,23 +3,20 @@
 **Feature**: Labels · **Entry**: R8 · **Spec**: [`spec.md`](./spec.md) · **Data model**:
 [`data-model.md`](./data-model.md) · **Contracts**: [`contracts/`](./contracts/)
 
-## Prerequisites: entries R2, R5, R6 are implemented, and R7's plan (not necessarily its code) exists
+## Prerequisites: entries R2, R5, R6 are implemented; R7's code is not
 
-Only R1 is built today. This feature's own guard-only page (`/settings/labels`) needs R2's shell and
-`forbidden()`; its picker needs R6's issue rail and Create issue form to exist to be edited; its
+R2, R5 and R6 are implemented. This feature's own guard-only page (`/settings/labels`) needs R2's shell
+and `forbidden()`; its picker needs R6's issue rail and Create issue form to exist to be edited; its
 `isMember` check needs R5's `project` and `project_member`. **`addIssueLabel` and `removeIssueLabel`'s
-activity write additionally needs R7's plan** to have fixed the writer's real signature
-([`research.md`](./research.md) C-6) — R7's *code* landing is not required to run every other walkthrough
-below, but the two activity-writing steps (7, 8) cannot be exercised for real until it does.
+activity write additionally needs R7's `activity` table and `writeActivity` function to actually exist
+in code** ([`research.md`](./research.md) C-6) — every other walkthrough below runs without it, but the
+two activity-writing steps (7, 8) cannot be exercised for real until R7 lands.
 
 ### Reconcile before implementing
 
 1. **`recordActivity`'s actual shape**, against R7's landed plan — this feature's `addIssueLabel` and
    `removeIssueLabel` import path and call shape ([`research.md`](./research.md) C-6).
-2. **Where `palette.ts` and `palette-field.tsx` live**, against R5's landed plan — if R5 moved them
-   itself before this feature was implemented, retarget the import rather than re-run the move
-   ([`research.md`](./research.md) B-1, Assumptions).
-3. **`createIssue`'s accepted shape**, against R6's landed plan — confirming the mutator still accepts
+2. **`createIssue`'s accepted shape**, against R6's landed plan — confirming the mutator still accepts
    a partial-field object this feature can add `labelIds` to without restructuring it.
 
 ## Setup
@@ -38,8 +35,7 @@ Sign in as the seeded admin (§6). A second, non-admin account and at least one 
 ## 1 · An admin creates a label from nothing · `FR-006`…`FR-008`, `SC-001`
 
 Visit `/settings/labels` with none created yet. Confirm the empty line "No labels yet". Press **New
-label**, type "Bug", accept the pre-selected colour, confirm. The modal closes; the table shows one row
-— swatch, "Bug", usage count 0.
+label**, type "Bug", confirm. The modal closes; the table shows one row — "Bug", usage count 0.
 
 ## 2 · A clash is named, not silently accepted · `FR-007`
 
@@ -48,9 +44,9 @@ error names "Bug" as the existing holder. The form is not submittable until the 
 
 ## 3 · An edit lands everywhere at once · `FR-009`, `FR-010`, `SC-002`
 
-With "Bug" applied to an issue (scenario 5 below), open **Edit**, rename it to "Defect" and recolour
-it. Save. The labels table shows the new name and colour; the issue's rail and the Create issue
-picker, opened fresh, show "Defect" in the new colour too — no second edit anywhere.
+With "Bug" applied to an issue (scenario 5 below), open **Edit**, rename it to "Defect". Save. The
+labels table shows the new name; the issue's rail and the Create issue picker, opened fresh, show
+"Defect" too — no second edit anywhere.
 
 ## 4 · Delete states its count before it destroys anything · `FR-011`, `FR-012`, `SC-003`, `SC-004`
 
@@ -95,15 +91,15 @@ the foot of either picker. Visit `/settings/labels` directly — Forbidden.
 
 ## 11 · Curating the set writes no activity · `FR-013`
 
-Create, rename, recolour and delete a label (using one carrying no issues, so nothing else fires).
+Create, rename and delete a label (using one carrying no issues, so nothing else fires).
 Confirm no row lands in any project's or issue's activity feed for any of the four actions, and that
 deleting a label carried by issues writes nothing on those issues either.
 
 ## 12 · Keyboard alone · `OT-UX-018`, `AGENTS.md` → React Aria
 
-Tab to **New label**, open it with `Enter`, tab through name and the colour `RadioGroup` (arrow keys
-move the selection), submit with `Enter`. Tab to a picker's options; `Space` toggles a label without a
-mouse. Every control carries a visible focus indicator and an accessible name naming what it is.
+Tab to **New label**, open it with `Enter`, tab to the name field, submit with `Enter`. Tab to a
+picker's options; `Space` toggles a label without a mouse. Every control carries a visible focus
+indicator and an accessible name naming what it is.
 
 ## 13 · The labels page loads as itself · `SC-001`
 
@@ -120,9 +116,9 @@ full-screen spinner and never a layout shift once data lands (`OT-UX-005`).
 - **`addIssueLabel`'s idempotency under real concurrency** (`research.md` E-3) — two connections racing
   `addIssueLabel` for the same issue and label; the table holds exactly one row afterward and neither
   call raises.
-- **The seven-colour `CHECK` and the 200-character bound** (`research.md` A-6, A-7) — a server test
-  attempts the violating insert directly against `TEST_DATABASE_URL` and asserts the database refuses
-  it, independent of whatever the modal's own client-side check would have caught.
+- **The 200-character bound** (`research.md` A-7) — a server test attempts the violating insert
+  directly against `TEST_DATABASE_URL` and asserts the database refuses it, independent of whatever the
+  modal's own client-side check would have caught.
 - **`ON DELETE CASCADE` reaches `issue_label` from both directions** (`data-model.md` §4) — deleting an
   issue removes its `issue_label` rows without `deleteIssue`'s own body changing; deleting a label
   removes its `issue_label` rows without `deleteLabel` issuing a second statement.
