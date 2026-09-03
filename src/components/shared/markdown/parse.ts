@@ -14,8 +14,17 @@ export type BlockNode =
   | { type: "numberedList"; items: InlineNode[][] };
 
 const HEADING_PATTERN = /^(#{1,6}) (.*)$/;
-const BULLET_PATTERN = /^[-*] (.*)$/;
-const NUMBERED_PATTERN = /^\d+\. (.*)$/;
+const BULLET_PATTERN = /^\s*[-*] (.*)$/;
+const NUMBERED_PATTERN = /^\s*\d+\. (.*)$/;
+const ALLOWED_LINK_SCHEMES = new Set(["http:", "https:", "mailto:"]);
+
+function isAllowedLinkHref(href: string): boolean {
+  try {
+    return ALLOWED_LINK_SCHEMES.has(new URL(href).protocol);
+  } catch {
+    return false;
+  }
+}
 
 function findBalancedParenClose(line: string, start: number): number {
   let depth = 0;
@@ -48,7 +57,7 @@ function parseInline(line: string): InlineNode[] {
 
     if (char === "`") {
       const close = line.indexOf("`", i + 1);
-      if (close !== -1) {
+      if (close !== -1 && close > i + 1) {
         flushText(i);
         nodes.push({ type: "code", text: line.slice(i + 1, close) });
         i = close + 1;
@@ -69,18 +78,19 @@ function parseInline(line: string): InlineNode[] {
       if (textClose !== -1 && line[textClose + 1] === "(") {
         const hrefClose = findBalancedParenClose(line, textClose + 2);
         if (hrefClose !== -1) {
-          flushText(i);
-          nodes.push({
-            type: "link",
-            href: line.slice(textClose + 2, hrefClose),
-            text: line.slice(i + 1, textClose),
-          });
+          const href = line.slice(textClose + 2, hrefClose);
+          if (isAllowedLinkHref(href)) {
+            flushText(i);
+            nodes.push({ type: "link", href, text: line.slice(i + 1, textClose) });
+            i = hrefClose + 1;
+            textStart = i;
+            continue;
+          }
           i = hrefClose + 1;
-          textStart = i;
           continue;
         }
       }
-    } else if (char === "*" || char === "_") {
+    } else if (char === "*") {
       const close = line.indexOf(char, i + 1);
       if (close !== -1) {
         flushText(i);

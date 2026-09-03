@@ -2,8 +2,6 @@ import type { ReactNode } from "react";
 import type { BlockNode, InlineNode } from "./parse";
 import { parseMarkdown } from "./parse";
 
-const ALLOWED_SCHEMES = new Set(["http:", "https:", "mailto:"]);
-
 const HEADING_TAGS = {
   1: "h1",
   2: "h2",
@@ -12,14 +10,6 @@ const HEADING_TAGS = {
   5: "h5",
   6: "h6",
 } as const;
-
-export function isAllowedLinkHref(href: string): boolean {
-  try {
-    return ALLOWED_SCHEMES.has(new URL(href).protocol);
-  } catch {
-    return false;
-  }
-}
 
 function renderInline(inline: InlineNode, key: number): ReactNode {
   switch (inline.type) {
@@ -32,9 +22,6 @@ function renderInline(inline: InlineNode, key: number): ReactNode {
     case "code":
       return <code key={key}>{inline.text}</code>;
     case "link":
-      if (!isAllowedLinkHref(inline.href)) {
-        return inline.text;
-      }
       return (
         <a
           key={key}
@@ -79,6 +66,6 @@ function renderBlock(block: BlockNode, key: number): ReactNode {
   }
 }
 
-export function renderMarkdown(source: string): ReactNode {
+export function Markdown({ source }: { source: string }): ReactNode {
   return parseMarkdown(source).map((block, index) => renderBlock(block, index));
 }
