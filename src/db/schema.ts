@@ -4,12 +4,14 @@ import {
   check,
   customType,
   date,
+  foreignKey,
   index,
   integer,
   pgTable,
   primaryKey,
   text,
   timestamp,
+  unique,
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
@@ -229,6 +231,7 @@ export const boardColumn = pgTable(
   },
   (table) => [
     uniqueIndex("board_column_project_id_name_lower_idx").on(table.projectId, sql`lower(${table.name})`),
+    unique("board_column_project_id_id_unique").on(table.projectId, table.id),
     check("board_column_name_length", sql`char_length(${table.name}) <= 200`),
     check("board_column_kind_valid", sql`${table.kind} in ('open', 'done', 'canceled')`),
   ],
@@ -244,3 +247,39 @@ export const issueCounter = pgTable("issue_counter", {
     .references(() => project.id, { onDelete: "cascade" }),
   lastNumber: integer("last_number").notNull().default(0),
 });
+
+export const issue = pgTable(
+  "issue",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .$defaultFn(() => uuidv7()),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => project.id, { onDelete: "cascade" }),
+    number: integer("number").notNull(),
+    title: text("title").notNull(),
+    description: text("description"),
+    columnId: uuid("column_id").notNull(),
+    priority: text("priority").notNull().default("none"),
+    assigneeId: uuid("assignee_id").references(() => user.id),
+    dueDate: date("due_date"),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => user.id),
+    sortOrder: sortOrder("sort_order").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    unique("issue_project_id_number_unique").on(table.projectId, table.number),
+    foreignKey({
+      name: "issue_project_id_column_id_fk",
+      columns: [table.projectId, table.columnId],
+      foreignColumns: [boardColumn.projectId, boardColumn.id],
+    }),
+    check("issue_title_length", sql`char_length(${table.title}) <= 200`),
+    check("issue_description_length", sql`char_length(${table.description}) <= 10000`),
+    check("issue_priority_valid", sql`${table.priority} in ('none', 'low', 'medium', 'high', 'urgent')`),
+  ],
+);
