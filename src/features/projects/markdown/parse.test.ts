@@ -139,6 +139,15 @@ describe("parseMarkdown — inlines (FR-010, FR-011)", () => {
     ]);
   });
 
+  it("keeps a balanced parenthesis inside a link href", () => {
+    expect(parseMarkdown("[no](javascript:alert(1))")).toEqual([
+      {
+        type: "paragraph",
+        inlines: [{ type: "link", href: "javascript:alert(1)", text: "no" }],
+      },
+    ]);
+  });
+
   it("mixes inlines with surrounding text in one paragraph", () => {
     expect(parseMarkdown("plain **bold** and *italic* and `code`")).toEqual([
       {

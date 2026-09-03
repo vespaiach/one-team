@@ -17,6 +17,21 @@ const HEADING_PATTERN = /^(#{1,6}) (.*)$/;
 const BULLET_PATTERN = /^[-*] (.*)$/;
 const NUMBERED_PATTERN = /^\d+\. (.*)$/;
 
+function findBalancedParenClose(line: string, start: number): number {
+  let depth = 0;
+  for (let i = start; i < line.length; i++) {
+    if (line[i] === "(") {
+      depth++;
+    } else if (line[i] === ")") {
+      if (depth === 0) {
+        return i;
+      }
+      depth--;
+    }
+  }
+  return -1;
+}
+
 function parseInline(line: string): InlineNode[] {
   const nodes: InlineNode[] = [];
   let i = 0;
@@ -52,7 +67,7 @@ function parseInline(line: string): InlineNode[] {
     } else if (char === "[") {
       const textClose = line.indexOf("]", i + 1);
       if (textClose !== -1 && line[textClose + 1] === "(") {
-        const hrefClose = line.indexOf(")", textClose + 2);
+        const hrefClose = findBalancedParenClose(line, textClose + 2);
         if (hrefClose !== -1) {
           flushText(i);
           nodes.push({

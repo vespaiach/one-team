@@ -216,11 +216,11 @@ and both tabs.
 
 ## Phase 8: Polish & cross-cutting concerns
 
-- [ ] T079 Run `npm run verify` from the repository root and confirm `style-check`, `type-check`, `test` and `build` all pass with no failing or skipped tests (gates 5 and 8)
-- [ ] T080 Walk all twelve scenarios in [`quickstart.md`](./quickstart.md) against a running dev server and a seeded database, recording any that diverge from the specification
-- [ ] T081 Sweep `git diff main...HEAD` for comments, commented-out code, unused imports and unreachable paths, and confirm every changed line traces to a requirement this feature states (gates 6 and 7)
-- [ ] T082 Confirm the migration T009 generated under `drizzle/` and its snapshot in `drizzle/meta/` are both committed and that no migration was edited after generation
-- [ ] T083 Check each of FR-001 to FR-056 and SC-001 to SC-019 in [`spec.md`](./spec.md) against a test or a walkthrough that exercises it, and record any requirement with no evidence behind it
+- [X] T079 Run `npm run verify` from the repository root and confirm `style-check`, `type-check`, `test` and `build` all pass with no failing or skipped tests (gates 5 and 8)
+- [X] T080 Walk all twelve scenarios in [`quickstart.md`](./quickstart.md) against a running dev server and a seeded database, recording any that diverge from the specification
+- [X] T081 Sweep `git diff main...HEAD` for comments, commented-out code, unused imports and unreachable paths, and confirm every changed line traces to a requirement this feature states (gates 6 and 7)
+- [X] T082 Confirm the migration T009 generated under `drizzle/` and its snapshot in `drizzle/meta/` are both committed and that no migration was edited after generation
+- [X] T083 Check each of FR-001 to FR-056 and SC-001 to SC-019 in [`spec.md`](./spec.md) against a test or a walkthrough that exercises it, and record any requirement with no evidence behind it
 
 ---
 
