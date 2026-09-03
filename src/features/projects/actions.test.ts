@@ -4,11 +4,14 @@ import { project, projectMember, user } from "@/db/schema";
 import { testDb, truncateTestDatabase } from "@/db/test-database";
 import { issueSession, SESSION_COOKIE_NAME } from "@/features/auth/server/sessions";
 
-const { cookiesMock, refreshMock, redirectMock } = vi.hoisted(() => ({
+const { cookiesMock, refreshMock, redirectMock, notFoundMock } = vi.hoisted(() => ({
   cookiesMock: vi.fn(),
   refreshMock: vi.fn(),
   redirectMock: vi.fn((url: string) => {
     throw new Error(`NEXT_REDIRECT:${url}`);
+  }),
+  notFoundMock: vi.fn(() => {
+    throw new Error("NEXT_NOT_FOUND");
   }),
 }));
 
@@ -21,6 +24,7 @@ vi.mock("next/headers", () => ({
 
 vi.mock("next/navigation", () => ({
   redirect: redirectMock,
+  notFound: notFoundMock,
 }));
 
 vi.mock("next/cache", () => ({
@@ -34,6 +38,7 @@ beforeEach(async () => {
   cookiesMock.mockReset();
   refreshMock.mockReset();
   redirectMock.mockClear();
+  notFoundMock.mockClear();
 });
 
 afterEach(() => {
@@ -71,6 +76,11 @@ async function signInAs(overrides: Partial<typeof user.$inferInsert> = {}) {
   const { token } = await issueSession({ userId: owner.id, ipAddress: "203.0.113.4", userAgent: null });
   mockCookie(token);
   return owner;
+}
+
+async function addMember(projectId: string, userId: string) {
+  const now = new Date();
+  await testDb.insert(projectMember).values({ projectId, userId, createdAt: now, updatedAt: now });
 }
 
 async function insertProject(overrides: Partial<typeof project.$inferInsert> = {}) {
@@ -245,5 +255,112 @@ describe("checkProjectKeyAvailable (FR-026, D-5)", () => {
     const { checkProjectKeyAvailable } = await import("./actions");
 
     await expect(checkProjectKeyAvailable("WR")).resolves.toEqual({ holder: null });
+  });
+});
+
+describe("updateProject (FR-014, FR-016, FR-028, FR-036)", () => {
+  it("asserts the origin before reading anything else", async () => {
+    currentOrigin = undefined;
+    const { updateProject } = await import("./actions");
+
+    await expect(updateProject({ projectKey: "WR", changes: { name: "Renamed" } })).rejects.toThrow(
+      "forbidden_origin",
+    );
+  });
+
+  it("redirects an unauthenticated caller to /signin", async () => {
+    mockCookie(undefined);
+    const { updateProject } = await import("./actions");
+
+    await expect(updateProject({ projectKey: "WR", changes: { name: "Renamed" } })).rejects.toThrow(
+      "NEXT_REDIRECT:/signin",
+    );
+  });
+
+  it("rejects a changes object carrying an unknown key before touching the database", async () => {
+    const member = await signInAs({ role: "member" });
+    const proj = await insertProject();
+    await addMember(proj.id, member.id);
+    const { updateProject } = await import("./actions");
+
+    const changes = { name: "Renamed", key: "HACKED" } as Record<string, unknown>;
+    const result = await updateProject({ projectKey: proj.key, changes });
+
+    expect(result).toEqual({ status: "forbidden" });
+    const [row] = await testDb.select().from(project).where(eq(project.id, proj.id));
+    expect(row?.name).toBe("Existing Project");
+  });
+
+  it("rejects an empty name before touching the database", async () => {
+    const member = await signInAs({ role: "member" });
+    const proj = await insertProject();
+    await addMember(proj.id, member.id);
+    const { updateProject } = await import("./actions");
+
+    const result = await updateProject({ projectKey: proj.key, changes: { name: "   " } });
+
+    expect(result).toMatchObject({ status: "invalid", field: "name" });
+    const [row] = await testDb.select().from(project).where(eq(project.id, proj.id));
+    expect(row?.name).toBe("Existing Project");
+  });
+
+  it("rejects a target date before the start date, sent together, before touching the database", async () => {
+    const member = await signInAs({ role: "member" });
+    const proj = await insertProject();
+    await addMember(proj.id, member.id);
+    const { updateProject } = await import("./actions");
+
+    const result = await updateProject({
+      projectKey: proj.key,
+      changes: { startDate: "2026-06-10", targetDate: "2026-06-01" },
+    });
+
+    expect(result).toMatchObject({ status: "invalid", field: "targetDate" });
+    const [row] = await testDb.select().from(project).where(eq(project.id, proj.id));
+    expect(row?.startDate).toBeNull();
+  });
+
+  it("saves a valid name change for a member and refreshes", async () => {
+    const member = await signInAs({ role: "member" });
+    const proj = await insertProject();
+    await addMember(proj.id, member.id);
+    const { updateProject } = await import("./actions");
+
+    const result = await updateProject({ projectKey: proj.key, changes: { name: "Renamed" } });
+
+    expect(result).toEqual({ status: "saved" });
+    expect(refreshMock).toHaveBeenCalledTimes(1);
+    const [row] = await testDb.select().from(project).where(eq(project.id, proj.id));
+    expect(row?.name).toBe("Renamed");
+  });
+
+  it("returns forbidden for a signed-in non-member", async () => {
+    await signInAs({ role: "member" });
+    const proj = await insertProject();
+    const { updateProject } = await import("./actions");
+
+    await expect(updateProject({ projectKey: proj.key, changes: { name: "Renamed" } })).resolves.toEqual({
+      status: "forbidden",
+    });
+  });
+
+  it("calls notFound() rather than forbidden() for a project the module did not find", async () => {
+    await signInAs({ role: "admin" });
+    const { updateProject } = await import("./actions");
+
+    await expect(updateProject({ projectKey: "NOPE", changes: { name: "Renamed" } })).rejects.toThrow(
+      "NEXT_NOT_FOUND",
+    );
+    expect(notFoundMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("carries no SQL, no constraint name and no row in a refused result", async () => {
+    await signInAs({ role: "member" });
+    const proj = await insertProject();
+    const { updateProject } = await import("./actions");
+
+    const result = await updateProject({ projectKey: proj.key, changes: { name: "Renamed" } });
+
+    expect(JSON.stringify(result)).not.toMatch(/select|insert|constraint/i);
   });
 });

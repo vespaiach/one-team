@@ -19,9 +19,9 @@ const member = {
 const admin = { ...member, id: "u2", role: "admin" };
 
 const ADMIN_ONLY_ROUTES = [
-  { name: "/projects/new", importPage: () => import("./projects/new/page") },
-  { name: "/settings/accounts", importPage: () => import("./settings/accounts/page") },
-  { name: "/settings/labels", importPage: () => import("./settings/labels/page") },
+  { name: "/projects/new", importPage: () => import("./projects/new/page"), params: undefined },
+  { name: "/settings/accounts", importPage: () => import("./settings/accounts/page"), params: undefined },
+  { name: "/settings/labels", importPage: () => import("./settings/labels/page"), params: undefined },
 ];
 
 const DELIVERED_ADMIN_ROUTE_NAMES = new Set(["/projects/new", "/settings/accounts"]);
@@ -30,24 +30,31 @@ const UNDELIVERED_ADMIN_ROUTES = ADMIN_ONLY_ROUTES.filter(
 );
 
 const SIGNED_IN_ROUTES = [
-  { name: "/profile", importPage: () => import("./profile/page") },
-  { name: "/notifications", importPage: () => import("./notifications/page") },
-  { name: "/projects/[projectKey]", importPage: () => import("./projects/[projectKey]/page") },
+  { name: "/profile", importPage: () => import("./profile/page"), params: undefined },
+  { name: "/notifications", importPage: () => import("./notifications/page"), params: undefined },
+  {
+    name: "/projects/[projectKey]",
+    importPage: () => import("./projects/[projectKey]/page"),
+    params: undefined,
+  },
   {
     name: "/projects/[projectKey]/details",
     importPage: () => import("./projects/[projectKey]/details/page"),
+    params: { projectKey: "WR" } as Record<string, string> | undefined,
   },
   {
     name: "/projects/[projectKey]/issues/new",
     importPage: () => import("./projects/[projectKey]/issues/new/page"),
+    params: undefined,
   },
   {
     name: "/projects/[projectKey]/issues/[issueNumber]/details",
     importPage: () => import("./projects/[projectKey]/issues/[issueNumber]/details/page"),
+    params: undefined,
   },
 ];
 
-const DELIVERED_SIGNED_IN_ROUTE_NAMES = new Set(["/profile"]);
+const DELIVERED_SIGNED_IN_ROUTE_NAMES = new Set(["/profile", "/projects/[projectKey]/details"]);
 const UNDELIVERED_SIGNED_IN_ROUTES = SIGNED_IN_ROUTES.filter(
   (route) => !DELIVERED_SIGNED_IN_ROUTE_NAMES.has(route.name),
 );
@@ -59,26 +66,28 @@ describe("Route guards (FR-014, FR-019, FR-021, FR-022, FR-029, research D-1)", 
     ALL_ROUTES,
   )("$name redirects to /signin and never reaches Forbidden for no actor (s3, SC-007)", async ({
     importPage,
+    params,
   }) => {
     requireActorMock.mockImplementation(() => {
       throw REDIRECT_ERROR;
     });
-    const { default: Page } = await importPage();
+    const { default: Page } = (await importPage()) as { default: (props?: unknown) => Promise<unknown> };
 
-    await expect(Page()).rejects.toMatchObject({
+    await expect(Page(params ? { params: Promise.resolve(params) } : undefined)).rejects.toMatchObject({
       digest: expect.stringContaining(";/signin;") as string,
     });
   });
 
   it.each(ALL_ROUTES)("$name treats an expired session exactly as no session (s4)", async ({
     importPage,
+    params,
   }) => {
     requireActorMock.mockImplementation(() => {
       throw REDIRECT_ERROR;
     });
-    const { default: Page } = await importPage();
+    const { default: Page } = (await importPage()) as { default: (props?: unknown) => Promise<unknown> };
 
-    await expect(Page()).rejects.toMatchObject({
+    await expect(Page(params ? { params: Promise.resolve(params) } : undefined)).rejects.toMatchObject({
       digest: expect.stringContaining("NEXT_REDIRECT") as string,
     });
   });
@@ -111,7 +120,7 @@ describe("Route guards (FR-014, FR-019, FR-021, FR-022, FR-029, research D-1)", 
     importPage,
   }) => {
     requireActorMock.mockResolvedValue(member);
-    const { default: Page } = await importPage();
+    const { default: Page } = (await importPage()) as { default: () => Promise<unknown> };
 
     await expect(Page()).rejects.toMatchObject({
       digest: "NEXT_HTTP_ERROR_FALLBACK;404",
@@ -120,7 +129,7 @@ describe("Route guards (FR-014, FR-019, FR-021, FR-022, FR-029, research D-1)", 
 
   it.each(UNDELIVERED_SIGNED_IN_ROUTES)("$name answers 404 for a signed-in admin", async ({ importPage }) => {
     requireActorMock.mockResolvedValue(admin);
-    const { default: Page } = await importPage();
+    const { default: Page } = (await importPage()) as { default: () => Promise<unknown> };
 
     await expect(Page()).rejects.toMatchObject({
       digest: "NEXT_HTTP_ERROR_FALLBACK;404",

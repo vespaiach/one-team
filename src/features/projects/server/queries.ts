@@ -1,7 +1,7 @@
 import "server-only";
-import { and, eq, isNull, ne, notExists, sql } from "drizzle-orm";
+import { and, asc, eq, isNull, ne, notExists, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { project, projectMember, user } from "@/db/schema";
+import { boardColumn, project, projectMember, user } from "@/db/schema";
 import { publicUser } from "@/features/auth/server/projections";
 
 export async function hasProjectMemberRow(projectId: string, userId: string): Promise<boolean> {
@@ -66,4 +66,85 @@ export async function listAddableUsers(params: {
     jobTitle: row.jobTitle,
     deactivated: false,
   }));
+}
+
+export type ProjectRecord = {
+  key: string;
+  name: string;
+  description: string | null;
+  status: "active" | "archived";
+  startDate: string | null;
+  targetDate: string | null;
+};
+
+export type ProjectColumnRow = {
+  id: string;
+  name: string;
+  kind: "open" | "done" | "canceled";
+  position: number;
+  issueCount: number;
+};
+
+export type ProjectDetails = {
+  record: ProjectRecord;
+  columns: ProjectColumnRow[];
+  roster: RosterEntry[];
+  cascadeCount: number;
+  canEditRecord: boolean;
+  canAdminister: boolean;
+};
+
+export async function loadProjectDetails(
+  key: string,
+  actor: { id: string; role: string },
+): Promise<ProjectDetails | null> {
+  const [row] = await db.select().from(project).where(eq(project.key, key));
+  if (!row) {
+    return null;
+  }
+
+  const columnRows = await db
+    .select()
+    .from(boardColumn)
+    .where(eq(boardColumn.projectId, row.id))
+    .orderBy(asc(boardColumn.sortOrder));
+
+  const rosterRows = await db
+    .select({ ...publicUser })
+    .from(projectMember)
+    .innerJoin(user, eq(projectMember.userId, user.id))
+    .where(eq(projectMember.projectId, row.id))
+    .orderBy(sql`lower(${user.lastName})`, sql`lower(${user.firstName})`);
+
+  const roster: RosterEntry[] = rosterRows.map((member) => ({
+    userId: member.id,
+    displayName: `${member.firstName} ${member.lastName}`,
+    avatarUrl: member.avatarUrl,
+    jobTitle: member.jobTitle,
+    deactivated: member.deactivatedAt !== null,
+  }));
+
+  const isAdmin = actor.role === "admin";
+
+  return {
+    record: {
+      key: row.key,
+      name: row.name,
+      description: row.description,
+      status: row.status as "active" | "archived",
+      startDate: row.startDate,
+      targetDate: row.targetDate,
+    },
+    columns: columnRows.map((column, index) => ({
+      id: column.id,
+      name: column.name,
+      kind: column.kind as "open" | "done" | "canceled",
+      position: index,
+      issueCount: 0,
+    })),
+    roster,
+    cascadeCount: columnRows.length + rosterRows.length,
+    canEditRecord: isAdmin || roster.some((entry) => entry.userId === actor.id),
+    canAdminister: isAdmin,
+  };
 }

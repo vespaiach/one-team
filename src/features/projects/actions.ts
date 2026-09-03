@@ -2,13 +2,14 @@
 
 import { refresh } from "next/cache";
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { requireActor } from "@/features/auth/server/actor";
 import { assertSameOrigin } from "@/features/auth/server/origin";
 import { isValidProjectKey } from "./key";
 import { requireAdmin } from "./server/authorization";
 import { createProject as runCreateProject } from "./server/create-project";
-import { findProjectKeyHolder } from "./server/queries";
+import { findProjectKeyHolder, loadProjectByKey } from "./server/queries";
+import { updateProject as runUpdateProject, type UpdateProjectChanges } from "./server/update-project";
 
 const MAX_NAME_LENGTH = 200;
 const MAX_DESCRIPTION_LENGTH = 10000;
@@ -84,4 +85,66 @@ export async function checkProjectKeyAvailable(
 
   const holder = await findProjectKeyHolder(key);
   return { holder };
+}
+
+const UPDATE_PROJECT_FIELDS = new Set(["name", "description", "startDate", "targetDate"]);
+
+export type UpdateProjectPayload = {
+  projectKey: string;
+  changes: UpdateProjectChanges;
+};
+
+export type UpdateProjectState =
+  | { status: "saved" }
+  | { status: "invalid"; field: "name" | "description" | "startDate" | "targetDate"; reason: string }
+  | { status: "forbidden" };
+
+export async function updateProject(input: UpdateProjectPayload): Promise<UpdateProjectState> {
+  assertSameOrigin({ headers: await headers() });
+  const actor = await requireActor();
+
+  const changes = input.changes as Record<string, unknown>;
+  if (Object.keys(changes).some((key) => !UPDATE_PROJECT_FIELDS.has(key))) {
+    return { status: "forbidden" };
+  }
+
+  const normalized: UpdateProjectChanges = { ...input.changes };
+
+  if ("name" in normalized) {
+    const name = normalized.name?.trim() ?? "";
+    if (name === "" || name.length > MAX_NAME_LENGTH) {
+      return { status: "invalid", field: "name", reason: "required" };
+    }
+    normalized.name = name;
+  }
+
+  if ("description" in normalized) {
+    const description = normalized.description ?? null;
+    const trimmed = description !== null && description.trim() === "" ? null : description;
+    if (trimmed !== null && trimmed.length > MAX_DESCRIPTION_LENGTH) {
+      return { status: "invalid", field: "description", reason: "too_long" };
+    }
+    normalized.description = trimmed;
+  }
+
+  if ("startDate" in normalized && "targetDate" in normalized) {
+    const { startDate, targetDate } = normalized;
+    if (startDate && targetDate && targetDate < startDate) {
+      return { status: "invalid", field: "targetDate", reason: "before_start" };
+    }
+  }
+
+  const project = await loadProjectByKey(input.projectKey);
+  if (!project) {
+    notFound();
+  }
+
+  const result = await runUpdateProject(project.id, actor, normalized);
+
+  if (result.status === "not_found") {
+    notFound();
+  }
+
+  refresh();
+  return result;
 }

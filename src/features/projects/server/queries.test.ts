@@ -1,7 +1,14 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { project, projectMember, user } from "@/db/schema";
+import { boardColumn, project, projectMember, user } from "@/db/schema";
 import { testDb, truncateTestDatabase } from "@/db/test-database";
-import { findProjectKeyHolder, hasProjectMemberRow, listAddableUsers, loadProjectByKey } from "./queries";
+import { SEED_COLUMNS } from "../seed-columns";
+import {
+  findProjectKeyHolder,
+  hasProjectMemberRow,
+  listAddableUsers,
+  loadProjectByKey,
+  loadProjectDetails,
+} from "./queries";
 
 beforeEach(async () => {
   await truncateTestDatabase();
@@ -47,6 +54,20 @@ async function insertProject(overrides: Partial<typeof project.$inferInsert> = {
 async function addMember(projectId: string, userId: string) {
   const now = new Date();
   await testDb.insert(projectMember).values({ projectId, userId, createdAt: now, updatedAt: now });
+}
+
+async function insertSeedColumns(projectId: string) {
+  const now = new Date();
+  await testDb.insert(boardColumn).values(
+    SEED_COLUMNS.map((column) => ({
+      projectId,
+      name: column.name,
+      kind: column.kind,
+      sortOrder: column.sortOrder,
+      createdAt: now,
+      updatedAt: now,
+    })),
+  );
 }
 
 describe("hasProjectMemberRow (FR-013, OT-AUTHZ-001)", () => {
@@ -161,5 +182,119 @@ describe("listAddableUsers (FR-030, FR-045, OT-AUTHZ-006)", () => {
         deactivated: false,
       },
     ]);
+  });
+});
+
+describe("loadProjectDetails (FR-035, FR-044, FR-045, FR-048)", () => {
+  it("returns null for a key that matches no project", async () => {
+    const admin = await insertUser({ role: "admin" });
+
+    await expect(loadProjectDetails("NOPE", admin)).resolves.toBeNull();
+  });
+
+  it("returns the record", async () => {
+    const admin = await insertUser({ role: "admin" });
+    await insertProject({
+      key: "WR",
+      name: "Website Redesign",
+      description: "A redesign",
+      status: "archived",
+      startDate: "2026-01-01",
+      targetDate: "2026-06-01",
+    });
+
+    const details = await loadProjectDetails("WR", admin);
+
+    expect(details?.record).toEqual({
+      key: "WR",
+      name: "Website Redesign",
+      description: "A redesign",
+      status: "archived",
+      startDate: "2026-01-01",
+      targetDate: "2026-06-01",
+    });
+  });
+
+  it("returns the columns ordered by sort_order", async () => {
+    const admin = await insertUser({ role: "admin" });
+    const proj = await insertProject({ key: "WR" });
+    await insertSeedColumns(proj.id);
+
+    const details = await loadProjectDetails("WR", admin);
+
+    expect(details?.columns.map((column) => column.name)).toEqual([
+      "Backlog",
+      "Todo",
+      "In Progress",
+      "Done",
+      "Canceled",
+    ]);
+    expect(details?.columns.every((column) => column.issueCount === 0)).toBe(true);
+  });
+
+  it("returns the roster ordered by lower(last_name), lower(first_name), reading project_member rows only", async () => {
+    const admin = await insertUser({ role: "admin" });
+    const proj = await insertProject({ key: "WR" });
+    const zed = await insertUser({ firstName: "Zed", lastName: "Adams" });
+    const amy = await insertUser({ firstName: "Amy", lastName: "adams" });
+    await addMember(proj.id, zed.id);
+    await addMember(proj.id, amy.id);
+
+    const details = await loadProjectDetails("WR", admin);
+
+    expect(details?.roster.map((entry) => entry.userId)).toEqual([amy.id, zed.id]);
+    expect(details?.roster.map((entry) => entry.userId)).not.toContain(admin.id);
+  });
+
+  it("keeps a deactivated member's roster row, flagged deactivated", async () => {
+    const admin = await insertUser({ role: "admin" });
+    const proj = await insertProject({ key: "WR" });
+    const member = await insertUser({
+      firstName: "Grace",
+      lastName: "Hopper",
+      deactivatedAt: new Date(),
+    });
+    await addMember(proj.id, member.id);
+
+    const details = await loadProjectDetails("WR", admin);
+
+    expect(details?.roster).toEqual([expect.objectContaining({ userId: member.id, deactivated: true })]);
+  });
+
+  it("returns the cascade count as columns plus memberships", async () => {
+    const admin = await insertUser({ role: "admin" });
+    const proj = await insertProject({ key: "WR" });
+    await insertSeedColumns(proj.id);
+    const member = await insertUser({ firstName: "Grace", lastName: "Hopper" });
+    await addMember(proj.id, member.id);
+
+    const details = await loadProjectDetails("WR", admin);
+
+    expect(details?.cascadeCount).toBe(6);
+  });
+
+  it("admits an admin who holds no membership row, but does not admit a non-member", async () => {
+    const admin = await insertUser({ role: "admin" });
+    const nonMember = await insertUser({ role: "member" });
+    await insertProject({ key: "WR" });
+
+    const forAdmin = await loadProjectDetails("WR", admin);
+    const forNonMember = await loadProjectDetails("WR", nonMember);
+
+    expect(forAdmin?.canEditRecord).toBe(true);
+    expect(forAdmin?.canAdminister).toBe(true);
+    expect(forNonMember?.canEditRecord).toBe(false);
+    expect(forNonMember?.canAdminister).toBe(false);
+  });
+
+  it("admits a member of the project who is not an admin", async () => {
+    const proj = await insertProject({ key: "WR" });
+    const member = await insertUser({ role: "member" });
+    await addMember(proj.id, member.id);
+
+    const details = await loadProjectDetails("WR", member);
+
+    expect(details?.canEditRecord).toBe(true);
+    expect(details?.canAdminister).toBe(false);
   });
 });
