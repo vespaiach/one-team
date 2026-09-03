@@ -1,7 +1,18 @@
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
-import { authAttempt, credential, invite, resetToken, session, user } from "./schema";
-import { testDb, truncateTestDatabase } from "./test-database";
+import {
+  authAttempt,
+  boardColumn,
+  credential,
+  invite,
+  issueCounter,
+  project,
+  projectMember,
+  resetToken,
+  session,
+  user,
+} from "./schema";
+import { testDb, testSql, truncateTestDatabase } from "./test-database";
 
 beforeEach(async () => {
   await truncateTestDatabase();
@@ -308,5 +319,225 @@ describe("invite enforced behaviour (FR-009a, FR-010)", () => {
     await expect(
       testDb.insert(invite).values(inviteValues({ invitedBy: admin.id, email })),
     ).resolves.toBeDefined();
+  });
+});
+
+async function insertProject(overrides: Partial<typeof project.$inferInsert> = {}) {
+  const now = new Date();
+  const [row] = await testDb
+    .insert(project)
+    .values({
+      key: `P${crypto.randomUUID().replace(/-/g, "").slice(0, 6).toUpperCase()}`,
+      name: "Website Redesign",
+      createdAt: now,
+      updatedAt: now,
+      ...overrides,
+    })
+    .returning();
+  if (!row) {
+    throw new Error("insertProject produced no row");
+  }
+  return row;
+}
+
+describe("project constraints (FR-002, FR-003, FR-012, FR-028, data-model §1)", () => {
+  describe("key pattern", () => {
+    it("rejects a key that does not match ^[A-Z][A-Z0-9]{0,7}$", async () => {
+      await expect(insertProject({ key: "wr" })).rejects.toThrow();
+    });
+
+    it("rejects a key starting with a digit", async () => {
+      await expect(insertProject({ key: "1AB" })).rejects.toThrow();
+    });
+
+    it("accepts a key that matches the pattern", async () => {
+      await expect(insertProject({ key: "WR" })).resolves.toBeDefined();
+    });
+  });
+
+  describe("UNIQUE (key)", () => {
+    it("rejects a second project with the same key", async () => {
+      await insertProject({ key: "DUP" });
+
+      await expect(insertProject({ key: "DUP" })).rejects.toThrow();
+    });
+  });
+
+  describe("status CHECK", () => {
+    it("rejects a status outside active or archived", async () => {
+      await expect(insertProject({ status: "deleted" })).rejects.toThrow();
+    });
+
+    it.each(["active", "archived"])("accepts status %s", async (status) => {
+      await expect(insertProject({ status })).resolves.toBeDefined();
+    });
+  });
+
+  describe("project_dates_ordered CHECK", () => {
+    it("rejects a target date before the start date", async () => {
+      await expect(insertProject({ startDate: "2026-06-10", targetDate: "2026-06-01" })).rejects.toThrow();
+    });
+
+    it("accepts a target date equal to the start date", async () => {
+      await expect(
+        insertProject({ startDate: "2026-06-10", targetDate: "2026-06-10" }),
+      ).resolves.toBeDefined();
+    });
+
+    it("accepts a target date after the start date", async () => {
+      await expect(
+        insertProject({ startDate: "2026-06-10", targetDate: "2026-06-20" }),
+      ).resolves.toBeDefined();
+    });
+
+    it("accepts either date left null", async () => {
+      await expect(insertProject({ startDate: "2026-06-10", targetDate: null })).resolves.toBeDefined();
+      await expect(insertProject({ startDate: null, targetDate: "2026-06-01" })).resolves.toBeDefined();
+    });
+  });
+
+  describe("200/10 000 character bounds", () => {
+    it("rejects a name over 200 characters", async () => {
+      await expect(insertProject({ name: "a".repeat(201) })).rejects.toThrow();
+    });
+
+    it("accepts a name at exactly 200 characters", async () => {
+      await expect(insertProject({ name: "a".repeat(200) })).resolves.toBeDefined();
+    });
+
+    it("rejects a description over 10000 characters", async () => {
+      await expect(insertProject({ description: "a".repeat(10001) })).rejects.toThrow();
+    });
+
+    it("accepts a description at exactly 10000 characters", async () => {
+      await expect(insertProject({ description: "a".repeat(10000) })).resolves.toBeDefined();
+    });
+  });
+});
+
+describe("project_member composite primary key and cascade (FR-005, data-model §2)", () => {
+  it("refuses a duplicate (project_id, user_id) pair", async () => {
+    const proj = await insertProject();
+    const member = await insertUser();
+    const now = new Date();
+    await testDb
+      .insert(projectMember)
+      .values({ projectId: proj.id, userId: member.id, createdAt: now, updatedAt: now });
+
+    await expect(
+      testDb
+        .insert(projectMember)
+        .values({ projectId: proj.id, userId: member.id, createdAt: now, updatedAt: now }),
+    ).rejects.toThrow();
+  });
+
+  it("disappears when its project is deleted", async () => {
+    const proj = await insertProject();
+    const member = await insertUser();
+    const now = new Date();
+    await testDb
+      .insert(projectMember)
+      .values({ projectId: proj.id, userId: member.id, createdAt: now, updatedAt: now });
+
+    await testDb.delete(project).where(eq(project.id, proj.id));
+
+    const remaining = await testDb.select().from(projectMember).where(eq(projectMember.userId, member.id));
+    expect(remaining).toHaveLength(0);
+  });
+});
+
+describe("board_column uniqueness, kind CHECK and cascade (FR-006, data-model §3)", () => {
+  async function insertColumn(overrides: Partial<typeof boardColumn.$inferInsert> & { projectId: string }) {
+    const now = new Date();
+    return testDb.insert(boardColumn).values({
+      name: "Backlog",
+      sortOrder: "a0",
+      kind: "open",
+      createdAt: now,
+      updatedAt: now,
+      ...overrides,
+    });
+  }
+
+  describe("UNIQUE (project_id, lower(name))", () => {
+    it("refuses a case-varied duplicate name within one project", async () => {
+      const proj = await insertProject();
+      await insertColumn({ projectId: proj.id, name: "Backlog" });
+
+      await expect(insertColumn({ projectId: proj.id, name: "BACKLOG", sortOrder: "a1" })).rejects.toThrow();
+    });
+
+    it("allows the same name in two different projects", async () => {
+      const first = await insertProject();
+      const second = await insertProject();
+      await insertColumn({ projectId: first.id, name: "Backlog" });
+
+      await expect(insertColumn({ projectId: second.id, name: "Backlog" })).resolves.toBeDefined();
+    });
+  });
+
+  describe("kind CHECK", () => {
+    it("rejects a kind outside open, done or canceled", async () => {
+      const proj = await insertProject();
+      await expect(insertColumn({ projectId: proj.id, kind: "bogus" })).rejects.toThrow();
+    });
+
+    it.each(["open", "done", "canceled"])("accepts kind %s", async (kind) => {
+      const proj = await insertProject();
+      await expect(insertColumn({ projectId: proj.id, kind })).resolves.toBeDefined();
+    });
+  });
+
+  it("is deleted when its project is deleted", async () => {
+    const proj = await insertProject();
+    await insertColumn({ projectId: proj.id });
+
+    await testDb.delete(project).where(eq(project.id, proj.id));
+
+    const remaining = await testDb.select().from(boardColumn).where(eq(boardColumn.projectId, proj.id));
+    expect(remaining).toHaveLength(0);
+  });
+});
+
+describe("issue_counter uniqueness, shape and cascade (FR-008, SC-017, data-model §4)", () => {
+  it("refuses a second row for one project", async () => {
+    const proj = await insertProject();
+    await testDb.insert(issueCounter).values({ projectId: proj.id, lastNumber: 0 });
+
+    await expect(testDb.insert(issueCounter).values({ projectId: proj.id, lastNumber: 0 })).rejects.toThrow();
+  });
+
+  it("refuses a second row under two concurrent inserts", async () => {
+    const proj = await insertProject();
+
+    const results = await Promise.allSettled([
+      testDb.insert(issueCounter).values({ projectId: proj.id, lastNumber: 0 }),
+      testDb.insert(issueCounter).values({ projectId: proj.id, lastNumber: 0 }),
+    ]);
+
+    const fulfilled = results.filter((result) => result.status === "fulfilled");
+    const rejected = results.filter((result) => result.status === "rejected");
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+  });
+
+  it("carries no created_at or updated_at columns", async () => {
+    const columns = await testSql<{ column_name: string }[]>`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'issue_counter'
+    `;
+    const names = columns.map((column) => column.column_name);
+    expect(names).not.toContain("created_at");
+    expect(names).not.toContain("updated_at");
+  });
+
+  it("is deleted when its project is deleted", async () => {
+    const proj = await insertProject();
+    await testDb.insert(issueCounter).values({ projectId: proj.id, lastNumber: 0 });
+
+    await testDb.delete(project).where(eq(project.id, proj.id));
+
+    const remaining = await testDb.select().from(issueCounter).where(eq(issueCounter.projectId, proj.id));
+    expect(remaining).toHaveLength(0);
   });
 });

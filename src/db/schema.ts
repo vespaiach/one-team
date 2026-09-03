@@ -1,6 +1,25 @@
 import { sql } from "drizzle-orm";
-import { boolean, check, index, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  check,
+  customType,
+  date,
+  index,
+  integer,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { uuidv7 } from "uuidv7";
+
+const sortOrder = customType<{ data: string }>({
+  dataType() {
+    return `text collate "C"`;
+  },
+});
 
 export const user = pgTable(
   "user",
@@ -149,3 +168,79 @@ export const authAttempt = pgTable(
     check("auth_attempt_subject_length", sql`char_length(${table.subject}) <= 200`),
   ],
 );
+
+export const project = pgTable(
+  "project",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .$defaultFn(() => uuidv7()),
+    key: text("key").notNull().unique(),
+    name: text("name").notNull(),
+    description: text("description"),
+    status: text("status").notNull().default("active"),
+    startDate: date("start_date"),
+    targetDate: date("target_date"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    check("project_key_pattern", sql`${table.key} ~ '^[A-Z][A-Z0-9]{0,7}$'`),
+    check("project_key_length", sql`char_length(${table.key}) <= 200`),
+    check("project_name_length", sql`char_length(${table.name}) <= 200`),
+    check("project_description_length", sql`char_length(${table.description}) <= 10000`),
+    check("project_status_valid", sql`${table.status} in ('active', 'archived')`),
+    check(
+      "project_dates_ordered",
+      sql`${table.startDate} is null or ${table.targetDate} is null or ${table.targetDate} >= ${table.startDate}`,
+    ),
+  ],
+);
+
+export const projectMember = pgTable(
+  "project_member",
+  {
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => project.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.projectId, table.userId] })],
+);
+
+export const boardColumn = pgTable(
+  "board_column",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .$defaultFn(() => uuidv7()),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => project.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    sortOrder: sortOrder("sort_order").notNull(),
+    kind: text("kind").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("board_column_project_id_name_lower_idx").on(table.projectId, sql`lower(${table.name})`),
+    check("board_column_name_length", sql`char_length(${table.name}) <= 200`),
+    check("board_column_kind_valid", sql`${table.kind} in ('open', 'done', 'canceled')`),
+  ],
+);
+
+export const issueCounter = pgTable("issue_counter", {
+  id: uuid("id")
+    .primaryKey()
+    .$defaultFn(() => uuidv7()),
+  projectId: uuid("project_id")
+    .notNull()
+    .unique()
+    .references(() => project.id, { onDelete: "cascade" }),
+  lastNumber: integer("last_number").notNull().default(0),
+});
