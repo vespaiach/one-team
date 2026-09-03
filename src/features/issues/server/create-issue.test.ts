@@ -1,6 +1,15 @@
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
-import { boardColumn, issue, issueCounter, project, projectMember, user } from "@/db/schema";
+import {
+  boardColumn,
+  issue,
+  issueCounter,
+  issueLabel,
+  label,
+  project,
+  projectMember,
+  user,
+} from "@/db/schema";
 import { testDb, truncateTestDatabase } from "@/db/test-database";
 import type { Actor } from "@/features/auth/server/actor";
 import { createIssue } from "./create-issue";
@@ -63,6 +72,23 @@ async function insertProjectWithColumnAndCounter() {
 async function addMember(projectId: string, userId: string) {
   const now = new Date();
   await testDb.insert(projectMember).values({ projectId, userId, createdAt: now, updatedAt: now });
+}
+
+async function insertLabel(overrides: Partial<typeof label.$inferInsert> = {}) {
+  const now = new Date();
+  const [row] = await testDb
+    .insert(label)
+    .values({
+      name: `Bug-${crypto.randomUUID()}`,
+      createdAt: now,
+      updatedAt: now,
+      ...overrides,
+    })
+    .returning();
+  if (!row) {
+    throw new Error("insertLabel produced no row");
+  }
+  return row;
 }
 
 function actorFor(userRow: { id: string; role: string; firstName: string; lastName: string }): Actor {
@@ -178,5 +204,51 @@ describe("createIssue — numbering (FR-013, FR-014, SC-003, US1 s2, US5 s5)", (
 
     const rows = await testDb.select().from(issue).where(eq(issue.projectId, proj.id));
     expect(rows).toHaveLength(1);
+  });
+});
+
+describe("createIssue — optional labelIds (FR-016, contracts/screens.md)", () => {
+  it("inserts one issue_label row per id, in the same transaction as the issue insert", async () => {
+    const { proj } = await insertProjectWithColumnAndCounter();
+    const member = await insertUser();
+    await addMember(proj.id, member.id);
+    const bug = await insertLabel({ name: "Bug" });
+    const urgent = await insertLabel({ name: "Urgent" });
+
+    const result = await createIssue(baseInput(proj.id, actorFor(member), { labelIds: [bug.id, urgent.id] }));
+
+    expect(result.status).toBe("ok");
+    const [createdIssue] = await testDb.select().from(issue).where(eq(issue.projectId, proj.id));
+    if (!createdIssue) throw new Error("expected an issue row");
+    const rows = await testDb.select().from(issueLabel).where(eq(issueLabel.issueId, createdIssue.id));
+    expect(rows.map((row) => row.labelId).sort()).toEqual([bug.id, urgent.id].sort());
+  });
+
+  it("refuses an id naming no existing label, named on the field, writing nothing", async () => {
+    const { proj } = await insertProjectWithColumnAndCounter();
+    const member = await insertUser();
+    await addMember(proj.id, member.id);
+
+    const result = await createIssue(
+      baseInput(proj.id, actorFor(member), { labelIds: [crypto.randomUUID()] }),
+    );
+
+    expect(result).toMatchObject({ status: "invalid", field: "labelIds" });
+    const rows = await testDb.select().from(issue).where(eq(issue.projectId, proj.id));
+    expect(rows).toHaveLength(0);
+  });
+
+  it("omitting the field creates an issue with no labels, unchanged from before this feature", async () => {
+    const { proj } = await insertProjectWithColumnAndCounter();
+    const member = await insertUser();
+    await addMember(proj.id, member.id);
+
+    const result = await createIssue(baseInput(proj.id, actorFor(member)));
+
+    expect(result.status).toBe("ok");
+    const [createdIssue] = await testDb.select().from(issue).where(eq(issue.projectId, proj.id));
+    if (!createdIssue) throw new Error("expected an issue row");
+    const rows = await testDb.select().from(issueLabel).where(eq(issueLabel.issueId, createdIssue.id));
+    expect(rows).toHaveLength(0);
   });
 });

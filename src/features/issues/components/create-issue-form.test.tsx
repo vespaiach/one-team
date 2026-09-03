@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { LabelOption } from "@/features/labels/server/queries";
 import type { CreateIssueState } from "../actions";
 import type { AssigneeOption, IssueColumnOption } from "../server/issue-queries";
 import { CreateIssueForm } from "./create-issue-form";
@@ -19,6 +20,11 @@ const assigneePool: AssigneeOption[] = [
   { id: "user-1", firstName: "Ada", lastName: "Lovelace", avatarUrl: null, jobTitle: null },
 ];
 
+const labelOptions: LabelOption[] = [
+  { id: "label-1", name: "Bug", applied: false },
+  { id: "label-2", name: "Urgent", applied: false },
+];
+
 type CreateIssueActionMock = (prevState: CreateIssueState, formData: FormData) => Promise<CreateIssueState>;
 
 beforeEach(() => {
@@ -29,7 +35,11 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function renderForm(action: CreateIssueActionMock, pool: AssigneeOption[] = assigneePool) {
+function renderForm(
+  action: CreateIssueActionMock,
+  pool: AssigneeOption[] = assigneePool,
+  overrides: Partial<{ labelOptions: LabelOption[]; canManageLabels: boolean }> = {},
+) {
   return render(
     <CreateIssueForm
       projectId="project-1"
@@ -37,6 +47,8 @@ function renderForm(action: CreateIssueActionMock, pool: AssigneeOption[] = assi
       columns={columns}
       assigneePool={pool}
       createIssueAction={action}
+      labelOptions={overrides.labelOptions ?? labelOptions}
+      canManageLabels={overrides.canManageLabels}
     />,
   );
 }
@@ -147,5 +159,55 @@ describe("CreateIssueForm (FR-030, FR-031, FR-036, FR-037)", () => {
     expect(assigneeButton).toBeDefined();
     fireEvent.click(assigneeButton);
     expect(screen.getByRole("option", { name: "Unassigned" })).toBeDefined();
+  });
+});
+
+describe("CreateIssueForm — the label picker, between Priority and Assignee (FR-016, research D-4)", () => {
+  it("renders between Priority and Assignee", () => {
+    const action = vi.fn();
+    renderForm(action);
+
+    const priority = screen.getByLabelText("Priority");
+    const labelsListbox = screen.getByRole("listbox");
+    const assignee = screen.getByLabelText("Assignee");
+
+    expect(priority.compareDocumentPosition(labelsListbox) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(labelsListbox.compareDocumentPosition(assignee) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("toggling a label updates local selection only, calling no mutator", () => {
+    const action = vi.fn();
+    renderForm(action);
+
+    fireEvent.click(screen.getByRole("option", { name: "Bug" }));
+
+    expect(screen.getByRole("option", { name: "Bug" }).getAttribute("aria-selected")).toBe("true");
+    expect(action).not.toHaveBeenCalled();
+  });
+
+  it("carries every selected label id inside the createIssue submission", async () => {
+    const action = vi.fn().mockResolvedValue({ status: "idle" });
+    renderForm(action);
+
+    fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Fix the header" } });
+    fireEvent.click(screen.getByRole("option", { name: "Bug" }));
+    fireEvent.click(screen.getByRole("option", { name: "Urgent" }));
+    submit();
+
+    await vi.waitFor(() => expect(action).toHaveBeenCalled());
+    const formData = action.mock.calls[0]?.[1] as FormData;
+    expect(formData.getAll("labelIds").sort()).toEqual(["label-1", "label-2"]);
+  });
+
+  it("submits with no labelIds field when nothing is selected", async () => {
+    const action = vi.fn().mockResolvedValue({ status: "idle" });
+    renderForm(action);
+
+    fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Fix the header" } });
+    submit();
+
+    await vi.waitFor(() => expect(action).toHaveBeenCalled());
+    const formData = action.mock.calls[0]?.[1] as FormData;
+    expect(formData.getAll("labelIds")).toEqual([]);
   });
 });

@@ -21,6 +21,9 @@ vi.mock("@/features/projects/server/queries", () => ({
 vi.mock("@/features/projects/server/authorization", () => ({
   isMember: vi.fn().mockResolvedValue(true),
 }));
+vi.mock("@/features/labels/server/queries", () => ({
+  listLabelOptionsForIssue: vi.fn().mockResolvedValue([]),
+}));
 
 import { notFound } from "next/navigation";
 import { requireActor } from "@/features/auth/server/actor";

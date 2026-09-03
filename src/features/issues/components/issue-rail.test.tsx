@@ -1,8 +1,19 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { IssueLabelPayload, IssueLabelResult } from "@/features/labels/actions";
+import type { LabelOption } from "@/features/labels/server/queries";
 import type { UpdateIssuePayload, UpdateIssueResult } from "../actions";
 import type { PublicUser } from "../server/issue-queries";
 import { IssueRail } from "./issue-rail";
+
+const showToastMock = vi.fn();
+vi.mock("@/features/shell/components/toast-region", () => ({
+  showToast: (...args: unknown[]) => showToastMock(...args),
+}));
+
+beforeEach(() => {
+  showToastMock.mockClear();
+});
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -28,6 +39,11 @@ const ALAN_TURING: PublicUser = {
   deactivatedAt: null,
 };
 
+const LABEL_OPTIONS: LabelOption[] = [
+  { id: "label-1", name: "Bug", applied: false },
+  { id: "label-2", name: "Urgent", applied: true },
+];
+
 function renderRail(
   updateIssueAction: (input: UpdateIssuePayload) => Promise<UpdateIssueResult>,
   overrides: Partial<{
@@ -37,6 +53,12 @@ function renderRail(
     dueDate: string | null;
     columns: { id: string; name: string }[];
     assigneePool: typeof ASSIGNEE_POOL;
+    canWrite: boolean;
+    writeReason: string;
+    labelOptions: LabelOption[];
+    canManageLabels: boolean;
+    addIssueLabelAction: (input: IssueLabelPayload) => Promise<IssueLabelResult>;
+    removeIssueLabelAction: (input: IssueLabelPayload) => Promise<IssueLabelResult>;
   }> = {},
 ) {
   return render(
@@ -48,7 +70,13 @@ function renderRail(
       dueDate={overrides.dueDate ?? null}
       columns={overrides.columns ?? COLUMNS}
       assigneePool={overrides.assigneePool ?? ASSIGNEE_POOL}
+      canWrite={overrides.canWrite}
+      writeReason={overrides.writeReason}
       updateIssueAction={updateIssueAction}
+      labelOptions={overrides.labelOptions ?? LABEL_OPTIONS}
+      canManageLabels={overrides.canManageLabels}
+      addIssueLabelAction={overrides.addIssueLabelAction}
+      removeIssueLabelAction={overrides.removeIssueLabelAction}
     />,
   );
 }
@@ -184,5 +212,95 @@ describe("IssueRail — column transitions, including the canceled-kind route (F
     expect(screen.getAllByRole("option")).toHaveLength(1);
     expect(screen.getByRole("option", { name: "Backlog" })).not.toBeNull();
     expect(updateIssueAction).not.toHaveBeenCalled();
+  });
+});
+
+describe("IssueRail — the label picker, a fifth quick-change control (FR-015, FR-019, research D-4)", () => {
+  it("renders every team label with its applied state", () => {
+    const updateIssueAction = vi.fn<(input: UpdateIssuePayload) => Promise<UpdateIssueResult>>();
+    renderRail(updateIssueAction);
+
+    expect(screen.getByRole("option", { name: "Bug" }).getAttribute("aria-selected")).toBe("false");
+    expect(screen.getByRole("option", { name: "Urgent" }).getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("adding an unapplied label calls addIssueLabelAction immediately, applied optimistically before the server answers", async () => {
+    const updateIssueAction = vi.fn<(input: UpdateIssuePayload) => Promise<UpdateIssueResult>>();
+    let resolveAdd: (value: IssueLabelResult) => void = () => undefined;
+    const addIssueLabelAction = vi.fn<(input: IssueLabelPayload) => Promise<IssueLabelResult>>(
+      () =>
+        new Promise<IssueLabelResult>((resolve) => {
+          resolveAdd = resolve;
+        }),
+    );
+    const removeIssueLabelAction = vi.fn<(input: IssueLabelPayload) => Promise<IssueLabelResult>>();
+    renderRail(updateIssueAction, { addIssueLabelAction, removeIssueLabelAction });
+
+    fireEvent.click(screen.getByRole("option", { name: "Bug" }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("option", { name: "Bug" }).getAttribute("aria-selected")).toBe("true"),
+    );
+    expect(addIssueLabelAction).toHaveBeenCalledWith({ issueId: "issue-1", labelId: "label-1" });
+    expect(removeIssueLabelAction).not.toHaveBeenCalled();
+
+    resolveAdd({ ok: true, applied: true });
+  });
+
+  it("removing an applied label calls removeIssueLabelAction immediately", async () => {
+    const updateIssueAction = vi.fn<(input: UpdateIssuePayload) => Promise<UpdateIssueResult>>();
+    const addIssueLabelAction = vi.fn<(input: IssueLabelPayload) => Promise<IssueLabelResult>>();
+    const removeIssueLabelAction = vi
+      .fn<(input: IssueLabelPayload) => Promise<IssueLabelResult>>()
+      .mockResolvedValue({ ok: true, applied: false });
+    renderRail(updateIssueAction, { addIssueLabelAction, removeIssueLabelAction });
+
+    fireEvent.click(screen.getByRole("option", { name: "Urgent" }));
+
+    await waitFor(() =>
+      expect(removeIssueLabelAction).toHaveBeenCalledWith({ issueId: "issue-1", labelId: "label-2" }),
+    );
+    expect(addIssueLabelAction).not.toHaveBeenCalled();
+  });
+
+  it("rolls back the optimistic apply and shows a toast on refusal", async () => {
+    const updateIssueAction = vi.fn<(input: UpdateIssuePayload) => Promise<UpdateIssueResult>>();
+    const addIssueLabelAction = vi
+      .fn<(input: IssueLabelPayload) => Promise<IssueLabelResult>>()
+      .mockResolvedValue({ ok: false, error: "label_not_found" });
+    const removeIssueLabelAction = vi.fn<(input: IssueLabelPayload) => Promise<IssueLabelResult>>();
+    renderRail(updateIssueAction, { addIssueLabelAction, removeIssueLabelAction });
+
+    fireEvent.click(screen.getByRole("option", { name: "Bug" }));
+
+    await waitFor(() => expect(addIssueLabelAction).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(screen.getByRole("option", { name: "Bug" }).getAttribute("aria-selected")).toBe("false"),
+    );
+    expect(showToastMock).toHaveBeenCalledTimes(1);
+    expect(showToastMock).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: "error", message: expect.any(String) }),
+    );
+  });
+
+  it("renders disabled with the rail's own reason for a non-member, calling no mutator", () => {
+    const updateIssueAction = vi.fn<(input: UpdateIssuePayload) => Promise<UpdateIssueResult>>();
+    const addIssueLabelAction = vi.fn<(input: IssueLabelPayload) => Promise<IssueLabelResult>>();
+    const removeIssueLabelAction = vi.fn<(input: IssueLabelPayload) => Promise<IssueLabelResult>>();
+    renderRail(updateIssueAction, {
+      canWrite: false,
+      writeReason: "Only project members can edit issues in Website Redesign.",
+      addIssueLabelAction,
+      removeIssueLabelAction,
+    });
+
+    expect(
+      screen.getAllByText("Only project members can edit issues in Website Redesign.").length,
+    ).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole("option", { name: "Bug" }));
+
+    expect(addIssueLabelAction).not.toHaveBeenCalled();
+    expect(removeIssueLabelAction).not.toHaveBeenCalled();
   });
 });

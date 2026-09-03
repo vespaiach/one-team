@@ -21,13 +21,12 @@
 
 **Requires**: `isAdmin(actor)` (`FR-001`, matching §2's write-rules table).
 
-**Input**: `{ name: string, color: string }`.
+**Input**: `{ name: string }`.
 
 **Validates** (server, independent of the modal's own on-blur checks — `FR-007`, Principle II):
 
 1. `name` trimmed, non-empty, `<= 200` characters.
-2. `color` is one of the seven palette values ([`../data-model.md`](../data-model.md) §1).
-3. No existing label matches `lower(name)` — checked as the insert attempt, refused by the unique
+2. No existing label matches `lower(name)` — checked as the insert attempt, refused by the unique
    index if a race slipped past the pre-check ([`research.md`](../research.md) C-3).
 
 **Writes** (one transaction): one `label` row.
@@ -42,11 +41,9 @@
 
 **Requires**: `isAdmin(actor)` (`FR-009`).
 
-**Input**: `{ id: string, name: string, color: string }` — both fields together, since the modal
-`FR-009` describes edits both at once and there is no in-place single-field save the way an issue's
-title is edited.
+**Input**: `{ id: string, name: string }`.
 
-**Validates**: the same three checks as `createLabel`, with the clash check excluding the label's own
+**Validates**: the same two checks as `createLabel`, with the clash check excluding the label's own
 current row (renaming a label to its own existing name is not a clash).
 
 **Writes** (one transaction): one `label` update, through `touched()`.
@@ -100,8 +97,10 @@ was removed from (`FR-013`, the spec's explicit "by §3.10, not by omission").
    pre-check the mutator runs itself): one `activity` insert —
    `{ issueId, actorId: actor.id, type: 'label_added', toValue: label.name }`, written through the
    activity writer R7 establishes ([`research.md`](../research.md) C-6). **This step is blocked until
-   R7's plan exists and names that writer's actual signature.** Every other line of this mutator does
-   not depend on R7.
+   R7's `activity` table and `writeActivity` function actually exist in code** — R7 now has a landed
+   plan pinning `writeActivity`'s module path and signature, but its `type` union does not yet include
+   `label_added` / `label_removed`, and no implementation exists to call. Every other line of this
+   mutator does not depend on R7.
 
 **Returns**: `{ ok: true, applied: true }` whether this call was the one that inserted the row or the
 row was already present — the picker's post-condition ("this issue now carries this label") holds
@@ -124,7 +123,7 @@ either way, which is what makes the toggle idempotent from the caller's perspect
    raises on zero ([`research.md`](../research.md) C-5).
 2. **Only when that delete actually removed a row**: one `activity` insert —
    `{ issueId, actorId: actor.id, type: 'label_removed', fromValue: label.name }`, through the same
-   R7 writer `addIssueLabel` depends on and under the same block.
+   writer `addIssueLabel` depends on and under the same block.
 
 **Returns**: `{ ok: true, applied: false }`.
 

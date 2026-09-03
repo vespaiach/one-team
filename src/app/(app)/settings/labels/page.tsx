@@ -1,10 +1,37 @@
-import { forbidden, notFound } from "next/navigation";
+import { forbidden } from "next/navigation";
+import { Suspense } from "react";
 import { requireActor } from "@/features/auth/server/actor";
+import { checkLabelNameAvailable, createLabel, deleteLabel, updateLabel } from "@/features/labels/actions";
+import { LabelsScreen } from "@/features/labels/components/labels-screen";
+import { LabelsSkeleton } from "@/features/labels/components/labels-skeleton";
+import { listLabelsWithUsage } from "@/features/labels/server/queries";
+import { ScreenHeader } from "@/features/shell/components/screen-header";
+
+async function LabelsScreenData() {
+  const labels = await listLabelsWithUsage();
+  return (
+    <LabelsScreen
+      labels={labels}
+      createLabelAction={createLabel}
+      updateLabelAction={updateLabel}
+      checkNameAvailable={checkLabelNameAvailable}
+      deleteLabelAction={deleteLabel}
+    />
+  );
+}
 
 export default async function LabelsPage() {
   const actor = await requireActor();
   if (actor.role !== "admin") {
     forbidden();
   }
-  notFound();
+
+  return (
+    <>
+      <ScreenHeader name="Labels" />
+      <Suspense fallback={<LabelsSkeleton />}>
+        <LabelsScreenData />
+      </Suspense>
+    </>
+  );
 }

@@ -7,10 +7,17 @@ import { ListBox, ListBoxItem } from "react-aria-components/ListBox";
 import { Popover } from "react-aria-components/Popover";
 import { Select, SelectValue } from "react-aria-components/Select";
 import { Text } from "react-aria-components/Text";
+import type { IssueLabelPayload, IssueLabelResult } from "@/features/labels/actions";
+import { LabelPickerField } from "@/features/labels/components/label-picker-field";
+import type { LabelOption } from "@/features/labels/server/queries";
 import { showToast } from "@/features/shell/components/toast-region";
 import type { UpdateIssuePayload, UpdateIssueResult } from "../actions";
 import type { IssuePriority } from "../server/input";
 import type { AssigneeOption, IssueColumnOption, PublicUser } from "../server/issue-queries";
+
+async function noopIssueLabelAction(): Promise<IssueLabelResult> {
+  return { ok: false, error: "not_found" };
+}
 
 const UNASSIGNED = "";
 
@@ -21,6 +28,19 @@ const PRIORITIES: { id: IssuePriority; label: string }[] = [
   { id: "high", label: "High" },
   { id: "urgent", label: "Urgent" },
 ];
+
+function describeLabelRefusal(result: IssueLabelResult): string {
+  if (result.ok) {
+    return "";
+  }
+  if (result.error === "forbidden") {
+    return result.reason;
+  }
+  if (result.error === "label_not_found") {
+    return "That label isn't available anymore.";
+  }
+  return "Couldn't change labels. Try again.";
+}
 
 function describeRefusal(result: UpdateIssueResult, label: string): string {
   if (result.status === "forbidden") {
@@ -54,6 +74,10 @@ export function IssueRail({
   canWrite = true,
   writeReason = "",
   updateIssueAction,
+  labelOptions = [],
+  canManageLabels = false,
+  addIssueLabelAction = noopIssueLabelAction,
+  removeIssueLabelAction = noopIssueLabelAction,
 }: {
   issueId: string;
   column: { id: string; name: string };
@@ -65,11 +89,18 @@ export function IssueRail({
   canWrite?: boolean;
   writeReason?: string;
   updateIssueAction: (input: UpdateIssuePayload) => Promise<UpdateIssueResult>;
+  labelOptions?: LabelOption[];
+  canManageLabels?: boolean;
+  addIssueLabelAction?: (input: IssueLabelPayload) => Promise<IssueLabelResult>;
+  removeIssueLabelAction?: (input: IssueLabelPayload) => Promise<IssueLabelResult>;
 }) {
   const [optimisticColumnId, setOptimisticColumnId] = useOptimistic(column.id);
   const [optimisticPriority, setOptimisticPriority] = useOptimistic(priority);
   const [optimisticAssigneeId, setOptimisticAssigneeId] = useOptimistic(assignee?.id ?? UNASSIGNED);
   const [optimisticDueDate, setOptimisticDueDate] = useOptimistic(dueDate ?? "");
+  const [optimisticAppliedLabelIds, setOptimisticAppliedLabelIds] = useOptimistic(
+    new Set(labelOptions.filter((option) => option.applied).map((option) => option.id)),
+  );
   const [, startTransition] = useTransition();
 
   function handleColumnChange(nextColumnId: string) {
@@ -126,6 +157,31 @@ export function IssueRail({
       }
     });
   }
+
+  function handleLabelToggle(labelId: string, applied: boolean) {
+    startTransition(async () => {
+      setOptimisticAppliedLabelIds((current) => {
+        const next = new Set(current);
+        if (applied) {
+          next.add(labelId);
+        } else {
+          next.delete(labelId);
+        }
+        return next;
+      });
+      const result = applied
+        ? await addIssueLabelAction({ issueId, labelId })
+        : await removeIssueLabelAction({ issueId, labelId });
+      if (!result.ok) {
+        showToast({ kind: "error", message: describeLabelRefusal(result) });
+      }
+    });
+  }
+
+  const optimisticLabelOptions = labelOptions.map((option) => ({
+    ...option,
+    applied: optimisticAppliedLabelIds.has(option.id),
+  }));
 
   return (
     <div className="flex flex-col gap-4">
@@ -229,6 +285,14 @@ export function IssueRail({
           </p>
         ) : null}
       </div>
+
+      <LabelPickerField
+        options={optimisticLabelOptions}
+        onToggle={handleLabelToggle}
+        canManageLabels={canManageLabels}
+        isDisabled={!canWrite}
+        disabledReason={writeReason}
+      />
     </div>
   );
 }
