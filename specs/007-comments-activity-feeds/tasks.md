@@ -100,45 +100,45 @@ feed page uses.
 
 **⚠️ CRITICAL**: no user story work can begin until this phase is complete.
 
-- [ ] T003 [P] Write the failing shape and bound tests in `src/db/comment-constraints.test.ts`, against
+- [X] T003 [P] Write the failing shape and bound tests in `src/db/comment-constraints.test.ts`, against
   the real PostgreSQL instance `TEST_DATABASE_URL` names: a body of exactly 10 000 characters accepted,
   10 001 refused; `author_id`, `body`, `created_at` and `updated_at` each refused when null; exactly one
   of `issue_id`/`project_id` required — both present and both null are each refused; deleting the
   parent issue or the parent project removes the comment (FR-001, FR-005, `OT-DATA-011`, `OT-INV-010`,
   data-model §1)
-- [ ] T004 [P] Write the failing shape, bound and type tests in `src/db/activity-constraints.test.ts`:
+- [X] T004 [P] Write the failing shape, bound and type tests in `src/db/activity-constraints.test.ts`:
   `from_value`/`to_value` accepted at exactly 200 characters, refused at 201; `type` admits exactly the
   seven values `FR-004` names and refuses an eighth; exactly one of `issue_id`/`project_id` required;
   `comment_id` set if and only if `type = 'comment'`, refused in both directions; deleting the parent
   issue, the parent project, or the referenced comment removes the row (FR-002, FR-004, FR-005,
   data-model §2, research A-2, A-4, A-6)
-- [ ] T005 [P] Write the failing absence test in `src/db/activity-shape.test.ts`: the `activity` table
+- [X] T005 [P] Write the failing absence test in `src/db/activity-shape.test.ts`: the `activity` table
   object carries no `updatedAt` key, following R6's own precedent for asserting a column's absence by
   the table object's own keys rather than by behaviour (FR-003, research A-5)
-- [ ] T006 Implement `comment` and `activity` in `src/db/schema.ts` per [`data-model.md`](./data-model.md)
+- [X] T006 Implement `comment` and `activity` in `src/db/schema.ts` per [`data-model.md`](./data-model.md)
   §1–2 — UUIDv7 keys, the `num_nonnulls` CHECK on each table, `activity`'s `(type = 'comment') =
   (comment_id IS NOT NULL)` CHECK, the seven-value `type` CHECK, the two 200-character bounds, the
   10 000-character body bound, cascading `issue_id`/`project_id`/`comment_id`, and the four indexes
   (research A-8) — makes T003, T004, T005 green
-- [ ] T007 Run `npm run db:generate`, read the generated SQL to confirm both CHECKs per table, the
+- [X] T007 Run `npm run db:generate`, read the generated SQL to confirm both CHECKs per table, the
   seven-value `type` CHECK, the four indexes, and that **no column is added to `user`** (T001's first
   finding), then commit the migration with its metadata (`AGENTS.md` → Drizzle) — depends on T006
-- [ ] T008 [P] Write the failing tests in `src/features/activity/server/write-activity.test.ts`: given
+- [X] T008 [P] Write the failing tests in `src/features/activity/server/write-activity.test.ts`: given
   an already-open transaction, inserts exactly one row carrying the type, target, actor and optional
   field/from/to/comment values it was passed, for each of the seven types; opens no transaction of its
   own and performs no authorization — verified by calling it inside a transaction the test itself rolls
   back and confirming the row existed only inside that transaction (FR-011, FR-013,
   contracts/mutators.md)
-- [ ] T009 [P] Write the failing tests in `src/features/activity/server/input.test.ts`: `parseCommentBody`
+- [X] T009 [P] Write the failing tests in `src/features/activity/server/input.test.ts`: `parseCommentBody`
   trims, requires the result to be non-empty, admits exactly 10 000 characters, refuses 10 001, and
   never truncates (FR-040, FR-041)
-- [ ] T010 Implement `writeActivity` in `src/features/activity/server/write-activity.ts` per
+- [X] T010 Implement `writeActivity` in `src/features/activity/server/write-activity.ts` per
   [`contracts/mutators.md`](./contracts/mutators.md)'s signature — one `INSERT`, nothing else (FR-011,
   FR-013, research B-1, B-2, B-3) — depends on T006; makes T008 green
-- [ ] T011 [P] Implement `parseCommentBody` in `src/features/activity/server/input.ts`, in R1's
+- [X] T011 [P] Implement `parseCommentBody` in `src/features/activity/server/input.ts`, in R1's
   `parseEmail`/R6's `parseTitle` idiom — takes `unknown`, returns the trimmed string or `null`, never
   coerces or truncates (FR-040, FR-041) — makes T009 green
-- [ ] T012 [P] Write the failing tests in `src/features/activity/server/feed-queries.test.ts`:
+- [X] T012 [P] Write the failing tests in `src/features/activity/server/feed-queries.test.ts`:
   `listFeed({ issueId })` and `listFeed({ projectId })` each return only that target's own comment and
   activity rows, newest first by `(created_at, id)` descending; a first call with no cursor returns the
   50 most recent rows and whether a next page exists; a call with a cursor returns the next page intact
@@ -147,7 +147,7 @@ feed page uses.
   viewer's own membership (FR-014, `OT-AUTHZ-002`); `canEdit`/`canDelete` on a comment row are computed
   against the passed-in viewer id and `isAdmin` flag, both `null` on an activity row (FR-032, data-model
   §4, research F-1)
-- [ ] T013 Implement `listFeed` in `src/features/activity/server/feed-queries.ts` — the `UNION ALL` over
+- [X] T013 Implement `listFeed` in `src/features/activity/server/feed-queries.ts` — the `UNION ALL` over
   `comment` and `activity` scoped to one target, keyset-paginated on `(created_at, id)`, joining
   `publicUser` for the actor (FR-014, FR-032, data-model §4, research F-1) — depends on T006; makes T012
   green

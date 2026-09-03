@@ -315,3 +315,61 @@ export const issueLabel = pgTable(
     index("issue_label_label_id_idx").on(table.labelId),
   ],
 );
+
+export const comment = pgTable(
+  "comment",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .$defaultFn(() => uuidv7()),
+    authorId: uuid("author_id")
+      .notNull()
+      .references(() => user.id),
+    body: text("body").notNull(),
+    issueId: uuid("issue_id").references(() => issue.id, { onDelete: "cascade" }),
+    projectId: uuid("project_id").references(() => project.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    index("comment_issue_id_created_at_idx").on(table.issueId, table.createdAt),
+    index("comment_project_id_created_at_idx").on(table.projectId, table.createdAt),
+    check("comment_body_length", sql`char_length(${table.body}) <= 10000`),
+    check("comment_target_exactly_one", sql`num_nonnulls(${table.issueId}, ${table.projectId}) = 1`),
+  ],
+);
+
+export const activity = pgTable(
+  "activity",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .$defaultFn(() => uuidv7()),
+    actorId: uuid("actor_id")
+      .notNull()
+      .references(() => user.id),
+    type: text("type").notNull(),
+    issueId: uuid("issue_id").references(() => issue.id, { onDelete: "cascade" }),
+    projectId: uuid("project_id").references(() => project.id, { onDelete: "cascade" }),
+    field: text("field"),
+    fromValue: text("from_value"),
+    toValue: text("to_value"),
+    commentId: uuid("comment_id").references(() => comment.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    index("activity_issue_id_created_at_idx").on(table.issueId, table.createdAt),
+    index("activity_project_id_created_at_idx").on(table.projectId, table.createdAt),
+    check(
+      "activity_type_valid",
+      sql`${table.type} in ('created', 'field_changed', 'member_added', 'member_removed', 'archived', 'reopened', 'comment')`,
+    ),
+    check("activity_from_value_length", sql`char_length(${table.fromValue}) <= 200`),
+    check("activity_to_value_length", sql`char_length(${table.toValue}) <= 200`),
+    check("activity_target_exactly_one", sql`num_nonnulls(${table.issueId}, ${table.projectId}) = 1`),
+    check(
+      "activity_comment_id_matches_type",
+      sql`(${table.type} = 'comment') = (${table.commentId} is not null)`,
+    ),
+  ],
+);
