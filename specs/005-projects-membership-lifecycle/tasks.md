@@ -202,13 +202,13 @@ sidebar's order is identical for an admin, a member and a non-member, and that a
 render after active ones and dimmed. Open project details and confirm the header carries the name
 and both tabs.
 
-- [ ] T072 [US5] Write failing tests for `listProjectsForSidebar` in `src/features/projects/server/queries.test.ts` — `ORDER BY (status = 'archived'), lower(name)`, the project key breaking a tie between two identical names, and the same rows for every actor whatever their role or membership
-- [ ] T073 [US5] Implement `listProjectsForSidebar` in `src/features/projects/server/queries.ts` returning `ProjectListEntry` rows
-- [ ] T074 [P] [US5] Write failing jsdom tests for `src/features/shell/components/project-list-region.test.tsx` — alphabetical regardless of case, active before archived with archived dimmed, each entry linking to `/projects/:projectKey`, and a long name truncated visually with the whole name still available to assistive technology
-- [ ] T075 [US5] Extend `src/features/shell/components/project-list-region.tsx` to render the entries, leaving R2's existing empty line untouched
-- [ ] T076 [US5] Wire `listProjectsForSidebar` into `src/app/(app)/layout.tsx`, which already resolves the actor for the shell
-- [ ] T077 [P] [US5] Write failing jsdom tests for `src/features/projects/components/project-header.test.tsx` — the name truncated without displacing the tabs, and the Board and Details tabs with Details marked current on this screen
-- [ ] T078 [US5] Implement `src/features/projects/components/project-header.tsx`, composing R2's `ScreenHeader` unchanged with `name` and the tab pair as `context`, from React Aria `Tabs` rendered as links
+- [X] T072 [US5] Write failing tests for `listProjectsForSidebar` in `src/features/projects/server/queries.test.ts` — `ORDER BY (status = 'archived'), lower(name)`, the project key breaking a tie between two identical names, and the same rows for every actor whatever their role or membership
+- [X] T073 [US5] Implement `listProjectsForSidebar` in `src/features/projects/server/queries.ts` returning `ProjectListEntry` rows
+- [X] T074 [P] [US5] Write failing jsdom tests for `src/features/shell/components/project-list-region.test.tsx` — alphabetical regardless of case, active before archived with archived dimmed, each entry linking to `/projects/:projectKey`, and a long name truncated visually with the whole name still available to assistive technology
+- [X] T075 [US5] Extend `src/features/shell/components/project-list-region.tsx` to render the entries, leaving R2's existing empty line untouched
+- [X] T076 [US5] Wire `listProjectsForSidebar` into `src/app/(app)/layout.tsx`, which already resolves the actor for the shell
+- [X] T077 [P] [US5] Write failing jsdom tests for `src/features/projects/components/project-header.test.tsx` — the name truncated without displacing the tabs, and the Board and Details tabs with Details marked current on this screen
+- [X] T078 [US5] Implement `src/features/projects/components/project-header.tsx`, composing R2's `ScreenHeader` unchanged with `name` and the tab pair as `context`, from React Aria `Tabs` rendered as links
 
 **Checkpoint**: every acceptance scenario in the specification is reachable through the product.
 

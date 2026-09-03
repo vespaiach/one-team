@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { MustChangePasswordBanner } from "@/features/auth/components/must-change-password-banner";
 import { ConnectionBanner } from "./connection-banner";
+import type { ProjectListRegionEntry } from "./project-list-region";
 import { Sidebar } from "./sidebar";
 
 export function AppShell({
@@ -8,12 +9,14 @@ export function AppShell({
   avatarUrl,
   isAdmin,
   showPasswordBanner,
+  projects = [],
   children,
 }: {
   displayName: string;
   avatarUrl: string | null;
   isAdmin: boolean;
   showPasswordBanner: boolean;
+  projects?: ProjectListRegionEntry[];
   children: ReactNode;
 }) {
   return (
@@ -27,6 +30,7 @@ export function AppShell({
         displayName={displayName}
         avatarUrl={avatarUrl}
         isAdmin={isAdmin}
+        projects={projects}
       />
       <main
         id="main-content"

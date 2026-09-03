@@ -17,6 +17,21 @@ export async function loadProjectByKey(key: string): Promise<typeof project.$inf
   return row ?? null;
 }
 
+export type ProjectListEntry = {
+  key: string;
+  name: string;
+  status: "active" | "archived";
+};
+
+export async function listProjectsForSidebar(): Promise<ProjectListEntry[]> {
+  const rows = await db
+    .select({ key: project.key, name: project.name, status: project.status })
+    .from(project)
+    .orderBy(sql`${project.status} = 'archived'`, sql`lower(${project.name})`, asc(project.key));
+
+  return rows.map((row) => ({ key: row.key, name: row.name, status: row.status as "active" | "archived" }));
+}
+
 export async function findProjectKeyHolder(key: string): Promise<{ key: string; name: string } | null> {
   const [row] = await db
     .select({ key: project.key, name: project.name })

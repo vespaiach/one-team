@@ -6,6 +6,7 @@ import {
   findProjectKeyHolder,
   hasProjectMemberRow,
   listAddableUsers,
+  listProjectsForSidebar,
   loadProjectByKey,
   loadProjectDetails,
 } from "./queries";
@@ -296,5 +297,35 @@ describe("loadProjectDetails (FR-035, FR-044, FR-045, FR-048)", () => {
 
     expect(details?.canEditRecord).toBe(true);
     expect(details?.canAdminister).toBe(false);
+  });
+});
+
+describe("listProjectsForSidebar (FR-053, FR-054, OT-UX-020)", () => {
+  it("orders active projects before archived ones, case-insensitively by name", async () => {
+    await insertProject({ key: "Z1", name: "zephyr", status: "archived" });
+    await insertProject({ key: "A1", name: "atlas" });
+    await insertProject({ key: "B1", name: "Beacon" });
+
+    const rows = await listProjectsForSidebar();
+
+    expect(rows.map((row) => row.key)).toEqual(["A1", "B1", "Z1"]);
+    expect(rows.map((row) => row.status)).toEqual(["active", "active", "archived"]);
+  });
+
+  it("breaks a tie between two projects sharing a name on the project's key", async () => {
+    await insertProject({ key: "B1", name: "Same Name" });
+    await insertProject({ key: "A1", name: "Same Name" });
+
+    const rows = await listProjectsForSidebar();
+
+    expect(rows.map((row) => row.key)).toEqual(["A1", "B1"]);
+  });
+
+  it("returns key, name and status for every project, with no actor argument to vary the result", async () => {
+    await insertProject({ key: "WR", name: "Website Redesign" });
+
+    const rows = await listProjectsForSidebar();
+
+    expect(rows).toEqual([{ key: "WR", name: "Website Redesign", status: "active" }]);
   });
 });

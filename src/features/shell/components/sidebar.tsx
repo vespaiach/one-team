@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Logo from "@/app/components/common/logo";
+import type { ProjectListRegionEntry } from "./project-list-region";
 import { ProjectListRegion } from "./project-list-region";
 import { UserChip } from "./user-chip";
 
@@ -9,10 +10,12 @@ export function Sidebar({
   displayName,
   avatarUrl,
   isAdmin,
+  projects = [],
 }: {
   displayName: string;
   avatarUrl: string | null;
   isAdmin: boolean;
+  projects?: ProjectListRegionEntry[];
 }) {
   return (
     <nav
@@ -26,7 +29,10 @@ export function Sidebar({
         className={NAV_LINK_CLASSES}>
         Home
       </Link>
-      <ProjectListRegion isAdmin={isAdmin} />
+      <ProjectListRegion
+        isAdmin={isAdmin}
+        entries={projects}
+      />
       <Link
         href="/notifications"
         className={NAV_LINK_CLASSES}>
