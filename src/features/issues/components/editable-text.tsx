@@ -1,11 +1,12 @@
 "use client";
 
-import type { ClipboardEvent, KeyboardEvent, ReactNode } from "react";
+import type { ClipboardEvent, KeyboardEvent } from "react";
 import { useEffect, useOptimistic, useRef, useState, useTransition } from "react";
 import { Button } from "react-aria-components/Button";
 import { FieldError, Input, TextArea, TextField } from "react-aria-components/TextField";
 import { showToast } from "@/features/shell/components/toast-region";
 import type { UpdateIssuePayload, UpdateIssueResult } from "../actions";
+import { IssueDescription } from "./issue-description";
 
 function collapseLineBreaks(value: string): string {
   return value.replace(/\r\n|\r|\n/g, " ");
@@ -35,7 +36,7 @@ export function EditableText({
   value,
   multiline = false,
   maxLength,
-  renderValue,
+  renderMarkdown = false,
   canWrite = true,
   writeReason = "",
   updateIssueAction,
@@ -46,7 +47,7 @@ export function EditableText({
   value: string;
   multiline?: boolean;
   maxLength: number;
-  renderValue?: (value: string) => ReactNode;
+  renderMarkdown?: boolean;
   canWrite?: boolean;
   writeReason?: string;
   updateIssueAction: (input: UpdateIssuePayload) => Promise<UpdateIssueResult>;
@@ -205,7 +206,7 @@ export function EditableText({
         aria-label={label}
         aria-describedby={reasonId}
         className="block w-full whitespace-pre-wrap text-start text-control text-(--color-text) disabled:text-(--color-text-muted)">
-        {renderValue ? renderValue(optimisticValue) : optimisticValue}
+        {renderMarkdown ? <IssueDescription description={optimisticValue} /> : optimisticValue}
       </Button>
       {!canWrite ? (
         <p

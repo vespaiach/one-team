@@ -4,7 +4,6 @@ import type { AssigneeOption, IssueColumnOption, IssueView } from "../server/iss
 import { CopyableKey } from "./copyable-key";
 import { DeleteIssueControl } from "./delete-issue-control";
 import { EditableText } from "./editable-text";
-import { IssueDescription } from "./issue-description";
 import { IssueRail } from "./issue-rail";
 
 const TIMESTAMP_FORMAT = new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "UTC" });
@@ -58,7 +57,7 @@ export function IssueDetail({
           value={issue.description ?? ""}
           multiline
           maxLength={10000}
-          renderValue={(value) => <IssueDescription description={value} />}
+          renderMarkdown
           canWrite={canWrite}
           writeReason={writeReason}
           updateIssueAction={updateIssue}
