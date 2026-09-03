@@ -24,6 +24,7 @@
     "@node-rs/argon2": "^2.2.0",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.2",
+    "fractional-indexing": "^4.0.0",
     "next": "16.3.2",
     "nodemailer": "^9.0.6",
     "postgres": "^3.4.9",

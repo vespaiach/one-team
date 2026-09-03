@@ -1,6 +1,6 @@
 "use client";
 
-import { renderMarkdown } from "../markdown/render";
+import { Markdown } from "@/components/shared/markdown/markdown";
 import { EditableField, type EditableFieldSaveResult } from "./editable-field";
 
 export function DescriptionView({
@@ -22,7 +22,7 @@ export function DescriptionView({
       multiline
       isDisabled={isDisabled}
       disabledReason={disabledReason}
-      renderValue={(value) => renderMarkdown(value)}
+      renderValue={(value) => <Markdown source={value} />}
       onSave={onSave}
     />
   );

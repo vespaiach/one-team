@@ -17,6 +17,7 @@ vi.mock("@/features/projects/actions", () => ({
 
 import { notFound } from "next/navigation";
 import { requireActor } from "@/features/auth/server/actor";
+import { NewIssueControl } from "@/features/issues/components/new-issue-control";
 import { updateProject } from "@/features/projects/actions";
 import { loadProjectDetails } from "@/features/projects/server/queries";
 import ProjectDetailsPage from "./page";
@@ -83,5 +84,29 @@ describe("/projects/:projectKey/details page (FR-035, FR-040)", () => {
     expect(notFound).not.toHaveBeenCalled();
     expect(jsx.props.details).toBe(DETAILS);
     expect(jsx.props.updateProjectAction).toBe(updateProject);
+  });
+
+  it("wires the header's New issue control, enabled for a member of the project (FR-028)", async () => {
+    vi.mocked(requireActor).mockResolvedValue(ACTOR);
+    vi.mocked(loadProjectDetails).mockResolvedValue(DETAILS);
+
+    const jsx = await ProjectDetailsPage({ params: Promise.resolve({ projectKey: "WR" }) });
+
+    expect(jsx.props.newIssue.type).toBe(NewIssueControl);
+    expect(jsx.props.newIssue.props.projectKey).toBe("WR");
+    expect(jsx.props.newIssue.props.canWrite).toBe(true);
+    expect(jsx.props.newIssue.props.writeReason).toBe("");
+  });
+
+  it("disables the header's New issue control with a reason for a non-member", async () => {
+    vi.mocked(requireActor).mockResolvedValue(ACTOR);
+    vi.mocked(loadProjectDetails).mockResolvedValue({ ...DETAILS, canEditRecord: false });
+
+    const jsx = await ProjectDetailsPage({ params: Promise.resolve({ projectKey: "WR" }) });
+
+    expect(jsx.props.newIssue.props.canWrite).toBe(false);
+    expect(jsx.props.newIssue.props.writeReason).toBe(
+      "Only project members can create issues in Website Redesign.",
+    );
   });
 });

@@ -45,16 +45,21 @@ const SIGNED_IN_ROUTES = [
   {
     name: "/projects/[projectKey]/issues/new",
     importPage: () => import("./projects/[projectKey]/issues/new/page"),
-    params: undefined,
+    params: { projectKey: "WR" } as Record<string, string> | undefined,
   },
   {
     name: "/projects/[projectKey]/issues/[issueNumber]/details",
     importPage: () => import("./projects/[projectKey]/issues/[issueNumber]/details/page"),
-    params: undefined,
+    params: { projectKey: "WR", issueNumber: "1" } as Record<string, string> | undefined,
   },
 ];
 
-const DELIVERED_SIGNED_IN_ROUTE_NAMES = new Set(["/profile", "/projects/[projectKey]/details"]);
+const DELIVERED_SIGNED_IN_ROUTE_NAMES = new Set([
+  "/profile",
+  "/projects/[projectKey]/details",
+  "/projects/[projectKey]/issues/new",
+  "/projects/[projectKey]/issues/[issueNumber]/details",
+]);
 const UNDELIVERED_SIGNED_IN_ROUTES = SIGNED_IN_ROUTES.filter(
   (route) => !DELIVERED_SIGNED_IN_ROUTE_NAMES.has(route.name),
 );

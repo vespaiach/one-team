@@ -29,6 +29,13 @@
       "when": 1788396514505,
       "tag": "0003_supreme_skullbuster",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788437629434,
+      "tag": "0004_luxuriant_deadpool",
+      "breakpoints": true
     }
   ]
 }

@@ -8,7 +8,7 @@ export class ForbiddenActorError extends Error {
   }
 }
 
-function isAdmin(actor: Actor): boolean {
+export function isAdmin(actor: Actor): boolean {
   return actor.role === "admin";
 }
 

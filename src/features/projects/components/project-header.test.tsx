@@ -79,4 +79,17 @@ describe("ProjectHeader (FR-056)", () => {
     expect(screen.getByRole("tab", { name: "Board", selected: true })).not.toBeNull();
     expect(screen.queryByRole("tab", { name: "Details", selected: true })).toBeNull();
   });
+
+  it("renders the header's New issue slot when given one (FR-028)", () => {
+    render(
+      <ProjectHeader
+        projectKey="WR"
+        name="Website Redesign"
+        current="details"
+        newIssue={<span>New issue control</span>}
+      />,
+    );
+
+    expect(screen.getByText("New issue control")).not.toBeNull();
+  });
 });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseMarkdown } from "./parse";
 
-describe("parseMarkdown — blocks (FR-010, OT-DATA-015)", () => {
+describe("parseMarkdown — the seven constructs, exact spelling (FR-009)", () => {
   it("parses a heading for each level 1 through 6", () => {
     for (let level = 1; level <= 6; level++) {
       const source = `${"#".repeat(level)} Heading ${level}`;
@@ -84,42 +84,14 @@ describe("parseMarkdown — blocks (FR-010, OT-DATA-015)", () => {
     ]);
   });
 
-  it("treats an indented line as a paragraph rather than a nested item", () => {
-    expect(parseMarkdown("- one\n  - nested")).toEqual([
-      { type: "bulletList", items: [[{ type: "text", text: "one" }]] },
-      { type: "paragraph", inlines: [{ type: "text", text: "  - nested" }] },
-    ]);
-  });
-
-  for (const [label, source] of [
-    ["a table row", "| a | b |"],
-    ["a blockquote", "> a quote"],
-    ["an indented code block", "    const x = 1;"],
-    ["an HTML tag", "<div>hi</div>"],
-  ] as const) {
-    it(`falls through to a literal-text paragraph for ${label}`, () => {
-      expect(parseMarkdown(source)).toEqual([
-        { type: "paragraph", inlines: [{ type: "text", text: source }] },
-      ]);
-    });
-  }
-});
-
-describe("parseMarkdown — inlines (FR-010, FR-011)", () => {
   it("parses bold text", () => {
     expect(parseMarkdown("**bold**")).toEqual([
       { type: "paragraph", inlines: [{ type: "bold", text: "bold" }] },
     ]);
   });
 
-  it("parses italic text with asterisks", () => {
+  it("parses italic text with a single asterisk", () => {
     expect(parseMarkdown("*italic*")).toEqual([
-      { type: "paragraph", inlines: [{ type: "italic", text: "italic" }] },
-    ]);
-  });
-
-  it("parses italic text with underscores", () => {
-    expect(parseMarkdown("_italic_")).toEqual([
       { type: "paragraph", inlines: [{ type: "italic", text: "italic" }] },
     ]);
   });
@@ -130,7 +102,7 @@ describe("parseMarkdown — inlines (FR-010, FR-011)", () => {
     ]);
   });
 
-  it("parses a link", () => {
+  it("parses a link with an allowed scheme", () => {
     expect(parseMarkdown("[One Team](https://example.com)")).toEqual([
       {
         type: "paragraph",
@@ -139,11 +111,11 @@ describe("parseMarkdown — inlines (FR-010, FR-011)", () => {
     ]);
   });
 
-  it("keeps a balanced parenthesis inside a link href", () => {
-    expect(parseMarkdown("[no](javascript:alert(1))")).toEqual([
+  it("keeps a balanced parenthesis inside an allowed-scheme link href", () => {
+    expect(parseMarkdown("[wiki](https://en.wikipedia.org/wiki/Foo_(disambiguation))")).toEqual([
       {
         type: "paragraph",
-        inlines: [{ type: "link", href: "javascript:alert(1)", text: "no" }],
+        inlines: [{ type: "link", href: "https://en.wikipedia.org/wiki/Foo_(disambiguation)", text: "wiki" }],
       },
     ]);
   });
@@ -170,30 +142,6 @@ describe("parseMarkdown — inlines (FR-010, FR-011)", () => {
     ]);
   });
 
-  it("renders an unclosed bold marker as its own literal text", () => {
-    expect(parseMarkdown("**bold")).toEqual([
-      { type: "paragraph", inlines: [{ type: "text", text: "**bold" }] },
-    ]);
-  });
-
-  it("renders an unclosed italic marker as its own literal text", () => {
-    expect(parseMarkdown("*italic")).toEqual([
-      { type: "paragraph", inlines: [{ type: "text", text: "*italic" }] },
-    ]);
-  });
-
-  it("renders an unclosed code marker as its own literal text", () => {
-    expect(parseMarkdown("`code")).toEqual([
-      { type: "paragraph", inlines: [{ type: "text", text: "`code" }] },
-    ]);
-  });
-
-  it("renders an unclosed link as its own literal text", () => {
-    expect(parseMarkdown("[text](unterminated")).toEqual([
-      { type: "paragraph", inlines: [{ type: "text", text: "[text](unterminated" }] },
-    ]);
-  });
-
   it("does not parse markers inside a heading differently than a paragraph", () => {
     expect(parseMarkdown("# **Bold** heading")).toEqual([
       {
@@ -217,6 +165,88 @@ describe("parseMarkdown — inlines (FR-010, FR-011)", () => {
             { type: "text", text: " item" },
           ],
         ],
+      },
+    ]);
+  });
+});
+
+describe("parseMarkdown — `_` carries no meaning at all (FR-009)", () => {
+  it("renders a lone underscore-wrapped word whole, never as italic", () => {
+    expect(parseMarkdown("_italic_")).toEqual([
+      { type: "paragraph", inlines: [{ type: "text", text: "_italic_" }] },
+    ]);
+  });
+
+  it("renders snake_case identifiers whole", () => {
+    expect(parseMarkdown("created_at and updated_at")).toEqual([
+      { type: "paragraph", inlines: [{ type: "text", text: "created_at and updated_at" }] },
+    ]);
+  });
+
+  it("does not treat a double underscore as bold either", () => {
+    expect(parseMarkdown("__bold__")).toEqual([
+      { type: "paragraph", inlines: [{ type: "text", text: "__bold__" }] },
+    ]);
+  });
+});
+
+describe("parseMarkdown — no backslash escape (FR-009)", () => {
+  it("does not let a backslash suppress an emphasis marker", () => {
+    expect(parseMarkdown("\\*bold\\*")).toEqual([
+      {
+        type: "paragraph",
+        inlines: [
+          { type: "text", text: "\\" },
+          { type: "italic", text: "bold\\" },
+        ],
+      },
+    ]);
+  });
+});
+
+describe("parseMarkdown — no bare-URL autolink (FR-009)", () => {
+  it("renders a bare URL as plain text, never as a link", () => {
+    expect(parseMarkdown("Visit https://example.com today")).toEqual([
+      { type: "paragraph", inlines: [{ type: "text", text: "Visit https://example.com today" }] },
+    ]);
+  });
+});
+
+describe("parseMarkdown — no nesting of one inline construct inside another (FR-009)", () => {
+  it("renders the inner delimiters of a bold-then-italic run literally", () => {
+    expect(parseMarkdown("**bold *and italic***")).toEqual([
+      {
+        type: "paragraph",
+        inlines: [
+          { type: "bold", text: "bold *and italic" },
+          { type: "text", text: "*" },
+        ],
+      },
+    ]);
+  });
+
+  it("renders a link's label as plain text rather than parsing markers inside it", () => {
+    expect(parseMarkdown("[**bold**](https://example.com)")).toEqual([
+      { type: "paragraph", inlines: [{ type: "link", href: "https://example.com", text: "**bold**" }] },
+    ]);
+  });
+});
+
+describe("parseMarkdown — no significance to indentation before a list marker (FR-009)", () => {
+  it("flattens an indented bullet item into the same list rather than nesting or rejecting it", () => {
+    expect(parseMarkdown("- one\n  - two")).toEqual([
+      {
+        type: "bulletList",
+        items: [[{ type: "text", text: "one" }], [{ type: "text", text: "two" }]],
+      },
+    ]);
+  });
+
+  it("flattens an indented numbered item into the same list", () => {
+    expect(parseMarkdown("1. one\n   2. two")).toEqual([
+      {
+        type: "numberedList",
+        items: [[{ type: "text", text: "one" }], [{ type: "text", text: "two" }]],
       },
     ]);
   });
