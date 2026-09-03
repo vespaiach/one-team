@@ -31,7 +31,7 @@
 
 ## Requirements coverage
 
-Entry **R5** assigns twenty requirement IDs. Each is cited by at least one functional requirement:
+Entry **R5** assigns nineteen requirement IDs. Each is cited by at least one functional requirement:
 
 | Assigned ID | Covered by |
 |---|---|
@@ -42,7 +42,6 @@ Entry **R5** assigns twenty requirement IDs. Each is cited by at least one funct
 | `OT-AUTHZ-013` | FR-019 |
 | `OT-DATA-007` | FR-049 |
 | `OT-DATA-008` | FR-050 |
-| `OT-DATA-013` | FR-009, FR-029 |
 | `OT-DATA-015` | FR-010, FR-011, FR-039 |
 | `OT-UX-008` | FR-033, FR-038, FR-041 |
 | `OT-UX-009` | FR-036 |

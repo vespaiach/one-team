@@ -65,9 +65,9 @@ Repeat with `One Team Design Ops` → the key shows `OTDO`. Repeat with `3D Rede
 
 Open `npm run db:studio` against the project created above.
 
-**Expect**: one `project` row, `status = 'active'`, `color = '#5b5bd6'`. Exactly five `board_column`
+**Expect**: one `project` row, `status = 'active'`. Exactly five `board_column`
 rows — Backlog, Todo, In Progress, Done, Canceled, in that `sort_order` — with kinds
-`open, open, open, done, canceled` and colours grey, blue, amber, green, red. One `issue_counter` row
+`open, open, open, done, canceled`. One `issue_counter` row
 for the project with `last_number = 0`. No `created_at` or `updated_at` column on that table at all.
 
 Create a second project with three member chips: **expect** three `project_member` rows, and the
@@ -95,7 +95,7 @@ npx vitest run -t "two concurrent creations of the same key"
 Open `/projects/WR/details` as all three roles.
 
 **Expect**, for every one of them: the whole record renders — key, name, description, status, dates,
-colour, columns and members — with no membership check on the read.
+columns and members — with no membership check on the read.
 
 As the **member**: click the name. It becomes a field in place, with no edit mode and no separate
 form. Escape returns the previous value and writes nothing. Change it and blur: the new value appears
@@ -223,7 +223,7 @@ illustration.
 
 Open project details.
 
-**Expect**: the header carries the project's colour dot, its name, and the Board and Details tab pair,
+**Expect**: the header carries the project's name, and the Board and Details tab pair,
 with Details marked current. Pressing Board goes to `/projects/:projectKey` — R10's route, which
 answers nothing yet.
 

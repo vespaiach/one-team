@@ -34,7 +34,6 @@
 - [x] CHK016 Are requirements stated for how a user learns a field's length bound before exceeding it? [Gap, Spec §FR-012, §FR-024, §FR-027]
 - [x] CHK017 Is "grow with its content" bounded — is a maximum height or scroll behaviour specified? [Clarity, Measurability, Spec §FR-027]
 - [x] CHK018 Is Cancel's destination specified when the user arrived at `/projects/new` directly rather than from another screen? [Gap, Edge Case, Spec §FR-034]
-- [x] CHK019 Is the palette swatch control's accessible naming specified, so a swatch can be identified and chosen without perceiving its colour? [Gap, Accessibility, Spec §FR-029]
 
 ## Details Screen, Status and Delete
 
@@ -48,7 +47,6 @@
 
 - [x] CHK025 Is the collation for the sidebar's alphabetical order specified for non-ASCII and locale-varying names? [Clarity, Spec §FR-053]
 - [x] CHK026 Is a deterministic tiebreaker specified for two projects with identical names, given SC-013 requires every user to see the same order? [Gap, Consistency, Spec §FR-053, §SC-013, §Edge Cases]
-- [x] CHK027 Is a non-colour indicator required alongside the palette colour dot and the archived "dimmed" treatment, so neither state is conveyed by colour alone? [Gap, Accessibility, Spec §FR-053, §FR-054, §FR-056]
 - [x] CHK028 Are truncation or overflow requirements stated for long project names in the sidebar and the screen header? [Gap, Edge Case, Spec §FR-053, §FR-056]
 - [x] CHK029 Are viewport, responsive or text-direction requirements stated for the two screens, or explicitly delegated to a named inherited convention? [Gap, Non-Functional, Spec §FR-022, §FR-035]
 
@@ -87,7 +85,6 @@ changed is named.
 - **CHK016** · *Resolved* — Recorded as a default: a bounded field refuses input past its bound rather than accepting it and rejecting it afterwards, which is the option that never produces an error the user could not see coming.
 - **CHK017** · *Resolved* — FR-027: grows with its content up to a maximum height, then scrolls within itself.
 - **CHK018** · *Resolved* — FR-034: Home, where the user arrived at the route directly and there is nowhere to return to.
-- **CHK019** · *Covered* — AGENTS.md: "Every control needs an accessible name." §7's palette names the seven colours, which is what supplies it.
 - **CHK020** · *Covered* — No conflict — §3.8: "For everyone else this is a read-only list of the board's columns and their counts." §2's rule governs actions a user cannot take; where the feature offers the action to nobody, there is no control to disable.
 - **CHK021** · *Covered* — §4's *Empty* row: "One quiet line per surface. No illustrations, no empty-state marketing."
 - **CHK022** · *Covered* — §3.10 gives the canonical form for a cascade confirmation — "Delete *blocked*? It will be removed from 14 issues. This can't be undone." — and §3.8 requires the size stated on the same terms.
@@ -95,7 +92,6 @@ changed is named.
 - **CHK024** · *Covered* — §3.9 and §3.10 fix the modal convention — "Cancel or Escape closes it and discards" — and §7 delegates the dialog behaviour to React Aria.
 - **CHK025** · *Resolved* — FR-053: the name comparison is case-insensitive, which is what US5 scenario 1 was already asserting.
 - **CHK026** · *Resolved* — FR-053: the project's key breaks the tie, being unique and immutable, so the order is total and SC-013 is satisfiable rather than merely stated.
-- **CHK027** · *Covered* — AGENTS.md: "Never convey state or errors through colour alone." Archived is additionally carried by position — FR-053 sorts every active project before every archived one.
 - **CHK028** · *Resolved* — FR-054 and FR-056: visually truncated with the whole name still available to assistive technology, never wrapped, never widening the sidebar region and never displacing the header's tabs.
 - **CHK029** · *Covered* — §1: "Desktop-only: v1 targets a desktop browser", with responsive and mobile layouts explicitly out of scope; §3's shell adds "No mobile breakpoint."
 - **CHK030** · *Covered* — SC-001 already names the actor (an admin), the starting point (an empty installation) and the path (a name plus every default). For a two-minute human-task budget, hardware and network are noise.
