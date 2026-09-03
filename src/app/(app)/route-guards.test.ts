@@ -24,7 +24,7 @@ const ADMIN_ONLY_ROUTES = [
   { name: "/settings/labels", importPage: () => import("./settings/labels/page"), params: undefined },
 ];
 
-const DELIVERED_ADMIN_ROUTE_NAMES = new Set(["/projects/new", "/settings/accounts"]);
+const DELIVERED_ADMIN_ROUTE_NAMES = new Set(["/projects/new", "/settings/accounts", "/settings/labels"]);
 const UNDELIVERED_ADMIN_ROUTES = ADMIN_ONLY_ROUTES.filter(
   (route) => !DELIVERED_ADMIN_ROUTE_NAMES.has(route.name),
 );

@@ -141,96 +141,96 @@ confirm the new name shows immediately. No other story needs to exist.
 
 ### Tests for User Story 1 (write first, observe failing) ⚠️
 
-- [ ] T007 [P] [US1] Write the failing query tests in `src/features/labels/server/queries.test.ts`:
+- [X] T007 [P] [US1] Write the failing query tests in `src/features/labels/server/queries.test.ts`:
       `listLabelsWithUsage` returns every label alphabetical by `lower(name)`, each carrying the real
       `COUNT(*)` of its `issue_label` rows across every project; `checkLabelNameAvailable` returns the
       holder `{ id, name }` on a case-insensitive match and `null` otherwise (FR-003, FR-007,
       data-model.md §3)
-- [ ] T008 [P] [US1] Write the failing tests in `src/features/labels/server/create-label.test.ts`:
+- [X] T008 [P] [US1] Write the failing tests in `src/features/labels/server/create-label.test.ts`:
       `isAdmin` required, a non-admin refused; a trimmed, non-empty, `<= 200`-character name accepted; a
       name matching an existing label case-insensitively refused with the holder named, never
       suffixed; two admins creating the same name concurrently on two separate connections — exactly
       one succeeds, refused by the unique index rather than the pre-check (FR-001, FR-006, FR-007,
       FR-008, research C-3)
-- [ ] T009 [P] [US1] Write the failing tests in `src/features/labels/server/update-label.test.ts`:
+- [X] T009 [P] [US1] Write the failing tests in `src/features/labels/server/update-label.test.ts`:
       `isAdmin` required; renaming to the label's own current name is not a clash; renaming to another
       label's name (case-insensitive) is refused with that label named; a missing id returns
       `not_found`; the label row's `updated_at` changes through `touched()`, no other row changes
       (FR-009, FR-010)
-- [ ] T010 [P] [US1] Write the failing tests in `src/features/labels/server/delete-label.test.ts`:
+- [X] T010 [P] [US1] Write the failing tests in `src/features/labels/server/delete-label.test.ts`:
       `isAdmin` required; deleting a label carried by N issues returns `removedFromIssueCount: N`,
       matching a fresh `COUNT(*)` read inside the same transaction; every `issue_label` row naming it is
       gone and the N issues themselves are otherwise unchanged, asserted from a second connection so no
       intermediate state is observed; a label carried by zero issues deletes with `removedFromIssueCount: 0`
       and no confirmation-count special case in the mutator itself (FR-011, FR-012, research C-4)
-- [ ] T011 [P] [US1] Write the failing no-activity tests in
+- [X] T011 [P] [US1] Write the failing no-activity tests in
       `src/features/labels/server/no-activity.test.ts`: creating, renaming and deleting a label — one
       carrying issues — writes no row to any issue's or project's activity history; the module reachable
       from these three mutators imports nothing from an activity writer (FR-013)
-- [ ] T012 [P] [US1] Write the failing screen tests in
+- [X] T012 [P] [US1] Write the failing screen tests in
       `src/features/labels/components/labels-screen.test.tsx`: zero labels renders the single line "No
       labels yet" in place of a table; one or more labels renders a row per label showing its name and
       issue count, each with **Edit** and **Delete** controls, plus a **New label** control at the
       page's head (FR-003, FR-004, FR-005)
-- [ ] T013 [P] [US1] Write the failing modal tests in
+- [X] T013 [P] [US1] Write the failing modal tests in
       `src/features/labels/components/label-form-modal.test.tsx`: with no `label` prop, the name field
       is empty and submitting calls `createLabel`; with a `label` prop, the field is pre-populated and
       submitting calls `updateLabel`; on-blur validation against `checkLabelNameAvailable` reports a
       clash inline naming the holder without submitting; Escape or Cancel closes and discards, calling
       neither mutator; the submit control stays enabled through an invalid or clashing name and disables
       only while its own request is in flight (FR-006, FR-007, FR-008, FR-009, research C-2, D-2)
-- [ ] T014 [P] [US1] Write the failing dialog tests in
+- [X] T014 [P] [US1] Write the failing dialog tests in
       `src/features/labels/components/delete-label-dialog.test.tsx`: with `issueCount > 0` the body
       reads exactly "It will be removed from {n} issues. This can't be undone."; with `issueCount === 0`
       the same confirmation without the count clause; Confirm calls `deleteLabel` and the dialog closes
       on success; Cancel and Escape close without calling it, and focus returns to the row's Delete
       control (FR-011, research D-3)
-- [ ] T015 [P] [US1] Write the failing route test in `src/app/(app)/settings/labels/page.test.ts`: an
+- [X] T015 [P] [US1] Write the failing route test in `src/app/(app)/settings/labels/page.test.ts`: an
       admin sees the rendered list (or the empty line); a non-admin sees Forbidden; the guard runs
       before the query (FR-001, research D-1, D-7)
 
 ### Implementation for User Story 1
 
-- [ ] T016 [US1] Implement `listLabelsWithUsage` and `checkLabelNameAvailable` in
+- [X] T016 [US1] Implement `listLabelsWithUsage` and `checkLabelNameAvailable` in
       `src/features/labels/server/queries.ts` (FR-003, FR-007, data-model.md §3) — depends on T004,
       makes T007 green
-- [ ] T017 [US1] Implement `createLabel` in `src/features/labels/server/create-label.ts` —
+- [X] T017 [US1] Implement `createLabel` in `src/features/labels/server/create-label.ts` —
       `isAdmin`, the three server-side validations, one `label` insert inside one transaction, returning
       `LabelView` with `issueCount: 0` or the named `duplicate_name` refusal
       ([`contracts/mutators.md`](./contracts/mutators.md) `createLabel`) — depends on T016, makes T008
       green
-- [ ] T018 [US1] Implement `updateLabel` in `src/features/labels/server/update-label.ts` — `isAdmin`,
+- [X] T018 [US1] Implement `updateLabel` in `src/features/labels/server/update-label.ts` — `isAdmin`,
       the same two validations with the clash check excluding the label's own row, one update through
       `touched()` ([`contracts/mutators.md`](./contracts/mutators.md) `updateLabel`) — depends on T016,
       makes T009 green
-- [ ] T019 [US1] Implement `deleteLabel` in `src/features/labels/server/delete-label.ts` — `isAdmin`,
+- [X] T019 [US1] Implement `deleteLabel` in `src/features/labels/server/delete-label.ts` — `isAdmin`,
       one transaction reading `COUNT(*) FROM issue_label WHERE label_id = $1` and then deleting the
       `label` row, relying on the database's `ON DELETE CASCADE` for `issue_label` rather than a second
       statement ([`contracts/mutators.md`](./contracts/mutators.md) `deleteLabel`, research C-4) —
       depends on T004, makes T010, T011 green
-- [ ] T020 [US1] Export `createLabel`, `updateLabel`, `deleteLabel` from
+- [X] T020 [US1] Export `createLabel`, `updateLabel`, `deleteLabel` from
       `src/features/labels/actions.ts` under one top-level `"use server"`, each starting with
       `assertSameOrigin` and `requireActor`, and each revalidating `/settings/labels` on success
       ([`contracts/mutators.md`](./contracts/mutators.md) *Shared rules*) — depends on T017, T018, T019
-- [ ] T021 [P] [US1] Implement `src/features/labels/components/label-row.tsx` — name, issue count, Edit
+- [X] T021 [P] [US1] Implement `src/features/labels/components/label-row.tsx` — name, issue count, Edit
       and Delete controls (FR-005) — makes part of T012 green
-- [ ] T022 [US1] Implement `src/features/labels/components/label-form-modal.tsx` as one `"use client"`
+- [X] T022 [US1] Implement `src/features/labels/components/label-form-modal.tsx` as one `"use client"`
       React Aria `Dialog`, an optional `label` prop choosing Create vs. Edit, submitting through
       `useActionState` (FR-006, FR-007, FR-008, FR-009, research C-2, D-2) — depends on T020, makes T013
       green
-- [ ] T023 [US1] Implement `src/features/labels/components/delete-label-dialog.tsx` as a React Aria
+- [X] T023 [US1] Implement `src/features/labels/components/delete-label-dialog.tsx` as a React Aria
       `AlertDialog`, mirroring `src/features/issues/components/delete-issue-control.tsx`'s structure,
       with the real `issueCount`-driven sentence (FR-011, research D-3) — depends on T020, makes T014
       green
-- [ ] T024 [US1] Implement `src/features/labels/components/labels-screen.tsx` — synchronous, the empty
+- [X] T024 [US1] Implement `src/features/labels/components/labels-screen.tsx` — synchronous, the empty
       line or the table of `LabelRow`s, the `NewLabelButton` opening `LabelFormModal` with no `label`
       prop (FR-003, FR-004, research D-1) — depends on T021, T022, T023, makes the remainder of T012
       green
-- [ ] T025 [US1] Fill `src/app/(app)/settings/labels/page.tsx` — keep the existing `requireActor()` and
+- [X] T025 [US1] Fill `src/app/(app)/settings/labels/page.tsx` — keep the existing `requireActor()` and
       `isAdmin` guard, replace the placeholder `notFound()` with `listLabelsWithUsage()` wrapped in
       `Suspense`, rendering `LabelsScreen` (FR-001, research D-1, D-7) — depends on T016, T024, makes
       T015 green
-- [ ] T026 [US1] Refactor with the tests green across `create-label.ts`, `update-label.ts`,
+- [X] T026 [US1] Refactor with the tests green across `create-label.ts`, `update-label.ts`,
       `delete-label.ts`, `queries.ts` and the four components: no comment added, no dead code, and the
       two curation queries stay inline rather than extracted (gates 2, 6; Principle I)
 
