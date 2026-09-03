@@ -45,9 +45,9 @@ Today `src/` holds `src/app`, `src/db` and `src/features/auth` — R1 and nothin
 
 **Purpose**: confirm the ground this feature stands on, and clear the one governance item.
 
-- [ ] T001 Confirm the R2 and R3 preconditions by checking that `src/app/(app)/layout.tsx`, `src/features/shell/components/project-list-region.tsx`, `src/features/shell/components/screen-header.tsx` and the accounts query R3 delivers all exist; stop and report if any is absent
-- [ ] T002 Add one row for `@internationalized/date` to the approved-dependency table in `AGENTS.md`, scoped `runtime`, purpose "Calendar date values for React Aria DatePicker", then declare it in `package.json` at the version already resolved in the tree
-- [ ] T003 [P] Confirm `TEST_DATABASE_URL` in the environment points at a database separate from development, since every persistence task below truncates tables in it
+- [X] T001 Confirm the R2 and R3 preconditions by checking that `src/app/(app)/layout.tsx`, `src/features/shell/components/project-list-region.tsx`, `src/features/shell/components/screen-header.tsx` and the accounts query R3 delivers all exist; stop and report if any is absent
+- [X] T002 Add one row for `@internationalized/date` to the approved-dependency table in `AGENTS.md`, scoped `runtime`, purpose "Calendar date values for React Aria DatePicker", then declare it in `package.json` at the version already resolved in the tree
+- [X] T003 [P] Confirm `TEST_DATABASE_URL` in the environment points at a database separate from development, since every persistence task below truncates tables in it
 
 ---
 

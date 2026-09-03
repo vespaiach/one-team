@@ -19,6 +19,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@internationalized/date": "^3.12.3",
     "@next/env": "^16.3.3",
     "@node-rs/argon2": "^2.2.0",
     "clsx": "^2.1.1",
