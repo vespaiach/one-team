@@ -8,10 +8,12 @@ import { assertSameOrigin } from "@/features/auth/server/origin";
 import { isValidProjectKey } from "./key";
 import { requireAdmin } from "./server/authorization";
 import { createProject as runCreateProject } from "./server/create-project";
+import { deleteProject as runDeleteProject } from "./server/delete-project";
 import {
   addProjectMember as runAddProjectMember,
   removeProjectMember as runRemoveProjectMember,
 } from "./server/membership";
+import { setProjectStatus as runSetProjectStatus } from "./server/project-status";
 import { findProjectKeyHolder, loadProjectByKey } from "./server/queries";
 import { updateProject as runUpdateProject, type UpdateProjectChanges } from "./server/update-project";
 
@@ -191,4 +193,59 @@ export async function removeProjectMember(input: MembershipPayload): Promise<Mem
 
   refresh();
   return { status: "saved" };
+}
+
+const PROJECT_STATUS_VALUES = new Set(["active", "archived"]);
+
+export type SetProjectStatusPayload = { projectKey: string; status: "active" | "archived" };
+
+export type SetProjectStatusState = { status: "saved" } | { status: "forbidden" };
+
+export async function setProjectStatus(input: SetProjectStatusPayload): Promise<SetProjectStatusState> {
+  assertSameOrigin({ headers: await headers() });
+  const actor = await requireActor();
+  if (actor.role !== "admin") {
+    return { status: "forbidden" };
+  }
+
+  if (!PROJECT_STATUS_VALUES.has(input.status)) {
+    return { status: "forbidden" };
+  }
+
+  const project = await loadProjectByKey(input.projectKey);
+  if (!project) {
+    notFound();
+  }
+
+  await runSetProjectStatus(project.id, input.status);
+
+  refresh();
+  return { status: "saved" };
+}
+
+export type DeleteProjectPayload = { projectKey: string };
+
+export type DeleteProjectState = { status: "deleted" } | { status: "not_archived" } | { status: "forbidden" };
+
+export async function deleteProject(input: DeleteProjectPayload): Promise<DeleteProjectState> {
+  assertSameOrigin({ headers: await headers() });
+  const actor = await requireActor();
+  if (actor.role !== "admin") {
+    return { status: "forbidden" };
+  }
+
+  const project = await loadProjectByKey(input.projectKey);
+  if (!project) {
+    notFound();
+  }
+
+  const result = await runDeleteProject(project.id);
+  if (result.status === "not_found") {
+    notFound();
+  }
+
+  if (result.status === "deleted") {
+    refresh();
+  }
+  return result;
 }

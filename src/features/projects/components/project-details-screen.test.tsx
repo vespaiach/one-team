@@ -1,7 +1,23 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { ProjectDetails } from "../server/queries";
+import type { ProjectDetailsScreenAdmin } from "./project-details-screen";
 import { ProjectDetailsScreen } from "./project-details-screen";
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
+
+function adminBundle(overrides: Partial<ProjectDetailsScreenAdmin> = {}): ProjectDetailsScreenAdmin {
+  return {
+    candidates: [],
+    addProjectMemberAction: vi.fn().mockResolvedValue({ status: "saved" }),
+    removeProjectMemberAction: vi.fn().mockResolvedValue({ status: "saved" }),
+    setProjectStatusAction: vi.fn().mockResolvedValue({ status: "saved" }),
+    deleteProjectAction: vi.fn().mockResolvedValue({ status: "deleted" }),
+    ...overrides,
+  };
+}
 
 function makeDetails(overrides: Partial<ProjectDetails> = {}): ProjectDetails {
   return {
@@ -121,5 +137,85 @@ describe("ProjectDetailsScreen (FR-035, FR-036, FR-037, FR-021)", () => {
     );
 
     expect(screen.getByText("Ada Lovelace")).not.toBeNull();
+  });
+});
+
+describe("ProjectDetailsScreen — status and delete (FR-041, FR-042, FR-047, FR-048)", () => {
+  it("renders the status switch for every signed-in user, reflecting the record's status", () => {
+    render(
+      <ProjectDetailsScreen
+        details={makeDetails({ canEditRecord: false, canAdminister: false })}
+        updateProjectAction={vi.fn()}
+      />,
+    );
+
+    const control = screen.getByRole("switch") as HTMLInputElement;
+    expect(control.checked).toBe(false);
+  });
+
+  it("disables status and delete for a non-admin, each with a reason naming who may act", () => {
+    render(
+      <ProjectDetailsScreen
+        details={makeDetails({ canEditRecord: false, canAdminister: false })}
+        updateProjectAction={vi.fn()}
+      />,
+    );
+
+    expect((screen.getByRole("switch") as HTMLInputElement).hasAttribute("disabled")).toBe(true);
+    const deleteButton = screen.getByRole("button", { name: "Delete" });
+    expect(deleteButton.hasAttribute("disabled")).toBe(true);
+    expect(screen.getByText("Only admins can change a project's status.")).not.toBeNull();
+    expect(screen.getByText("Only admins can delete a project.")).not.toBeNull();
+  });
+
+  it("offers an admin an enabled status switch reflecting an archived project, and an enabled delete control", () => {
+    render(
+      <ProjectDetailsScreen
+        details={makeDetails({
+          record: { ...makeDetails().record, status: "archived" },
+          canAdminister: true,
+        })}
+        updateProjectAction={vi.fn()}
+        admin={adminBundle()}
+      />,
+    );
+
+    const control = screen.getByRole("switch") as HTMLInputElement;
+    expect(control.hasAttribute("disabled")).toBe(false);
+    expect(control.checked).toBe(true);
+
+    const deleteButton = screen.getByRole("button", { name: "Delete" });
+    expect(deleteButton.hasAttribute("disabled")).toBe(false);
+  });
+
+  it("disables delete with a reason on an active project even for an admin", () => {
+    render(
+      <ProjectDetailsScreen
+        details={makeDetails({ canAdminister: true })}
+        updateProjectAction={vi.fn()}
+        admin={adminBundle()}
+      />,
+    );
+
+    const deleteButton = screen.getByRole("button", { name: "Delete" });
+    expect(deleteButton.hasAttribute("disabled")).toBe(true);
+    expect(screen.getByText(/Archive Website Redesign/)).not.toBeNull();
+  });
+
+  it("calls setProjectStatusAction with the project key and next status when an admin flips the switch", async () => {
+    const setProjectStatusAction = vi.fn().mockResolvedValue({ status: "saved" });
+    render(
+      <ProjectDetailsScreen
+        details={makeDetails({ canAdminister: true })}
+        updateProjectAction={vi.fn()}
+        admin={adminBundle({ setProjectStatusAction })}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("switch"));
+
+    await waitFor(() =>
+      expect(setProjectStatusAction).toHaveBeenCalledWith({ projectKey: "WR", status: "archived" }),
+    );
   });
 });

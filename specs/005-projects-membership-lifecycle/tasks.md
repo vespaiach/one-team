@@ -175,18 +175,18 @@ after a confirmation stating the size of what it destroys.
 Confirm Delete is refused and disabled while the project is active, offered once archived, states the
 size of what it will remove, and leaves nothing behind when confirmed.
 
-- [ ] T060 [US4] Write failing persistence tests for `src/features/projects/server/project-status.test.ts` — both transitions legal, and archiving or reopening changes no column, no membership and no counter row
-- [ ] T061 [US4] Implement `src/features/projects/server/project-status.ts` as one statement writing `updated_at` through `touched()`
-- [ ] T062 [US4] Write failing persistence tests for `src/features/projects/server/delete-project.test.ts` — an active project is refused, an archived one deletes with its columns, memberships and counter row in one transaction, a project archived and deleted concurrently is decided by the `SELECT … FOR UPDATE` rather than an earlier read, and the deleted key is immediately available to a new project
-- [ ] T063 [US4] Implement `src/features/projects/server/delete-project.ts` with `SELECT … FOR UPDATE`, the archived check inside the transaction, and one `DELETE` that the database cascades
-- [ ] T064 [US4] Write failing tests for the two entry points in `src/features/projects/actions.test.ts` — `setProjectStatus` and `deleteProject` each assert the origin, require `isAdmin`, and return the settled state
-- [ ] T065 [US4] Implement `setProjectStatus` and `deleteProject` in `src/features/projects/actions.ts`
-- [ ] T066 [P] [US4] Write failing jsdom tests for `src/features/projects/components/status-switch.test.tsx` — a two-state switch for admins applied optimistically, and the current state shown disabled with its reason for everyone else
-- [ ] T067 [US4] Implement `src/features/projects/components/status-switch.tsx` from React Aria `Switch`
-- [ ] T068 [P] [US4] Write failing jsdom tests for `src/features/projects/components/delete-project-control.test.tsx` — disabled with a reason on an active project, a confirmation stating the cascade count before anything is written, Escape and Cancel discarding, and the count treated as advisory
-- [ ] T069 [US4] Implement `src/features/projects/components/delete-project-control.tsx` from React Aria `Dialog`, navigating to Home on success
-- [ ] T070 [US4] Write failing jsdom tests in `src/features/projects/components/project-details-screen.test.tsx` for the status and delete sections rendering for every user with the right affordances
-- [ ] T071 [US4] Add the status and delete sections to `src/features/projects/components/project-details-screen.tsx`
+- [X] T060 [US4] Write failing persistence tests for `src/features/projects/server/project-status.test.ts` — both transitions legal, and archiving or reopening changes no column, no membership and no counter row
+- [X] T061 [US4] Implement `src/features/projects/server/project-status.ts` as one statement writing `updated_at` through `touched()`
+- [X] T062 [US4] Write failing persistence tests for `src/features/projects/server/delete-project.test.ts` — an active project is refused, an archived one deletes with its columns, memberships and counter row in one transaction, a project archived and deleted concurrently is decided by the `SELECT … FOR UPDATE` rather than an earlier read, and the deleted key is immediately available to a new project
+- [X] T063 [US4] Implement `src/features/projects/server/delete-project.ts` with `SELECT … FOR UPDATE`, the archived check inside the transaction, and one `DELETE` that the database cascades
+- [X] T064 [US4] Write failing tests for the two entry points in `src/features/projects/actions.test.ts` — `setProjectStatus` and `deleteProject` each assert the origin, require `isAdmin`, and return the settled state
+- [X] T065 [US4] Implement `setProjectStatus` and `deleteProject` in `src/features/projects/actions.ts`
+- [X] T066 [P] [US4] Write failing jsdom tests for `src/features/projects/components/status-switch.test.tsx` — a two-state switch for admins applied optimistically, and the current state shown disabled with its reason for everyone else
+- [X] T067 [US4] Implement `src/features/projects/components/status-switch.tsx` from React Aria `Switch`
+- [X] T068 [P] [US4] Write failing jsdom tests for `src/features/projects/components/delete-project-control.test.tsx` — disabled with a reason on an active project, a confirmation stating the cascade count before anything is written, Escape and Cancel discarding, and the count treated as advisory
+- [X] T069 [US4] Implement `src/features/projects/components/delete-project-control.tsx` from React Aria `Dialog`, navigating to Home on success
+- [X] T070 [US4] Write failing jsdom tests in `src/features/projects/components/project-details-screen.test.tsx` for the status and delete sections rendering for every user with the right affordances
+- [X] T071 [US4] Add the status and delete sections to `src/features/projects/components/project-details-screen.tsx`
 
 **Checkpoint**: the full lifecycle works; only the way in is missing.
 

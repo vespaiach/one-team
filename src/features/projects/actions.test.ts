@@ -467,3 +467,124 @@ describe("removeProjectMember (FR-014, FR-015, FR-019)", () => {
     expect(memberships).toHaveLength(0);
   });
 });
+
+describe("setProjectStatus (FR-014, FR-015, FR-041, FR-042)", () => {
+  it("asserts the origin before reading anything else", async () => {
+    currentOrigin = undefined;
+    const { setProjectStatus } = await import("./actions");
+
+    await expect(setProjectStatus({ projectKey: "WR", status: "archived" })).rejects.toThrow(
+      "forbidden_origin",
+    );
+  });
+
+  it("redirects an unauthenticated caller to /signin", async () => {
+    mockCookie(undefined);
+    const { setProjectStatus } = await import("./actions");
+
+    await expect(setProjectStatus({ projectKey: "WR", status: "archived" })).rejects.toThrow(
+      "NEXT_REDIRECT:/signin",
+    );
+  });
+
+  it("requires isAdmin, refusing a signed-in non-admin", async () => {
+    await signInAs({ role: "member" });
+    const { setProjectStatus } = await import("./actions");
+
+    await expect(setProjectStatus({ projectKey: "WR", status: "archived" })).resolves.toEqual({
+      status: "forbidden",
+    });
+  });
+
+  it("calls notFound() rather than forbidden() for a project the module did not find", async () => {
+    await signInAs({ role: "admin" });
+    const { setProjectStatus } = await import("./actions");
+
+    await expect(setProjectStatus({ projectKey: "NOPE", status: "archived" })).rejects.toThrow(
+      "NEXT_NOT_FOUND",
+    );
+    expect(notFoundMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("archives an active project and returns the settled state", async () => {
+    await signInAs({ role: "admin" });
+    const proj = await insertProject({ status: "active" });
+    const { setProjectStatus } = await import("./actions");
+
+    const result = await setProjectStatus({ projectKey: proj.key, status: "archived" });
+
+    expect(result).toEqual({ status: "saved" });
+    expect(refreshMock).toHaveBeenCalledTimes(1);
+    const [row] = await testDb.select().from(project).where(eq(project.id, proj.id));
+    expect(row?.status).toBe("archived");
+  });
+
+  it("reopens an archived project and returns the settled state", async () => {
+    await signInAs({ role: "admin" });
+    const proj = await insertProject({ status: "archived" });
+    const { setProjectStatus } = await import("./actions");
+
+    const result = await setProjectStatus({ projectKey: proj.key, status: "active" });
+
+    expect(result).toEqual({ status: "saved" });
+    const [row] = await testDb.select().from(project).where(eq(project.id, proj.id));
+    expect(row?.status).toBe("active");
+  });
+});
+
+describe("deleteProject (FR-014, FR-015, FR-047, FR-049, FR-050)", () => {
+  it("asserts the origin before reading anything else", async () => {
+    currentOrigin = undefined;
+    const { deleteProject } = await import("./actions");
+
+    await expect(deleteProject({ projectKey: "WR" })).rejects.toThrow("forbidden_origin");
+  });
+
+  it("redirects an unauthenticated caller to /signin", async () => {
+    mockCookie(undefined);
+    const { deleteProject } = await import("./actions");
+
+    await expect(deleteProject({ projectKey: "WR" })).rejects.toThrow("NEXT_REDIRECT:/signin");
+  });
+
+  it("requires isAdmin, refusing a signed-in non-admin", async () => {
+    await signInAs({ role: "member" });
+    const { deleteProject } = await import("./actions");
+
+    await expect(deleteProject({ projectKey: "WR" })).resolves.toEqual({ status: "forbidden" });
+  });
+
+  it("calls notFound() rather than forbidden() for a project the module did not find", async () => {
+    await signInAs({ role: "admin" });
+    const { deleteProject } = await import("./actions");
+
+    await expect(deleteProject({ projectKey: "NOPE" })).rejects.toThrow("NEXT_NOT_FOUND");
+    expect(notFoundMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses to delete an active project, returning the settled state with no refresh", async () => {
+    await signInAs({ role: "admin" });
+    const proj = await insertProject({ status: "active" });
+    const { deleteProject } = await import("./actions");
+
+    const result = await deleteProject({ projectKey: proj.key });
+
+    expect(result).toEqual({ status: "not_archived" });
+    expect(refreshMock).not.toHaveBeenCalled();
+    const rows = await testDb.select().from(project).where(eq(project.id, proj.id));
+    expect(rows).toHaveLength(1);
+  });
+
+  it("deletes an archived project and returns the settled state", async () => {
+    await signInAs({ role: "admin" });
+    const proj = await insertProject({ status: "archived" });
+    const { deleteProject } = await import("./actions");
+
+    const result = await deleteProject({ projectKey: proj.key });
+
+    expect(result).toEqual({ status: "deleted" });
+    expect(refreshMock).toHaveBeenCalledTimes(1);
+    const rows = await testDb.select().from(project).where(eq(project.id, proj.id));
+    expect(rows).toHaveLength(0);
+  });
+});

@@ -2,13 +2,23 @@
 
 import { type CalendarDate, parseDate } from "@internationalized/date";
 import { DateInput, DatePicker, DateSegment, Group } from "react-aria-components/DatePicker";
-import type { UpdateProjectPayload, UpdateProjectState } from "../actions";
-import type { ProjectDetails } from "../server/queries";
+import type {
+  DeleteProjectPayload,
+  DeleteProjectState,
+  SetProjectStatusPayload,
+  SetProjectStatusState,
+  UpdateProjectPayload,
+  UpdateProjectState,
+} from "../actions";
+import type { ProjectDetails, RosterEntry } from "../server/queries";
 import { ColumnsSection } from "./columns-section";
+import { DeleteProjectControl } from "./delete-project-control";
 import { DescriptionView } from "./description-view";
 import type { EditableFieldEditorProps } from "./editable-field";
 import { EditableField } from "./editable-field";
+import type { MembershipActionResult, MembershipPayload } from "./members-section";
 import { MembersSection } from "./members-section";
+import { StatusSwitch } from "./status-switch";
 
 function toCalendarDate(value: string): CalendarDate | null {
   return value ? parseDate(value) : null;
@@ -37,18 +47,48 @@ function DateFieldEditor({
   );
 }
 
+export type ProjectDetailsScreenAdmin = {
+  candidates: RosterEntry[];
+  addProjectMemberAction: (input: MembershipPayload) => Promise<MembershipActionResult>;
+  removeProjectMemberAction: (input: MembershipPayload) => Promise<MembershipActionResult>;
+  setProjectStatusAction: (input: SetProjectStatusPayload) => Promise<SetProjectStatusState>;
+  deleteProjectAction: (input: DeleteProjectPayload) => Promise<DeleteProjectState>;
+};
+
 export function ProjectDetailsScreen({
   details,
   updateProjectAction,
+  admin,
 }: {
   details: ProjectDetails;
   updateProjectAction: (input: UpdateProjectPayload) => Promise<UpdateProjectState>;
+  admin?: ProjectDetailsScreenAdmin;
 }) {
   const { record, columns, roster, canEditRecord } = details;
   const disabledReason = canEditRecord ? undefined : `Join ${record.name} to make changes.`;
+  const adminDisabledReason = "Only admins can change a project's status.";
+  const deleteDisabledReason = !admin
+    ? "Only admins can delete a project."
+    : record.status !== "archived"
+      ? `Archive ${record.name} before deleting it.`
+      : undefined;
 
   function saveField(changes: UpdateProjectPayload["changes"]) {
     return updateProjectAction({ projectKey: record.key, changes });
+  }
+
+  function saveStatus(nextStatus: "active" | "archived"): Promise<SetProjectStatusState> {
+    if (!admin) {
+      return Promise.resolve({ status: "forbidden" });
+    }
+    return admin.setProjectStatusAction({ projectKey: record.key, status: nextStatus });
+  }
+
+  function runDelete(): Promise<DeleteProjectState> {
+    if (!admin) {
+      return Promise.resolve({ status: "forbidden" });
+    }
+    return admin.deleteProjectAction({ projectKey: record.key });
   }
 
   return (
@@ -99,9 +139,34 @@ export function ProjectDetailsScreen({
           )}
           onSave={(value) => saveField({ targetDate: value === "" ? null : value })}
         />
+        <StatusSwitch
+          status={record.status}
+          isDisabled={!admin}
+          disabledReason={admin ? undefined : adminDisabledReason}
+          onSave={saveStatus}
+        />
       </section>
       <ColumnsSection columns={columns} />
-      <MembersSection roster={roster} />
+      <MembersSection
+        roster={roster}
+        admin={
+          admin
+            ? {
+                projectKey: record.key,
+                candidates: admin.candidates,
+                addProjectMemberAction: admin.addProjectMemberAction,
+                removeProjectMemberAction: admin.removeProjectMemberAction,
+              }
+            : undefined
+        }
+      />
+      <DeleteProjectControl
+        projectName={record.name}
+        cascadeCount={details.cascadeCount}
+        isDisabled={!admin || record.status !== "archived"}
+        disabledReason={deleteDisabledReason}
+        onDelete={runDelete}
+      />
     </div>
   );
 }

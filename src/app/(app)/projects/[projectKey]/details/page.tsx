@@ -1,8 +1,15 @@
 import { notFound } from "next/navigation";
 import { requireActor } from "@/features/auth/server/actor";
-import { updateProject } from "@/features/projects/actions";
+import {
+  addProjectMember,
+  deleteProject,
+  removeProjectMember,
+  setProjectStatus,
+  updateProject,
+} from "@/features/projects/actions";
+import type { ProjectDetailsScreenAdmin } from "@/features/projects/components/project-details-screen";
 import { ProjectDetailsScreen } from "@/features/projects/components/project-details-screen";
-import { loadProjectDetails } from "@/features/projects/server/queries";
+import { listAddableUsers, loadProjectByKey, loadProjectDetails } from "@/features/projects/server/queries";
 
 export default async function ProjectDetailsPage({ params }: { params: Promise<{ projectKey: string }> }) {
   const actor = await requireActor();
@@ -13,10 +20,25 @@ export default async function ProjectDetailsPage({ params }: { params: Promise<{
     notFound();
   }
 
+  let admin: ProjectDetailsScreenAdmin | undefined;
+  if (details.canAdminister) {
+    const projectRow = await loadProjectByKey(projectKey);
+    if (projectRow) {
+      admin = {
+        candidates: await listAddableUsers({ excludeProjectId: projectRow.id }),
+        addProjectMemberAction: addProjectMember,
+        removeProjectMemberAction: removeProjectMember,
+        setProjectStatusAction: setProjectStatus,
+        deleteProjectAction: deleteProject,
+      };
+    }
+  }
+
   return (
     <ProjectDetailsScreen
       details={details}
       updateProjectAction={updateProject}
+      admin={admin}
     />
   );
 }
