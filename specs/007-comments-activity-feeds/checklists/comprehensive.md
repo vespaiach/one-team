@@ -35,8 +35,8 @@
   - Resolved: FR-019 states this generally for "every mutator this feature delivers"; `contracts/mutators.md`'s "shape every entry point has" (steps 4–5) restates the same order uniformly.
 - [x] CHK010 Is server-side re-validation independent of a disabled client control required for every write path (`createComment`, `updateComment`, `deleteComment`), not only the composer? [Coverage, Spec FR-007, FR-020]
   - Resolved: FR-049 states this generally for "every field-bound and authorization rule this feature states for a comment," covering all three mutators, not only the composer's disabled state (FR-020).
-- [ ] CHK011 Are the exact conditions under which an author retains edit/delete rights after losing project membership fully specified, including whether later re-joining the project changes anything? [Completeness, Spec FR-017, Edge Cases]
-  - Open: FR-017 and the Edge Cases entry state that losing membership does not remove edit/delete rights, but neither the spec, plan, nor contracts say whether re-joining the project (or any other later state change) has any effect. Authorship is stated as permanent, but the "re-joining" branch is never named either way.
+- [x] CHK011 Are the exact conditions under which an author retains edit/delete rights after losing project membership fully specified, including whether later re-joining the project changes anything? [Completeness, Spec FR-017, Edge Cases]
+  - Resolved: FR-016 now states explicitly that authorship is fixed permanently at creation and is never re-evaluated against membership, so losing membership does not remove either right and later re-joining does not restore or change anything — neither predicate ever reads current membership.
 - [x] CHK012 Is the concurrent delete-by-author-and-delete-by-admin race's exact server response ("this doesn't exist" rather than a second success) specified as a testable requirement rather than only narrated as an edge case? [Gap, Spec Edge Cases]
   - Resolved at the plan level: `contracts/mutators.md`'s `deleteComment` section states the exact mechanism — "the mutator checks the row count and returns `not-found` rather than a false `ok`" — and `quickstart.md` walkthrough 9 gives it a concrete testable scenario.
 
@@ -46,8 +46,8 @@
   - Resolved: `contracts/mutators.md` gives the exact TypeScript signature (`writeActivity(tx, input): Promise<void>`) and `research.md` B-2 gives the discriminated-union parameter shape.
 - [x] CHK014 Are the primitive's "no authorization, no diff computation, no transaction management" exclusions stated as testable negative requirements rather than prose description? [Measurability, Spec FR-013]
   - Resolved: FR-013 states each exclusion as a `MUST NOT`; `research.md` B-3 restates each as a checked "no" against a specific responsibility.
-- [ ] CHK015 Is the "no fewer than ten call sites" claim in FR-012 itself cross-referenced to the specific FRs that constitute those call sites, so the claim is independently checkable? [Traceability, Spec FR-012]
-  - **Defect found, not just unresolved**: FR-012 cites "FR-055 through FR-068," but the spec's highest requirement ID is FR-061 — FR-062 through FR-068 do not exist (confirmed by grep). Separately, `research.md` B-4, which verifies this same claim, counts **eight** call sites ("well past the two-call-site bar"), not the "ten" FR-012 states. Both the cross-reference and the count need correction before this item can be checked.
+- [x] CHK015 Is the "no fewer than ten call sites" claim in FR-012 itself cross-referenced to the specific FRs that constitute those call sites, so the claim is independently checkable? [Traceability, Spec FR-012]
+  - Resolved (defect fixed): FR-012 now names its eight call sites explicitly — `createComment` (FR-045), `createProject` (FR-050), `updateProject` (FR-051), `setProjectStatus` (FR-052), `addProjectMember`/`removeProjectMember` (FR-053), `createIssue` (FR-055), `updateIssue` (FR-056) — and states the count as eight, matching `research.md` B-4's own count (its heading was also corrected from "Ten" to "Eight").
 
 ## The Mention Token
 
@@ -64,12 +64,12 @@
 
 - [x] CHK020 Are rendering requirements specified individually for every one of the seven `activity.type` values (`created`, `field_changed`, `member_added`, `member_removed`, `archived`, `reopened`, `comment`)? [Completeness, Spec FR-030]
   - Resolved: FR-030 covers `field_changed` individually and the remaining four activity types as one shared sentence rule; `contracts/screens.md`'s `ActivityRow` table gives a distinct sentence shape for each of the six non-comment types, and FR-028 covers `comment` rows separately.
-- [ ] CHK021 Is the "none" wording used for a cleared field's `to_value`/`from_value` defined as a specific string, or left as an unspecified placeholder an implementer must invent? [Ambiguity, Spec FR-030, Edge Cases]
-  - Open: FR-030 and the Edge Cases entry both defer to "the product's own wording for 'none'" without stating the literal string, and it is not defined in `docs/product/specifications.md` either (checked — no such literal string exists there). An implementer still has to invent or guess the exact copy.
-- [ ] CHK022 Is the five-minute collapsing window's boundary condition (inclusive/exclusive, measured from which row's timestamp) specified precisely enough to be objectively testable? [Measurability, Spec FR-031]
-  - Open: FR-031 and `research.md` F-2 both say "within five minutes of the one before it" / "of each other," but neither states whether exactly five minutes is inclusive or exclusive, nor whether the window chains pairwise or measures every row in a run against the run's first row.
-- [ ] CHK023 Are requirements for collapsing behavior when a run spans a pagination boundary stated as testable acceptance criteria, or only narrated in Edge Cases without a corresponding FR? [Gap, Spec Edge Cases]
-  - Open: this stays in Edge Cases only ("collapses only within what is currently loaded and re-collapses correctly once the next page is appended"). No FR states it, and `contracts/screens.md`'s collapsing section doesn't address the boundary case either — it describes collapsing as a pure function over "the current page's rows" without specifying appended-page re-collapse behavior as a requirement.
+- [x] CHK021 Is the "none" wording used for a cleared field's `to_value`/`from_value` defined as a specific string, or left as an unspecified placeholder an implementer must invent? [Ambiguity, Spec FR-030, Edge Cases]
+  - Resolved: FR-030 and the matching Edge Cases entry now fix the literal string `"None"`, recorded as this feature's own choice since no upstream document defines the wording.
+- [x] CHK022 Is the five-minute collapsing window's boundary condition (inclusive/exclusive, measured from which row's timestamp) specified precisely enough to be objectively testable? [Measurability, Spec FR-031]
+  - Resolved: FR-031 now states the window is inclusive of exactly five minutes and chains pairwise — each row measured against the immediately preceding row already in its run, not the run's first row — so a steady drip under five minutes apart keeps one run going indefinitely. `research.md` F-2 restates the same mechanism.
+- [x] CHK023 Are requirements for collapsing behavior when a run spans a pagination boundary stated as testable acceptance criteria, or only narrated in Edge Cases without a corresponding FR? [Gap, Spec Edge Cases]
+  - Resolved: new FR-062 states the requirement directly — collapsing runs only over currently loaded rows, closes an in-progress run at whatever is loaded, and re-runs the same computation over the combined set once the next page is appended, merging or splitting the boundary run as the data dictates. The Edge Cases entry now cites FR-062.
 - [x] CHK024 Does the spec state explicitly whether server-side filtering by the Comments-only toggle is prohibited or merely not required, given pagination is specified to draw from all rows and filter client-side? [Ambiguity, Spec FR-033, US5 Acceptance Scenario 5]
   - Resolved at the plan level: `contracts/screens.md`'s "The filter" section commits to a specific implementation — "filtering is client-side over the fetched page ... switching the filter never re-fetches" — settling the ambiguity for implementation purposes.
 - [x] CHK025 Is the "page size counts rows before collapsing" rule stated as a functional requirement rather than only recorded in Assumptions? [Traceability, Spec FR-032, Assumptions]
@@ -79,19 +79,19 @@
 
 - [x] CHK026 Are the composer's 10,000-character validation requirements specified identically for client and server, with the server rule stated as the authoritative one? [Consistency, Spec FR-041]
   - Resolved: FR-041 states the same bound applies to both and that "the server MUST reject an over-length value independently of whatever the client checked"; FR-049 generalizes server authority over every field-bound rule.
-- [ ] CHK027 Is the delete confirmation gesture ("a second press or an inline confirm") specific enough to be a single testable UI requirement, or does it leave two divergent implementations equally compliant? [Ambiguity, Spec FR-044]
-  - Open: FR-044's own wording offers an explicit either/or ("a second press or an inline confirm") without choosing one, so two different implementations would both be compliant.
-- [ ] CHK028 Are requirements defined for an in-progress mention-autocomplete selection if the composer is submitted or cancelled mid-selection? [Gap, Coverage]
-  - Open: no FR, edge case, or contract addresses what happens to an open `MentionPicker` if ⌘-enter or Escape fires while it is showing suggestions.
+- [x] CHK027 Is the delete confirmation gesture ("a second press or an inline confirm") specific enough to be a single testable UI requirement, or does it leave two divergent implementations equally compliant? [Ambiguity, Spec FR-044]
+  - Resolved: FR-044 now picks one mechanism — pressing delete swaps the control in place for an inline Confirm/Cancel pair, and only Confirm calls `deleteComment` — removing the either/or, and matching the Assumptions section's own "confirms once, inline" framing that was already committed to this shape.
+- [x] CHK028 Are requirements defined for an in-progress mention-autocomplete selection if the composer is submitted or cancelled mid-selection? [Gap, Coverage]
+  - Resolved: new FR-063 states the requirement — a first Escape closes the picker alone without touching the composer's text (a second Escape then reverts per FR-043), and ⌘-enter submits the typed text as-is without implicitly accepting a highlighted suggestion.
 - [x] CHK029 Is `createComment`'s single-transaction write of a comment row and its activity row specified with an explicit failure-mode expectation (what the caller sees if the activity write fails)? [Gap, Spec FR-045]
   - Resolved: FR-045 fixes both writes inside "one database transaction," which by definition forecloses a partial-failure state — a failed activity write rolls back the comment insert too, so there is no caller-visible partial outcome to specify separately.
 
 ## Activity Additions to R5's and R6's Mutators
 
-- [ ] CHK030 Are the `activity.field` string values enumerated exhaustively for every one of the ten editable fields (five project, six issue) rather than left to be inferred solely from the Assumptions section? [Completeness, Spec FR-051, FR-056, Assumptions]
-  - Open: this is exactly the current state. The literal field-name strings (`title`, `description`, `column`, `priority`, `assignee`, `due_date`, `name`, `start_date`, `target_date`, `colour`) appear only in the *Assumptions* section, not in FR-051 or FR-056 themselves.
-- [ ] CHK031 Is the "must not alter existing return values or acceptance criteria" requirement for these seven mutator edits paired with a stated verification method, or left as an unverifiable prohibition? [Measurability, Spec FR-054, FR-057]
-  - Open: FR-054/FR-057 state the prohibition, but no document names a verification method (e.g., "R5's and R6's own test suites must still pass unmodified against this diff"). `quickstart.md` walkthrough 3 exercises the no-op case but doesn't state re-running the inherited suites as the check.
+- [x] CHK030 Are the `activity.field` string values enumerated exhaustively for every one of the ten editable fields (five project, six issue) rather than left to be inferred solely from the Assumptions section? [Completeness, Spec FR-051, FR-056, Assumptions]
+  - Resolved: FR-051 now lists the five literal project `field` values (`name`, `description`, `start_date`, `target_date`, `colour`) and FR-056 the six literal issue `field` values (`title`, `description`, `column`, `priority`, `assignee`, `due_date`) directly, rather than only in Assumptions.
+- [x] CHK031 Is the "must not alter existing return values or acceptance criteria" requirement for these seven mutator edits paired with a stated verification method, or left as an unverifiable prohibition? [Measurability, Spec FR-054, FR-057]
+  - Resolved: FR-054 and FR-057 each now state the verification method explicitly — entry R5's and R6's own existing test suites must still pass unmodified against this feature's diff.
 - [x] CHK032 Are multi-field-in-one-call update scenarios specified with equal rigor for both `updateProject` and `updateIssue`, or does one mutator's requirement rely on inference from the other's? [Consistency, Spec FR-051, FR-056, Edge Cases]
   - Resolved: FR-051 and FR-056 each independently state "one `field_changed` row per differing field" for their own mutator with equal specificity; the Edge Cases entry addresses both together without either depending on inference from the other.
 
@@ -101,8 +101,8 @@
   - Resolved: FR-038/FR-061 state the rule over "every control on the feed," and `contracts/screens.md`'s Accessibility section and the `MentionPicker`/`Composer` sections individually restate the specific keyboard and focus behavior expected of each control this feature introduces.
 - [x] CHK034 Is "no polling or interval re-query" scoped precisely enough to distinguish an on-open query from a while-open re-query? [Clarity, Spec FR-036]
   - Resolved: FR-036 states the distinction directly — no interval re-query, but a row appears "on that reader's next navigation to or revalidation of the screen."
-- [ ] CHK035 Are optimistic-update rollback requirements specified with the expected error-message content, or only as "naming what failed and why" in the abstract? [Ambiguity, Spec FR-037]
-  - Open: FR-037 and `contracts/screens.md`'s "Posting" section both stay at "naming what failed and why" / "a toast naming what failed and why" without specifying actual message content or format.
+- [x] CHK035 Are optimistic-update rollback requirements specified with the expected error-message content, or only as "naming what failed and why" in the abstract? [Ambiguity, Spec FR-037]
+  - Resolved: FR-037 now fixes the content directly — the toast MUST show the server's own typed-result message text verbatim, never a client-invented generic string, tying it to the concrete messages FR-041 and FR-049 already define.
 - [x] CHK036 Is the ordering between the loading skeleton and the authorization decision ("the skeleton sits below the page's own authorization decision") specified precisely enough to know which resolves first on every code path? [Clarity, Spec FR-060]
   - Resolved: FR-060 states the order directly — authorization resolves first, "so a refused or missing route answers as itself" before any skeleton is shown.
 
@@ -112,8 +112,8 @@
   - Resolved: `research.md` A-6 validates the assumption further, citing R6's own precedent of a later entry altering an earlier entry's table only when it needs the new capability.
 - [x] CHK038 Is the dependency on R2's shell, Forbidden screen and toast conventions specified with enough detail to know exactly which R2 artifacts this feature's plan may assume exist unmodified? [Dependency, Spec Assumptions, Dependencies]
   - Resolved: `plan.md`'s "Inherited constraints" section and `contracts/screens.md`'s "What is consumed unchanged" section both name the specific R2 artifacts (shell, Forbidden screen, toast convention, skeleton-below-guard rule, disabled-control-with-reason pattern) this feature assumes unmodified.
-- [ ] CHK039 Is the "blocked until R2, R5 and R6 land" precondition stated consistently between the spec's Dependencies section and the plan's Technical Context, or does one section imply a readiness the other does not? [Consistency, Spec Dependencies; Plan Technical Context]
-  - Open, real inconsistency: `spec.md`'s Dependencies section lists R1, R2 and R3 as *transitive* dependencies alongside R5/R6 as direct ones, giving R3 the same dependency status as R2. `plan.md`'s Technical Context instead says implementation is "blocked until R2, R5 and R6 land" and explicitly states "R3 is not a precondition beyond the deactivation flag." The two sections don't contradict on facts, but they frame R3's status differently — the spec doesn't distinguish it from R2 the way the plan does.
+- [x] CHK039 Is the "blocked until R2, R5 and R6 land" precondition stated consistently between the spec's Dependencies section and the plan's Technical Context, or does one section imply a readiness the other does not? [Consistency, Spec Dependencies; Plan Technical Context]
+  - Resolved: `spec.md`'s Dependencies section now names R1 and R2 as the transitive/direct dependencies and states R3 separately — "not a precondition beyond the `deactivated_at` column," matching `plan.md`'s Technical Context wording exactly rather than grouping R3 with R2.
 
 ## Edge Cases & Exception Flows
 
@@ -145,4 +145,17 @@
 
 ### Summary of open items after this review
 
-11 of 45 items remain unchecked. One (CHK015) is a genuine spec defect — FR-012 cites nonexistent `FR-068` and its "ten call sites" count disagrees with `research.md`'s own count of eight — worth fixing before `/speckit-implement`. The rest (CHK011, CHK021–023, CHK027, CHK028, CHK030, CHK031, CHK035, CHK039) are real ambiguities or gaps, not reviewer nitpicks: two unresolved either/or requirements (CHK027, delete confirmation gesture), one string left to the implementer to invent (CHK021, "none" wording), one timing boundary left ambiguous (CHK022), one true gap in coverage (CHK028, mid-selection mention autocomplete), one traceability gap (CHK030, field-name strings only in Assumptions), and one framing inconsistency between spec and plan on R3's dependency status (CHK039).
+**Update (2026-09-03)**: all 11 previously-open items are now resolved and checked. `spec.md` was
+amended directly: FR-012's defect is fixed (correct FR cross-references, count corrected to eight,
+matching `research.md` B-4 whose own heading was also corrected); FR-016 states authorship is
+permanent and unaffected by later membership changes including re-joining (CHK011); FR-030 and its
+Edge Cases entry fix the literal string `"None"` (CHK021); FR-031 states the five-minute window is
+inclusive and chains pairwise against the immediately preceding row in a run (CHK022); new FR-062
+states the pagination-boundary re-collapse rule (CHK023); FR-044 picks one delete-confirmation
+mechanism — an inline Confirm/Cancel swap — instead of an either/or (CHK027); new FR-063 states what
+happens to an open mention picker on submit or cancel (CHK028); FR-051 and FR-056 enumerate their
+literal `field` values directly rather than only in Assumptions (CHK030); FR-054 and FR-057 each state
+their verification method — R5's/R6's own test suites must still pass unmodified (CHK031); FR-037
+fixes the rollback toast's content as the server's own typed-result message, never an invented string
+(CHK035); and the spec's Dependencies section now states R3's non-blocking status in the same terms
+`plan.md`'s Technical Context already used (CHK039). All 45 items are now checked.
