@@ -51,8 +51,8 @@ already carries (spec, *Dependencies*).
 
 **Purpose**: the one dependency and the one test-harness line every later phase assumes.
 
-- [ ] T001 Confirm entries R2 and R5 have landed by running **both** precondition checks in [`quickstart.md`](./quickstart.md) — stop here if either returns nothing — then work its reconciliation table: read R5's shipped `issue_counter` columns, its `board_column` constraints, where its markdown implementation sits and whether project details renders the New issue slot, and correct this plan where the assumed shape and the shipped one differ. `issue_counter`'s column name and meaning is the one this feature was written against without being able to see it (spec *Obligations*, [`data-model.md`](./data-model.md) §3, research A-7)
-- [ ] T002 [P] Install `fractional-indexing` and add it to `dependencies` in `package.json` — already recorded in `AGENTS.md`'s approved table for this purpose, so gate 4 is met by a record that predates this plan (FR-040, research A-9)
+- [X] T001 Confirm entries R2 and R5 have landed by running **both** precondition checks in [`quickstart.md`](./quickstart.md) — stop here if either returns nothing — then work its reconciliation table: read R5's shipped `issue_counter` columns, its `board_column` constraints, where its markdown implementation sits and whether project details renders the New issue slot, and correct this plan where the assumed shape and the shipped one differ. `issue_counter`'s column name and meaning is the one this feature was written against without being able to see it (spec *Obligations*, [`data-model.md`](./data-model.md) §3, research A-7)
+- [X] T002 [P] Install `fractional-indexing` and add it to `dependencies` in `package.json` — already recorded in `AGENTS.md`'s approved table for this purpose, so gate 4 is met by a record that predates this plan (FR-040, research A-9)
 - [ ] T003 [P] Add `"issue"` to `TRUNCATED_TABLES` in `src/db/test-database.ts`, ahead of the R5 tables it references, so each persistence test starts clean (research E-3)
 
 **On gate 1 for this phase.** T002 and T003 add no behaviour of their own — one dependency and one

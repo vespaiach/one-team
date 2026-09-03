@@ -92,9 +92,15 @@ carries the same column, the same default and the same meaning, and R5's researc
 same draw statement byte for byte. What follows is now a confirmed contract rather than a pin:
 
 ```
-issue_counter(project_id uuid PRIMARY KEY REFERENCES project(id) ON DELETE CASCADE,
+issue_counter(id uuid PRIMARY KEY,
+              project_id uuid NOT NULL UNIQUE REFERENCES project(id) ON DELETE CASCADE,
               last_number integer NOT NULL DEFAULT 0)
 ```
+
+**Correction (T001, Phase 1)**: the shipped table carries its own `id` primary key
+(`$defaultFn(uuidv7)`), with `project_id` as `NOT NULL UNIQUE` rather than the table's primary key —
+this block previously omitted `id`. `UNIQUE` still makes the draw's `WHERE project_id = $1` target
+exactly one row, so the draw statement below is unaffected.
 
 The draw, inside `createIssue`'s transaction and nowhere else:
 

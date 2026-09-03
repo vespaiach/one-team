@@ -146,9 +146,15 @@ R5's plan has since landed and confirms every part of it — same column, same `
 "holds the last number issued" meaning, and the same `UPDATE … RETURNING` in its own research A-3:
 
 ```
-issue_counter(project_id uuid PRIMARY KEY REFERENCES project(id) ON DELETE CASCADE,
+issue_counter(id uuid PRIMARY KEY,
+              project_id uuid NOT NULL UNIQUE REFERENCES project(id) ON DELETE CASCADE,
               last_number integer NOT NULL DEFAULT 0)
 ```
+
+**Correction (T001, Phase 1)**: the shipped table carries its own `id` primary key
+(`$defaultFn(uuidv7)`), with `project_id` as `NOT NULL UNIQUE` rather than the table's primary key —
+this block previously omitted `id`. `UNIQUE` still makes the draw's `WHERE project_id = $1` target
+exactly one row, so the statement below is unaffected.
 
 `last_number` starting at `0` rather than a `next_number` starting at `1` is what makes A-6's
 statement one line with no adjustment in the `RETURNING`: the first issue reads `1`.
