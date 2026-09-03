@@ -17,14 +17,13 @@ app/(app)/projects/new/page.tsx          async — requireActor, isAdmin or forb
     ├── ProjectKeyField                  project-key-field.tsx                     FR-025, FR-026
     ├── TextArea                         inline — grows, then scrolls; no preview  FR-027
     ├── DateRangeFields                  date-range-fields.tsx                     FR-028
-    ├── PaletteField                     palette-field.tsx                         FR-029
     ├── MemberPickerField                member-picker-field.tsx                   FR-030
     └── Create / Cancel                  inline — in-flight, never disabled        FR-032, FR-033
 ```
 
-**Four children are files and three are inline JSX**, and the split is Principle I's. The key field,
-the date pair, the palette and the member picker each carry behaviour worth its own test file — a
-derive/own rule, a cross-field comparison, a seven-way radio group, a combo box feeding a tag group.
+**Three children are files and three are inline JSX**, and the split is Principle I's. The key field,
+the date pair and the member picker each carry behaviour worth its own test file — a
+derive/own rule, a cross-field comparison, a combo box feeding a tag group.
 The name, the description and the button pair are one React Aria control each with no logic above
 them, so extracting them would be an abstraction at its first call site. They are asserted on
 `CreateProjectForm`'s own test rather than on files of their own; `FR-024`'s trimming and focus order
@@ -44,7 +43,6 @@ synchronous under jsdom ([`../research.md`](../research.md) D-1).
 | **Description** | optional, multi-line, grows, markdown source | `FR-027`, `FR-010` |
 | **Start date** | optional | `FR-028` |
 | **Target date** | optional, independent, must not precede start | `FR-028` |
-| **Colour** | required, seven swatches, defaults to accent | `FR-029`, `OT-DATA-013` |
 | **Members** | optional chips from existing accounts | `FR-030`, `OT-AUTHZ-006` |
 
 **Not on this form**: status and columns (`FR-031`).
@@ -126,7 +124,7 @@ destination is fixed here and nothing answers at it yet (`FR-034`, spec → *Out
 | `WR`, `OTDO`, `3R` → empty, >8 words truncated, punctuation-only → empty | `deriveProjectKey` — a pure function, no DOM |
 | the key stops following the name once edited | `ProjectKeyField` under jsdom |
 | the clash names the holder and applies no suffix | `ProjectKeyField` with a stubbed check; and `createProject` against real PostgreSQL |
-| five columns, their order, kinds and colours | `createProject` against real PostgreSQL |
+| five columns, their order and kinds | `createProject` against real PostgreSQL |
 | the counter row exists and holds `0` | same |
 | three chips → three membership rows, none the creating admin | same |
 | two concurrent creations of one key | two transactions, real PostgreSQL (`SC-003`) |

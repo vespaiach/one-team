@@ -16,7 +16,7 @@ A key matching no project reads "This doesn't exist" and never implies a hidden-
 ```text
 app/(app)/projects/[projectKey]/details/page.tsx    async — await params, load, compute two booleans
 └── ProjectDetailsScreen                            synchronous, takes ProjectDetails
-    ├── ProjectRecordSection      name · description · dates · colour · key   FR-036…FR-039
+    ├── ProjectRecordSection      name · description · dates · key            FR-036…FR-039
     ├── StatusSwitch              "use client", admin only, optimistic        FR-041, FR-042
     ├── ColumnsSection            read-only list in board order               FR-044
     ├── MembersSection            roster + add/remove, admin only             FR-045, FR-046
@@ -44,7 +44,7 @@ passed down ([`../data-model.md`](../data-model.md) §6). Every control a user m
 immediately; a refusal reverts it and the toast names what failed and why. The toast primitive is R3's
 or R4's, whichever is built first — R5 calls it ([`../research.md`](../research.md) F-3).
 
-Five fields use it — name, description, start date, target date, colour — so `EditableField` has five
+Four fields use it — name, description, start date, target date — so `EditableField` has four
 call sites the day it ships, which is what makes extracting it Principle I rather than speculation.
 
 **The key is a shown value, not a control**, and the screen states that it is immutable (`FR-037`,
@@ -76,9 +76,9 @@ transition itself (`FR-042`, `OT-OPS-011`). Archiving touches nothing else (`FR-
 
 ## Columns — a read-only list
 
-Board order, showing name, colour, kind and issue count per row (`FR-044`, §3.8).
+Board order, showing name, kind and issue count per row (`FR-044`, §3.8).
 
-**This feature offers no control that adds, renames, recolours, reorders or deletes a column.** R9
+**This feature offers no control that adds, renames, reorders or deletes a column.** R9
 does, and with it `OT-INV-005`, `-006`, `-012` and `-014`, which are `deleteColumn`'s and have no
 enforcer here (spec → *Out of Scope*).
 
@@ -145,6 +145,6 @@ carries the settled state, and the browser navigates away (`FR-052`).
 | --- | --- |
 | The Activity feed, its composer, its filter toggle and its collapsing | R7 |
 | The header's comment count | R7 |
-| Column add, rename, recolour, reorder, delete | R9 |
+| Column add, rename, reorder, delete | R9 |
 | Every issue count above zero | R6 |
 | A project lead, a project role, any permission finer than membership | nothing — the specification gives a project members and nothing else |

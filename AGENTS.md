@@ -54,6 +54,7 @@ The stack is Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, and
 | --- | --- | --- |
 | `drizzle-orm`, `drizzle-kit`, `postgres` | PostgreSQL access, schema and migrations | runtime, tooling |
 | `react-aria-components` | Interaction behaviour, focus management, keyboard support and ARIA semantics | runtime |
+| `@internationalized/date` | Calendar date values for React Aria DatePicker | runtime |
 | `@node-rs/argon2` | Argon2id password hashing | runtime |
 | `nodemailer` | Notification mail over operator-supplied SMTP | runtime |
 | `uuidv7` | Time-ordered primary keys | runtime |

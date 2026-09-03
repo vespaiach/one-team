@@ -59,7 +59,6 @@ in    name         string, required, trimmed                       FR-024
       description  string | null                                    FR-027
       startDate    calendar date | null                             FR-028
       targetDate   calendar date | null                             FR-028
-      color        one of the seven palette values, default accent  FR-029
       memberIds    string[]  — may be empty                         FR-030
 
 out   { status: "created", projectKey }
@@ -103,8 +102,8 @@ predicate can race with a concurrent `removeProjectMember`, and the only reason 
 
 ```text
 in    projectId    string                                           resolved to the stored row first
-      changes      a partial over exactly five keys:
-                     name, description, startDate, targetDate, color
+      changes      a partial over exactly four keys:
+                     name, description, startDate, targetDate
 
 out   { status: "saved" } | { status: "invalid", field, reason } | { status: "forbidden" }
 ```
@@ -258,6 +257,6 @@ names whoever now holds it. That sequence is normal, not a defect.
 | --- | --- |
 | Writes an activity row | R7, added to all six in the same transaction as each change |
 | Writes a notification, or declares the `notification` arm of the cascade | R11 |
-| Creates, renames, recolours, reorders or deletes a column | R9 |
+| Creates, renames, reorders or deletes a column | R9 |
 | Creates, closes or reactivates an account | R3 |
 | Changes `project.key` | nothing, ever (`OT-INV-007`, `FR-037`) |

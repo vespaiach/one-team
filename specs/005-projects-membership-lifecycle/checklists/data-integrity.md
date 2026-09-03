@@ -21,7 +21,6 @@
 
 - [x] CHK007 Is the 200-character and 10 000-character bound specified in characters or in bytes? [Clarity, Spec §FR-012]
 - [x] CHK008 Is it specified whether trimming or normalization is applied before a length bound is evaluated, given FR-024 trims only the name? [Gap, Spec §FR-012, §FR-024]
-- [x] CHK009 Is the enforcement layer specified for the seven-value palette constraint, or only that the values are fixed? [Gap, Spec §FR-009, §FR-012]
 - [x] CHK010 Is it stated that start date and target date are timezone-independent calendar dates rather than instants? [Clarity, Spec §FR-012, §FR-028]
 - [x] CHK011 Are the board-position values for the five seeded columns specified, or only their relative order, so a reviewer can tell what "one fixed order" persists as? [Completeness, Spec §FR-006, §FR-007]
 - [x] CHK012 Is it specified whether a target date equal to the start date is legal, given FR-028 says only that the target must not precede the start? [Clarity, Spec §FR-028]
@@ -75,7 +74,6 @@ changed is named.
 - **CHK006** · *Covered* — §5's invariant table carries an "Enforced by" column, and its `project` and `board_column` entries name the constraints in SQL.
 - **CHK007** · *Covered* — §5 says "200 characters … 10 000". FR-012 now says "counted in characters" explicitly so the child document does not need the round trip.
 - **CHK008** · *Resolved* — FR-012: the bound applies to the trimmed value — trimmed, then measured, never truncated to fit.
-- **CHK009** · *Covered* — §5's "`text` + `CHECK` for enumerations" and "lowercase six-digit hex for colours", with §7 fixing the seven values. FR-009 read with FR-012 carries it.
 - **CHK010** · *Covered* — §5: "`date` for calendar dates (`due_date`, `start_date`, `target_date`) and `timestamptz` for instants", and calendar dates are compared in the server's own timezone, set once by the operator.
 - **CHK011** · *Covered* — §5 fixes the mechanism (`sort_order text COLLATE "C"`) and §3.8 the five columns' order. The concrete seed values are a plan decision (research → A-4), which is their correct layer.
 - **CHK012** · *Resolved* — FR-028 now states that a target equal to the start is legal, rather than leaving it to be inferred from "must not precede".

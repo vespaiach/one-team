@@ -2,7 +2,7 @@
 
 **Plan**: [`plan.md`](./plan.md) · **Spec**: [`spec.md`](./spec.md) · **Roadmap**: [`docs/ROADMAP.md`](../../docs/ROADMAP.md) → **R5**
 
-Forty decisions, grouped A–F. Each records what was chosen, why, and what was rejected. Nothing
+Thirty-eight decisions, grouped A–F. Each records what was chosen, why, and what was rejected. Nothing
 here widens R5's scope; where a decision touches an earlier entry's module it is named as a
 reach-back and repeated in the plan's Complexity Tracking.
 
@@ -160,15 +160,6 @@ the same typed refusal, so the two paths produce one message (C-6).
 
 **Rejected**: the mutator alone. It leaves the invariant to a race. **Rejected**: the constraint
 alone. It gives `FR-028` no field to put its error on.
-
-### A-7. Colour is a `CHECK` over the seven palette values
-
-`OT-DATA-013` says free colour entry MUST NOT exist. §5 says lowercase six-digit hex. A `text` column
-with `CHECK (color IN ('#5b5bd6','#8b909a','#2f7fc4','#d4a017','#3a9d5d','#c8453c','#9b5de5'))` makes
-"there is no free colour entry" a property of the data rather than of every form that writes it —
-which is what `FR-009` asks for on both tables this feature colours. Widening it for an eighth colour
-is an ordinary transactional migration, which is §5's stated reason for `text` + `CHECK` over
-`pgEnum`.
 
 ### A-8. Length bounds and enumerations follow R1 exactly
 
@@ -339,10 +330,10 @@ database's guarantee, not the mutator's (`FR-050`, `FR-051`).
 
 `redirect()` after the transaction commits satisfies `FR-052`.
 
-### C-6. `updateProject` accepts a partial of exactly five fields
+### C-6. `updateProject` accepts a partial of exactly four fields
 
-`FR-016` fixes the five — name, description, start date, target date, colour — and `FR-036` has the
-screen send one per call. The input is therefore a partial over those five keys, and an unknown key
+`FR-016` fixes the four — name, description, start date, target date — and `FR-036` has the
+screen send one per call. The input is therefore a partial over those four keys, and an unknown key
 is a rejection rather than a silently ignored property (II). `key` and `status` are not in the type,
 so `FR-016`'s two exclusions are a compile error before they are a runtime check — and a runtime
 check as well, since a Server Action's argument arrives over the wire (AGENTS.md: a TypeScript type
@@ -361,8 +352,8 @@ the client router's copy of the rendered tree, and the framework's answer to tha
 `refresh()`, which is callable only from a Server Action
 (`node_modules/next/dist/docs/01-app/03-api-reference/04-functions/refresh.md`).
 
-It matters here beyond the current page: a project's name, colour or status changes the **sidebar**,
-which lives in the `(app)` layout above every screen. A create, a rename, a recolour, a status flip
+It matters here beyond the current page: a project's name or status changes the **sidebar**,
+which lives in the `(app)` layout above every screen. A create, a rename, a status flip
 and a delete all move it.
 
 **Rejected**: `revalidatePath("/", "layout")`. It names a cache this application does not have, and
@@ -389,10 +380,10 @@ function, or against a server module called directly under the `node` project.
 This is the same decomposition R2 arrived at, for the same reason, and it is why the component list
 in [`plan.md`](./plan.md) has the shape it has.
 
-### D-2. In-place editing is one client component with five call sites on day one
+### D-2. In-place editing is one client component with four call sites on day one
 
 `FR-036` and `OT-UX-009` fix the behaviour: click the value, it becomes a field, Escape reverts, blur
-or ⌘-enter saves, one call per field. Five fields on the details screen need it the day it ships, so
+or ⌘-enter saves, one call per field. Four fields on the details screen need it the day it ships, so
 Principle I's "two call sites before extraction" is satisfied at the first commit rather than
 anticipated.
 
@@ -450,7 +441,6 @@ but the route it sits on is admin-only and the function matches it.
 | Control | Component |
 | --- | --- |
 | Name, key, description | `TextField`, `TextArea` |
-| Colour | `RadioGroup` of swatches — a required choice from seven, which is a radio group, not a listbox |
 | Members / Add member | `ComboBox` + `ListBox` for the picker, `TagGroup` for the chips |
 | Status | `Switch` — `FR-041`'s two-state switch |
 | Delete confirmation | `DialogTrigger` + `Modal` + `Dialog`, `role="alertdialog"` |
@@ -502,16 +492,6 @@ setting for the whole installation.
 
 The list is read in R2's `(app)/layout.tsx` and rendered by R2's `project-list-region.tsx`, both of
 which this feature edits. That is a reach-back and is recorded as one.
-
-### D-10. The project header composes R2's `ScreenHeader` and adds one prop to it
-
-R2's contract is `name`, `context`, `control`, `newIssue`, composed by the page. `FR-056` needs a
-colour dot beside the name and the Board/Details tab pair. The tabs are the `context` slot — §3 puts
-them in the title block's second line. The dot has no slot, so `ScreenHeader` gains one optional
-`colorDot` prop. A second reach-back, recorded as one.
-
-**Rejected**: passing a node as `name`. It would let any later screen put arbitrary markup in the
-title block, which is the drift R2's typed contract exists to prevent.
 
 ---
 
@@ -577,8 +557,8 @@ container, which is the assertion that would fail if someone later reached for a
 ### F-1. The database tests run against real PostgreSQL, as R1's already do
 
 Every constraint this feature adds is a test in the `node` project against `TEST_DATABASE_URL`: the
-key pattern, the key's uniqueness, the case-folded column-name uniqueness, the seven-value colour
-check, the date ordering check, the four length bounds, the composite membership key, the single
+key pattern, the key's uniqueness, the case-folded column-name uniqueness,
+the date ordering check, the four length bounds, the composite membership key, the single
 counter row per project, and the cascade. A mock cannot verify any of them (AGENTS.md → Testing).
 
 `src/db/constraints.test.ts` is R1's file and grows; the new tables' own behaviour goes in new files
@@ -609,18 +589,16 @@ and is tested here only for the three tables that exist. `FR-048`'s extension cl
 counter row exists, holds `0`, and cannot be duplicated — not that numbers are monotonic, which needs
 a caller R5 does not have.
 
-Everything else in the 56 functional requirements is reachable by a test in this entry.
+Everything else in the 54 functional requirements is reachable by a test in this entry.
 
 ---
 
 ## Assumptions carried forward
 
-Three, none blocking:
+Two, none blocking:
 
 1. **`project_member` carries `created_at` and `updated_at` that nothing reads today.** `FR-012`
    requires them and names `issue_counter` as the only exception. R7's `member_added` activity row
    carries its own timestamp, so the membership row's may stay unread indefinitely.
 2. **The Columns section's issue count is `0` for every column until R6.** Stated by the spec's own
    reconciliation; recorded here because the query returns a literal.
-3. **`ScreenHeader` gains `colorDot` before R2 has any other caller for it.** If R2 lands with a
-   different header shape, this is the one prop R5's plan expects to add to it.

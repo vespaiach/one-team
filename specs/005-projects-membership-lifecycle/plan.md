@@ -16,7 +16,7 @@ back into its mutators.
 The technical approach is mostly the database's and the framework's, because both answer the harder
 requirements better than application code would. **The invariants are constraints, not checks.** The
 key's pattern and uniqueness, one counter row per project, the composite membership key, the
-case-folded column-name uniqueness, the seven-value colour set, and the target-not-before-start rule
+case-folded column-name uniqueness, and the target-not-before-start rule
 are all `CHECK`s, `UNIQUE`s and a composite primary key — so `SC-003`'s two concurrent creations, the
 impossible duplicate membership row and `FR-028`'s two-concurrent-single-field-writes race are decided
 by PostgreSQL rather than by a read the mutator hopes is still true. **The cascade is the database's
@@ -33,7 +33,7 @@ component**, because the framework's own testing guide states that Vitest cannot
 Components and this repository has no E2E runner and cannot add one (IV) — so that constraint, not
 taste, fixes the component boundaries that make change gate 1 reachable.
 
-Full reasoning in [`research.md`](./research.md) — forty decisions, groups A–F. The tables in
+Full reasoning in [`research.md`](./research.md) — 38 decisions, groups A–F. The tables in
 [`data-model.md`](./data-model.md); the six mutators in [`contracts/mutators.md`](./contracts/mutators.md);
 the two screens in [`contracts/create-project.md`](./contracts/create-project.md) and
 [`contracts/project-details.md`](./contracts/project-details.md); the closed grammar in
@@ -99,15 +99,14 @@ query patterns only ([`research.md`](./research.md) A-9).
 feature is membership-scoped (`OT-AUTHZ-002`) · admins are implicit members, so no rule carries an
 `|| isAdmin` branch (`OT-AUTHZ-001`) · membership **predicates** include admins, membership **lists**
 do not (`OT-AUTHZ-006`) · the project for an `isMember` check is derived from the stored row, never
-from a client-supplied id (`OT-AUTHZ-004`) · every colour is one of seven, with no free entry
-(`OT-DATA-013`) · descriptions render a closed markdown subset with HTML escaped and no parsing
+from a client-supplied id (`OT-AUTHZ-004`) · descriptions render a closed markdown subset with HTML escaped and no parsing
 dependency (`OT-DATA-015`, IV) · `issue_counter` is unreachable from every read (`OT-DATA-006`) ·
 `project.key` is immutable (`OT-INV-007`) and unique (`OT-INV-016`) · a project is archived before it
 is deleted (`OT-INV-008`) · deletes are hard, cascading, and one transaction (`OT-DATA-007`,
 `OT-DATA-008`) · archiving touches nothing else (`OT-OPS-010`) and both transitions are legal
 (`OT-OPS-011`) · no dependency outside AGENTS.md's table (IV) · no component library (I, roadmap §1.1).
 
-**Scale/Scope**: one installation, one team under twenty people. 56 functional requirements, 5 user
+**Scale/Scope**: one installation, one team under twenty people. 54 functional requirements, 5 user
 stories, 56 acceptance scenarios, 18 edge cases, 15 success criteria, 2 screens plus the shell's two
 regions, 4 tables, 1 migration, 6 Server Actions and 1 authorizing read.
 
@@ -129,7 +128,7 @@ version record (v1.0.0).
 
 | | Principle | Assessment | Post-design |
 | --- | --- | --- | --- |
-| **I** | Component-Driven Architecture | Each component owns one section of one screen. Two abstractions are extracted on day one and both have their second call site on day one too: `EditableField` has five (name, description, both dates, colour) and the palette swatches have two (the project's colour and the seeded columns'). Nothing is promoted to `src/components/shared` or `src/lib` — the markdown renderer stays inside the feature until R6 is its second caller, which the spec's *Dependencies* already records. | pass |
+| **I** | Component-Driven Architecture | Each component owns one section of one screen. One abstraction is extracted on day one and already has its second call site that same day: `EditableField` has four (name, description, both dates). Nothing is promoted to `src/components/shared` or `src/lib` — the markdown renderer stays inside the feature until R6 is its second caller, which the spec's *Dependencies* already records. | pass |
 | **II** | Validated Input Boundaries | Seven server entry points — six mutators and one authorizing read — and each validates shape and then value before touching the database. Every predicate is checked against the **stored** row, never a client-supplied project, and the project-scoped one is checked **inside the transaction that writes** rather than before it, because a membership row read outside that transaction is a read followed by a write (`FR-014`, [`contracts/mutators.md`](./contracts/mutators.md)). `updateProject`'s five-key partial rejects an unknown key at runtime as well as at compile time, because a Server Action's argument arrives over the wire. Every mutator asserts the origin first, following R1. Returned results carry no SQL, no constraint name and no row. | pass |
 | **III** | Straightforward Over Clever | No metaprogramming, no dynamic dispatch, no generic machinery. The cascade is three foreign keys rather than a delete orchestrator; the markdown grammar is a line classifier and an inline scanner rather than a pluggable pipeline; the key's ownership is one boolean rather than a value comparison. `integer` over `bigint` on the counter, and no library for five constant strings. | pass |
 | **IV** | Built-In Features Over Third-Party Libraries | The renderer is hand-written and builds React nodes; the refusals, the redirect and the refresh are framework built-ins; `URL` does the scheme allowlist; React Aria supplies every control. `fractional-indexing` is approved and not installed, because this entry has nothing for it to compute. **One item is unresolved**: `@internationalized/date`, which `DatePicker` requires and which is in the tree transitively but not declared or approved. | pass, with one entry in Complexity Tracking |
@@ -166,7 +165,7 @@ one optional prop, which is a reach-back into R2's typed contract and is recorde
 specs/005-projects-membership-lifecycle/
 ├── spec.md                          the feature specification
 ├── plan.md                          this file
-├── research.md                      Phase 0 — 40 decisions, grouped A–F
+├── research.md                      Phase 0 — 38 decisions, grouped A–F
 ├── data-model.md                    Phase 1 — four tables, the reads, the DTOs, the writes
 ├── quickstart.md                    Phase 1 — twelve runnable walkthroughs
 ├── contracts/
@@ -193,7 +192,7 @@ src/
 ├── db/
 │   ├── schema.ts                           EDIT — project, project_member, board_column,
 │   │                                              issue_counter, and the sort_order custom type
-│   │                                              FR-002…FR-009, FR-012
+│   │                                              FR-002…FR-008, FR-012
 │   └── test-database.ts                    EDIT — four names in TRUNCATED_TABLES
 ├── app/(app)/
 │   ├── layout.tsx                          EDIT (R2's) — reads the sidebar's project list  FR-053
@@ -203,13 +202,11 @@ src/
 │       └── [projectKey]/details/page.tsx   EDIT (R2's) — the details screen        FR-035, FR-040
 └── features/
     ├── shell/components/
-    │   ├── project-list-region.tsx         EDIT (R2's) — entries, order, dimming  FR-053…FR-055
-    │   └── screen-header.tsx               EDIT (R2's) — one optional colorDot prop        FR-056
+    │   └── project-list-region.tsx         EDIT (R2's) — entries, order, dimming  FR-053…FR-055
     └── projects/
         ├── actions.ts                      "use server" — six mutators + the key check   FR-015
         ├── key.ts                          deriveProjectKey, isValidProjectKey    FR-002, FR-025
-        ├── palette.ts                      the seven values and their names       FR-009, OT-DATA-013
-        ├── seed-columns.ts                 the five rows: name, kind, colour, sort_order  FR-007
+        ├── seed-columns.ts                 the five rows: name, kind, sort_order  FR-007
         ├── markdown/
         │   ├── parse.ts                    source → blocks and inlines            FR-010
         │   └── render.tsx                  blocks and inlines → React nodes       FR-010, FR-011
@@ -225,7 +222,6 @@ src/
         └── components/
             ├── create-project-form.tsx     "use client" — useActionState          FR-032, FR-033
             ├── project-key-field.tsx       "use client" — derive, own, check      FR-025, FR-026
-            ├── palette-field.tsx           "use client" — RadioGroup of swatches  FR-029
             ├── member-picker-field.tsx     "use client" — ComboBox + TagGroup     FR-030, FR-045
             ├── date-range-fields.tsx       "use client" — two DatePickers         FR-028
             ├── project-details-screen.tsx  synchronous — the five sections        FR-035
@@ -235,7 +231,7 @@ src/
             ├── columns-section.tsx         read-only list in board order          FR-044
             ├── members-section.tsx         roster + add and remove                FR-045
             ├── delete-project-control.tsx  "use client" — Dialog, count, confirm  FR-047, FR-048
-            └── project-header.tsx          colour dot, name, Board/Details tabs   FR-056
+            └── project-header.tsx          name, Board/Details tabs               FR-056
 
 drizzle/<next>_*.sql                        NEW — generated, inspected, committed with its snapshot
                                             (`0000` and `0001` are R1's; R2, R3 and R4 may add their
@@ -253,7 +249,7 @@ pages **only** — the three files there are a guard, a read and a render each, 
 lives among them. All behaviour is under `src/features/projects/`, with everything server-only inside
 its `server/` directory. Four modules sit outside `server/` deliberately: `actions.ts`, which carries
 top-level `"use server"` and is the only module a Client Component imports server behaviour from;
-`key.ts` and `palette.ts`, which the client evaluates on every keystroke and every swatch; and
+`key.ts`, which the client evaluates on every keystroke; and
 `markdown/`, which renders in both. Nothing is promoted to `src/components/shared` or `src/lib`, and
 `src/components/ui` is still not created — R2 ships no component library and R5 adds none. No barrel
 file mixes server and client exports.
@@ -284,9 +280,9 @@ is a design here, and the two live in different modules so the import makes the 
 
 | Phase | Output | Status |
 | --- | --- | --- |
-| 0 — Outline & research | [`research.md`](./research.md) | complete — 40 decisions, three assumptions carried forward, no unknown outstanding |
+| 0 — Outline & research | [`research.md`](./research.md) | complete — 38 decisions, two assumptions carried forward, no unknown outstanding |
 | 1 — Design & contracts | [`data-model.md`](./data-model.md), [`contracts/`](./contracts/), [`quickstart.md`](./quickstart.md) | complete |
 | Constitution re-check | this file | complete — pass, five items in Complexity Tracking, one of them a governance approval |
-| 2 — Tasks | [`tasks.md`](./tasks.md) | complete — 89 tasks across 8 phases, MVP is T001–T036 |
+| 2 — Tasks | [`tasks.md`](./tasks.md) | complete — 83 tasks across 8 phases, MVP is T001–T032 |
 | Cross-artifact analysis | [`tasks.md`](./tasks.md), this file, [`spec.md`](./spec.md) | complete — `/speckit-analyze`, 15 findings, all remediated |
 | Implementation | — | **blocked on entries R2 and R3**, and on the dependency approval above |

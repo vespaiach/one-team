@@ -24,7 +24,6 @@ The container work lives in. §5, *Key fields* → `project`.
 | `status` | `text` | `NOT NULL DEFAULT 'active'`, `CHECK (status IN ('active','archived'))` | `FR-003`, `FR-031` |
 | `start_date` | `date` | nullable | `FR-028` |
 | `target_date` | `date` | nullable | `FR-028` |
-| `color` | `text` | `NOT NULL`, `CHECK` over the seven palette values | `FR-009`, `FR-029`, `OT-DATA-013` |
 | `created_at` | `timestamptz` | `NOT NULL` | `FR-012` |
 | `updated_at` | `timestamptz` | `NOT NULL`, written through `touched()` | `FR-012` |
 
@@ -90,7 +89,6 @@ A lane belonging to one project. Read-only in this feature; R9 gives it its muta
 | `id` | `uuid` | PK, `$defaultFn(uuidv7)` | `FR-012` |
 | `project_id` | `uuid` | `NOT NULL`, → `project.id` `ON DELETE CASCADE` | `FR-006`, `FR-051` |
 | `name` | `text` | `NOT NULL`, `CHECK (char_length ≤ 200)` | `FR-006` |
-| `color` | `text` | `NOT NULL`, `CHECK` over the seven palette values | `FR-009`, `OT-DATA-013` |
 | `sort_order` | `text collate "C"` | `NOT NULL` | `FR-006`, §5 |
 | `kind` | `text` | `NOT NULL`, `CHECK (kind IN ('open','done','canceled'))` | `FR-006`, `OT-INV-015` |
 | `created_at` | `timestamptz` | `NOT NULL` | `FR-012` |
@@ -110,13 +108,13 @@ Columns section's per-project read filters on; the `ORDER BY sort_order` is a so
 
 Written by `createProject` in its own transaction, in this order (`FR-007`, §3.3, §7):
 
-| # | Name | Kind | Colour | `sort_order` |
-| --- | --- | --- | --- | --- |
-| 1 | Backlog | `open` | grey `#8b909a` | `a0` |
-| 2 | Todo | `open` | blue `#2f7fc4` | `a1` |
-| 3 | In Progress | `open` | amber `#d4a017` | `a2` |
-| 4 | Done | `done` | green `#3a9d5d` | `a3` |
-| 5 | Canceled | `canceled` | red `#c8453c` | `a4` |
+| # | Name | Kind | `sort_order` |
+| --- | --- | --- | --- |
+| 1 | Backlog | `open` | `a0` |
+| 2 | Todo | `open` | `a1` |
+| 3 | In Progress | `open` | `a2` |
+| 4 | Done | `done` | `a3` |
+| 5 | Canceled | `canceled` | `a4` |
 
 The constants live in `src/features/projects/seed-columns.ts` as one exported array, so the seed, the
 test that asserts it, and R9's "a column added later is always `open`" all read the same list.
@@ -161,7 +159,7 @@ at the top. There is no ORM relation graph and no repository layer.
 
 | Query | Returns | Ordering | Requirement |
 | --- | --- | --- | --- |
-| `listProjectsForSidebar()` | every project: `key`, `name`, `status`, `color` | `(status = 'archived'), lower(name)` | `FR-053`, `FR-054`, `OT-UX-020` |
+| `listProjectsForSidebar()` | every project: `key`, `name`, `status` | `(status = 'archived'), lower(name)` | `FR-053`, `FR-054`, `OT-UX-020` |
 | `loadProjectByKey(key)` | the project row, or `null` | — | `FR-035`, `FR-040` |
 | `loadProjectDetails(key)` | the record, its columns, its roster, and the cascade count | columns by `sort_order`; roster by `lower(last_name), lower(first_name)` | `FR-035`, `FR-044`, `FR-045`, `FR-048` |
 | `findProjectKeyHolder(key)` | `{ key, name }` of the holder, or `null` | — | `FR-026`, `OT-UX-012` |
@@ -192,13 +190,13 @@ component.
 
 ```text
 ProjectListEntry            the sidebar
-  key, name, status, color
+  key, name, status
 
 ProjectRecord               the details screen's record section
-  key, name, description, status, startDate, targetDate, color
+  key, name, description, status, startDate, targetDate
 
 ProjectColumnRow            the Columns section
-  id, name, color, kind, position, issueCount
+  id, name, kind, position, issueCount
 
 RosterEntry                 the Members section, and the create form's chips
   userId, displayName, avatarUrl, jobTitle, deactivated

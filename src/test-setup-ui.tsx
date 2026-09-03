@@ -4,6 +4,13 @@ import type { ReactElement, ReactNode } from "react";
 import { I18nProvider } from "react-aria-components/I18nProvider";
 import { afterEach, vi } from "vitest";
 
+if (typeof window.CSS === "undefined" || typeof window.CSS.escape !== "function") {
+  window.CSS = {
+    ...window.CSS,
+    escape: (value: string) => value.replace(/[^a-zA-Z0-9_-]/g, (char) => `\\${char}`),
+  } as typeof window.CSS;
+}
+
 vi.mock("@testing-library/react", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@testing-library/react")>();
   const Wrapper = ({ children }: { children: ReactNode }) => (

@@ -2,9 +2,10 @@
 
 **Plan**: [`../plan.md`](../plan.md) · **Spec** §3, *The shell* · `FR-053`…`FR-056`
 
-R2 builds the frame and leaves two things for this entry: the project list's data and its ordering,
-and the project header's colour dot and tabs. Both are reach-backs into R2's modules and both are
-carried in the plan's Complexity Tracking.
+R2 builds the frame and leaves one thing for this entry: the project list's data and its ordering.
+It is a reach-back into R2's module and is carried in the plan's Complexity Tracking. The project
+header composes R2's `ScreenHeader` unchanged — its existing `name` and `context` props already
+cover what `FR-056` needs, so there is no second reach-back.
 
 ---
 
@@ -14,7 +15,7 @@ R2 ships `src/features/shell/components/project-list-region.tsx` rendering one q
 reading nothing. R5 gives it entries.
 
 **The read** happens in `src/app/(app)/layout.tsx`, which already resolves the actor for the shell.
-One query, `listProjectsForSidebar()`, returning `key`, `name`, `status` and `color`
+One query, `listProjectsForSidebar()`, returning `key`, `name` and `status`
 ([`../data-model.md`](../data-model.md) §5).
 
 **The order** is one `ORDER BY`:
@@ -35,7 +36,7 @@ boundary, never a visibility one (`FR-017`, US5 scenario 5).
 
 **Archived entries render after the active ones and dimmed** (`FR-053`).
 
-**Each entry links to `/projects/:projectKey`** — R10's board route — and carries the project's colour
+**Each entry links to `/projects/:projectKey`** — R10's board route
 (`FR-054`). The destination is fixed here; what answers at it is R10's.
 
 **The empty line stays R2's.** An installation with no projects shows the one quiet line R2 already
@@ -43,7 +44,7 @@ renders, not an illustration (`FR-055`, `OT-UX-007`, US5 scenario 8). R5 adds no
 
 The sidebar is a Server Component in the layout, so it is stale only as long as any layout is — and
 each of this feature's mutators calls `refresh()`, which is what moves it after a create, a rename, a
-recolour, a status flip or a delete ([`../research.md`](../research.md) C-7).
+status flip or a delete ([`../research.md`](../research.md) C-7).
 
 ---
 
@@ -58,20 +59,19 @@ control    node | null
 newIssue   node | null
 ```
 
-§3 says a project-scoped screen's title block carries the project's colour dot, its name, its comment
-count and the Board / Details tab pair. `FR-056` scopes that to the three this feature can supply.
+§3 says a project-scoped screen's title block carries the project's name, its comment count and the
+Board / Details tab pair. `FR-056` scopes that to the two this feature can supply.
 
 | Piece | Slot | Requirement |
 | --- | --- | --- |
 | the project's name | `name` | `FR-056` |
 | the Board / Details tab pair, current tab marked | `context` | `FR-056`, US5 scenarios 6 and 7 |
-| the project's colour dot | **a new `colorDot` prop** | `FR-056` |
 | the comment count | none — R7's | spec → *Out of Scope* |
 | **New issue** | `newIssue` — R6's | R2's contract, R6's occupant |
 
-**`ScreenHeader` gains one optional prop, `colorDot`.** Passing a node as `name` instead was rejected:
-it would let any later screen put arbitrary markup in the title block, which is the drift R2's typed
-contract exists to prevent ([`../research.md`](../research.md) D-10).
+**`ScreenHeader` is composed unchanged.** `name` and `context` already cover everything `FR-056`
+asks for, so this is not a reach-back into R2's module at all — `project-header.tsx` is a new
+component of this feature's own that calls R2's `ScreenHeader` with those two props.
 
 **The tabs are links, built from React Aria `Tabs`**, with Details marked current on this screen and
 Board pointing at `/projects/:projectKey` (`FR-056`, US5 scenarios 6 and 7).
