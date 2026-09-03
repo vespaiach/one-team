@@ -18,6 +18,7 @@ import type { EditableFieldEditorProps } from "./editable-field";
 import { EditableField } from "./editable-field";
 import type { MembershipActionResult, MembershipPayload } from "./members-section";
 import { MembersSection } from "./members-section";
+import { ProjectHeader } from "./project-header";
 import { StatusSwitch } from "./status-switch";
 
 function toCalendarDate(value: string): CalendarDate | null {
@@ -92,81 +93,88 @@ export function ProjectDetailsScreen({
   }
 
   return (
-    <div className="flex flex-col gap-6 p-4">
-      <section className="flex flex-col gap-3">
-        <div>
-          <span className="text-label text-(--color-text-muted)">Key</span>
-          <p>{record.key} — this can&apos;t be changed.</p>
-        </div>
-        <EditableField
-          label="Name"
-          value={record.name}
-          isDisabled={!canEditRecord}
-          disabledReason={disabledReason}
-          onSave={(value) => saveField({ name: value })}
-        />
-        <DescriptionView
-          description={record.description}
-          isDisabled={!canEditRecord}
-          disabledReason={disabledReason}
-          onSave={(value) => saveField({ description: value })}
-        />
-        <EditableField
-          label="Start date"
-          value={record.startDate}
-          placeholder="Add a start date"
-          isDisabled={!canEditRecord}
-          disabledReason={disabledReason}
-          renderEditor={(props) => (
-            <DateFieldEditor
-              label="Start date"
-              {...props}
-            />
-          )}
-          onSave={(value) => saveField({ startDate: value === "" ? null : value })}
-        />
-        <EditableField
-          label="Target date"
-          value={record.targetDate}
-          placeholder="Add a target date"
-          isDisabled={!canEditRecord}
-          disabledReason={disabledReason}
-          renderEditor={(props) => (
-            <DateFieldEditor
-              label="Target date"
-              {...props}
-            />
-          )}
-          onSave={(value) => saveField({ targetDate: value === "" ? null : value })}
-        />
-        <StatusSwitch
-          status={record.status}
-          isDisabled={!admin}
-          disabledReason={admin ? undefined : adminDisabledReason}
-          onSave={saveStatus}
-        />
-      </section>
-      <ColumnsSection columns={columns} />
-      <MembersSection
-        roster={roster}
-        admin={
-          admin
-            ? {
-                projectKey: record.key,
-                candidates: admin.candidates,
-                addProjectMemberAction: admin.addProjectMemberAction,
-                removeProjectMemberAction: admin.removeProjectMemberAction,
-              }
-            : undefined
-        }
+    <>
+      <ProjectHeader
+        projectKey={record.key}
+        name={record.name}
+        current="details"
       />
-      <DeleteProjectControl
-        projectName={record.name}
-        cascadeCount={details.cascadeCount}
-        isDisabled={!admin || record.status !== "archived"}
-        disabledReason={deleteDisabledReason}
-        onDelete={runDelete}
-      />
-    </div>
+      <div className="flex flex-col gap-6 p-4">
+        <section className="flex flex-col gap-3">
+          <div>
+            <span className="text-label text-(--color-text-muted)">Key</span>
+            <p>{record.key} — this can&apos;t be changed.</p>
+          </div>
+          <EditableField
+            label="Name"
+            value={record.name}
+            isDisabled={!canEditRecord}
+            disabledReason={disabledReason}
+            onSave={(value) => saveField({ name: value })}
+          />
+          <DescriptionView
+            description={record.description}
+            isDisabled={!canEditRecord}
+            disabledReason={disabledReason}
+            onSave={(value) => saveField({ description: value })}
+          />
+          <EditableField
+            label="Start date"
+            value={record.startDate}
+            placeholder="Add a start date"
+            isDisabled={!canEditRecord}
+            disabledReason={disabledReason}
+            renderEditor={(props) => (
+              <DateFieldEditor
+                label="Start date"
+                {...props}
+              />
+            )}
+            onSave={(value) => saveField({ startDate: value === "" ? null : value })}
+          />
+          <EditableField
+            label="Target date"
+            value={record.targetDate}
+            placeholder="Add a target date"
+            isDisabled={!canEditRecord}
+            disabledReason={disabledReason}
+            renderEditor={(props) => (
+              <DateFieldEditor
+                label="Target date"
+                {...props}
+              />
+            )}
+            onSave={(value) => saveField({ targetDate: value === "" ? null : value })}
+          />
+          <StatusSwitch
+            status={record.status}
+            isDisabled={!admin}
+            disabledReason={admin ? undefined : adminDisabledReason}
+            onSave={saveStatus}
+          />
+        </section>
+        <ColumnsSection columns={columns} />
+        <MembersSection
+          roster={roster}
+          admin={
+            admin
+              ? {
+                  projectKey: record.key,
+                  candidates: admin.candidates,
+                  addProjectMemberAction: admin.addProjectMemberAction,
+                  removeProjectMemberAction: admin.removeProjectMemberAction,
+                }
+              : undefined
+          }
+        />
+        <DeleteProjectControl
+          projectName={record.name}
+          cascadeCount={details.cascadeCount}
+          isDisabled={!admin || record.status !== "archived"}
+          disabledReason={deleteDisabledReason}
+          onDelete={runDelete}
+        />
+      </div>
+    </>
   );
 }

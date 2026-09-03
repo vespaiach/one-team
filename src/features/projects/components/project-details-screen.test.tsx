@@ -58,6 +58,19 @@ describe("ProjectDetailsScreen (FR-035, FR-036, FR-037, FR-021)", () => {
     expect(screen.getByRole("button", { name: "Description" }).textContent).toContain("A redesign");
   });
 
+  it("carries the project header, current tab marked Details (FR-056)", () => {
+    render(
+      <ProjectDetailsScreen
+        details={makeDetails()}
+        updateProjectAction={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("heading", { level: 1, name: "Website Redesign" })).not.toBeNull();
+    expect(screen.getByRole("tab", { name: "Board" })).not.toBeNull();
+    expect(screen.getByRole("tab", { name: "Details", selected: true })).not.toBeNull();
+  });
+
   it("states that the key is immutable", () => {
     render(
       <ProjectDetailsScreen
