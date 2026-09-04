@@ -100,12 +100,17 @@ Linking is bidirectional and plain-text — no tooling required.
 **Parent → child.** When a child spec directory is created, its path replaces the `—` in that row's `Sub-spec` column, as a link:
 
 ```markdown
-[`specs/005-projects/`](../specs/005-projects/)
+[`specs/005-projects-membership-lifecycle/`](../specs/005-projects-membership-lifecycle/)
 ```
 
 Child specs live under `specs/<NNN>-<short-name>/`, numbered sequentially by `.specify/scripts/bash/create-new-feature.sh`. Roadmap IDs are **not** the directory numbers: `R5` is the immutable identity, `005-` is whatever the script assigns. Keep the two mapped only through the `Sub-spec` column.
 
-The roadmap is accepted, so child specs may be created; none exists yet. `.specify/templates/spec-template.md` carries the `**Feature Branch**` line but no parent-roadmap line, so the author adds that line by hand.
+The roadmap is accepted, and child specs exist for all entries R1–R8. Each child spec directory contains:
+- `spec.md` — the feature specification, carrying the parent roadmap link and current status
+- `roadmap.md` (if the slice decomposes further) — a sub-roadmap with its own immutable IDs
+- `plan.md`, `tasks.md`, and working artifacts as implementation progresses
+
+The `**Feature Branch**` line in the template carries the spec identifier; the spec adds the `**Parent roadmap**` line by hand or via automation at creation time.
 
 ---
 
