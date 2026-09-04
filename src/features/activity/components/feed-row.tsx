@@ -10,6 +10,8 @@ export function FeedRow({ row }: { row: FeedRowData }) {
         actor={row.actor}
         body={row.body ?? ""}
         createdAt={row.createdAt}
+        canEdit={row.canEdit ?? false}
+        canDelete={row.canDelete ?? false}
       />
     );
   }

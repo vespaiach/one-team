@@ -355,41 +355,41 @@ delete control renders on every comment and works.
 
 ### Tests for User Story 3 (write first, observe failing) ⚠️
 
-- [ ] T047 [P] [US3] Write the failing tests in `src/features/activity/server/update-comment.test.ts`:
+- [X] T047 [P] [US3] Write the failing tests in `src/features/activity/server/update-comment.test.ts`:
   updates `body` and `updated_at` through `touched()`, writes no activity row; the predicate is
   authorship alone — not current membership, not `isAdmin`; a whitespace-only edit is refused and the
   prior text kept; an author who has since left the project can still edit; an unknown `commentId`
   resolves to `not-found` (FR-016, FR-017, FR-019, FR-047, US3 s1, s4, s8)
-- [ ] T048 [P] [US3] Write the failing tests in `src/features/activity/server/delete-comment.test.ts`:
+- [X] T048 [P] [US3] Write the failing tests in `src/features/activity/server/delete-comment.test.ts`:
   hard-deletes the row; the predicate is authorship or `isAdmin`; a second delete of the same id
   resolves to `not-found` rather than a second success; the comment's own activity row is gone
   afterward, verified as the schema's cascade rather than a second statement this mutator issues
   (FR-016, FR-048, US3 s5, s6, s7, spec → Edge Cases)
-- [ ] T049 [P] [US3] Write the failing tests in
+- [X] T049 [P] [US3] Write the failing tests in
   `src/features/activity/components/comment-row-controls.test.tsx`: an edit control renders only when
   `canEdit`; a delete control renders only when `canDelete`; pressing delete swaps it in place for an
   inline Confirm/Cancel pair rather than deleting immediately; Cancel, or moving focus away, reverts to
   the original control with nothing deleted; only Confirm calls `deleteComment` (FR-028, FR-044, US3 s3,
   s7)
-- [ ] T050 [P] [US3] Write the failing tests in `src/features/activity/components/comment-row-edit.test.tsx`:
+- [X] T050 [P] [US3] Write the failing tests in `src/features/activity/components/comment-row-edit.test.tsx`:
   activating the body turns it into a field; Escape reverts to the saved text and writes nothing;
   ⌘-enter saves with exactly one `updateComment` call (FR-043, US3 s1, s2)
 
 ### Implementation for User Story 3
 
-- [ ] T051 [US3] Implement `updateComment` in `src/features/activity/server/update-comment.ts` — the
+- [X] T051 [US3] Implement `updateComment` in `src/features/activity/server/update-comment.ts` — the
   one-statement write through `touched()`, the authorship predicate resolved from the stored comment
   (FR-016, FR-017, FR-019, FR-047, contracts/mutators.md) — depends on T011; makes T047 green
-- [ ] T052 [US3] Implement `deleteComment` in `src/features/activity/server/delete-comment.ts` — the
+- [X] T052 [US3] Implement `deleteComment` in `src/features/activity/server/delete-comment.ts` — the
   authorship-or-admin predicate, the one `DELETE`, and the affected-row-count check that turns a second
   delete into `not-found` (FR-016, FR-048, contracts/mutators.md) — makes T048 green
-- [ ] T053 [US3] Export `updateComment` and `deleteComment` from `src/features/activity/actions.ts`
+- [X] T053 [US3] Export `updateComment` and `deleteComment` from `src/features/activity/actions.ts`
   (contracts/mutators.md's eight-step shape) — depends on T051, T052
-- [ ] T054 [US3] Add the in-place edit gesture — click to activate, Escape to revert, ⌘-enter to save —
+- [X] T054 [US3] Add the in-place edit gesture — click to activate, Escape to revert, ⌘-enter to save —
   to `comment-row.tsx` (FR-043) — depends on T021, T053; makes T050 green
-- [ ] T055 [US3] Add the edit and delete controls, and the delete control's inline Confirm/Cancel swap,
+- [X] T055 [US3] Add the edit and delete controls, and the delete control's inline Confirm/Cancel swap,
   to `comment-row.tsx` (FR-028, FR-044) — depends on T054; makes T049 green
-- [ ] T056 [US3] Refactor with the tests green across `update-comment.ts`, `delete-comment.ts` and
+- [X] T056 [US3] Refactor with the tests green across `update-comment.ts`, `delete-comment.ts` and
   `comment-row.tsx` (gates 2, 6)
 
 **Checkpoint**: US1–US3 stand together. A comment's author can fix or retract it, an admin can remove

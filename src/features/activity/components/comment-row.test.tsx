@@ -15,6 +15,8 @@ function renderRow(overrides: Partial<Parameters<typeof CommentRow>[0]> = {}) {
       actor={ACTOR}
       body="Looks good to me."
       createdAt={new Date(Date.now() - 2 * 60 * 60 * 1000)}
+      canEdit={false}
+      canDelete={false}
       {...overrides}
     />,
   );
