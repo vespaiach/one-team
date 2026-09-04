@@ -1,13 +1,50 @@
 "use client";
 
-import type { FocusEvent, KeyboardEvent } from "react";
+import type { FocusEvent, KeyboardEvent, ReactNode } from "react";
 import { useEffect, useOptimistic, useRef, useState, useTransition } from "react";
 import { Button } from "react-aria-components/Button";
 import { FieldError, TextArea, TextField } from "react-aria-components/TextField";
 import { showToast } from "@/features/shell/components/toast-region";
-import { deleteComment, type UpdateCommentResult, updateComment } from "../actions";
+import { deleteComment, resolveCommentMentions, type UpdateCommentResult, updateComment } from "../actions";
 
 const MAX_COMMENT_BODY_LENGTH = 10000;
+
+const MENTION_TOKEN_PATTERN = /@\[([0-9a-f-]+)\]/g;
+
+function hasMentionToken(body: string): boolean {
+  return new RegExp(MENTION_TOKEN_PATTERN.source).test(body);
+}
+
+function renderResolvedBody(body: string, mentionNames: Record<string, string>): ReactNode[] {
+  const nodes: ReactNode[] = [];
+  let lastIndex = 0;
+  let key = 0;
+
+  for (const match of body.matchAll(MENTION_TOKEN_PATTERN)) {
+    const [token, userId] = match;
+    const start = match.index;
+    if (start > lastIndex) {
+      nodes.push(body.slice(lastIndex, start));
+    }
+    const name = mentionNames[userId ?? ""];
+    if (name) {
+      nodes.push(
+        <span
+          key={`mention-${key++}`}
+          className="font-medium text-(--color-text)">
+          {name}
+        </span>,
+      );
+    }
+    lastIndex = start + token.length;
+  }
+
+  if (lastIndex < body.length) {
+    nodes.push(body.slice(lastIndex));
+  }
+
+  return nodes;
+}
 
 const RELATIVE_TIME_FORMAT = new Intl.RelativeTimeFormat("en-US", { numeric: "auto" });
 
@@ -63,7 +100,23 @@ export function CommentRow({
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const [mentionNames, setMentionNames] = useState<Record<string, string>>({});
   const [, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (!hasMentionToken(optimisticBody)) {
+      return;
+    }
+    let cancelled = false;
+    resolveCommentMentions(optimisticBody).then((names) => {
+      if (!cancelled) {
+        setMentionNames(names);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [optimisticBody]);
 
   const editButtonRef = useRef<HTMLButtonElement>(null);
   const deleteButtonRef = useRef<HTMLButtonElement>(null);
@@ -211,10 +264,12 @@ export function CommentRow({
             onPress={openEdit}
             aria-label="Edit comment"
             className="block w-full whitespace-pre-wrap text-start text-control text-(--color-text)">
-            {optimisticBody}
+            {renderResolvedBody(optimisticBody, mentionNames)}
           </Button>
         ) : (
-          <p className="whitespace-pre-wrap text-control text-(--color-text)">{optimisticBody}</p>
+          <p className="whitespace-pre-wrap text-control text-(--color-text)">
+            {renderResolvedBody(optimisticBody, mentionNames)}
+          </p>
         )}
         {canDelete ? (
           isConfirmingDelete ? (

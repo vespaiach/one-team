@@ -6,6 +6,11 @@ import { requireActor } from "@/features/auth/server/actor";
 import { assertSameOrigin } from "@/features/auth/server/origin";
 import { type CreateCommentResult, createComment as runCreateComment } from "./server/create-comment";
 import { type DeleteCommentResult, deleteComment as runDeleteComment } from "./server/delete-comment";
+import {
+  type MentionCandidateGroups,
+  listMentionCandidates as runListMentionCandidates,
+} from "./server/mention-queries";
+import { resolveMentions as runResolveMentions } from "./server/mention-resolve";
 import { updateComment as runUpdateComment, type UpdateCommentResult } from "./server/update-comment";
 import type { ActivityTarget } from "./server/write-activity";
 
@@ -77,4 +82,28 @@ export async function deleteComment(input: DeleteCommentPayload): Promise<Delete
   }
 
   return result;
+}
+
+export async function listMentionCandidates(target: unknown): Promise<MentionCandidateGroups> {
+  assertSameOrigin({ headers: await headers() });
+  await requireActor();
+
+  const parsed = parseCommentTarget(target);
+  if (parsed === null) {
+    return { scoped: [], everyoneElse: [] };
+  }
+
+  return runListMentionCandidates(parsed);
+}
+
+export async function resolveCommentMentions(body: unknown): Promise<Record<string, string>> {
+  assertSameOrigin({ headers: await headers() });
+  await requireActor();
+
+  if (typeof body !== "string") {
+    return {};
+  }
+
+  const names = await runResolveMentions(body);
+  return Object.fromEntries(names);
 }

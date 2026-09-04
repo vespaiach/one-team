@@ -80,6 +80,7 @@ export function Feed({
   return (
     <div className="flex flex-col gap-4">
       <Composer
+        target={target}
         canPost={canPost}
         postReason={postReason}
         onSubmit={handleSubmit}

@@ -409,42 +409,42 @@ confirm the comment now shows their new name.
 
 ### Tests for User Story 4 (write first, observe failing) ⚠️
 
-- [ ] T057 [P] [US4] Write the failing tests in `src/features/activity/server/mention-queries.test.ts`:
+- [X] T057 [P] [US4] Write the failing tests in `src/features/activity/server/mention-queries.test.ts`:
   `listMentionCandidates({ issueId } | { projectId })` returns `scoped` (that target's project's members
   plus every admin) ranked above `everyoneElse`, both alphabetized, both excluding deactivated accounts
   unconditionally, re-read live rather than cached (FR-024, research E-2)
-- [ ] T058 [P] [US4] Write the failing tests in `src/features/activity/server/mention-resolve.test.ts`:
+- [X] T058 [P] [US4] Write the failing tests in `src/features/activity/server/mention-resolve.test.ts`:
   `resolveMentions` replaces every `@[<user_id>]` token in a body with that user's current display name,
   batched in one query per distinct id, and a deactivated user's mention still resolves (FR-022, FR-023,
   research E-1)
-- [ ] T059 [P] [US4] Write the failing tests in `src/features/activity/components/mention-picker.test.tsx`:
+- [X] T059 [P] [US4] Write the failing tests in `src/features/activity/components/mention-picker.test.tsx`:
   built from `Popover`/`ListBox`; opens on `@` with the full ranked list even with no letters typed yet;
   narrows on further letters, re-querying on every keystroke; closes on Escape without submitting the
   composer; selection inserts `@[<userId>]` at the trigger position, rendered to the typist as the
   display name (FR-024, FR-025, US4 s1, s4)
-- [ ] T060 [P] [US4] Write the failing tests in
+- [X] T060 [P] [US4] Write the failing tests in
   `src/features/activity/components/composer-mention-interplay.test.tsx`: the first Escape while the
   picker is open closes the picker alone, leaving the composer's text and cursor untouched and requiring
   a second Escape to revert the field; ⌘-enter submits the composer's text exactly as typed, never
   implicitly selecting a highlighted suggestion, and closes the picker as a consequence of the submit
   (FR-063)
-- [ ] T061 [P] [US4] Add the failing mention-rendering test to `comment-row.test.tsx`: a body carrying
+- [X] T061 [P] [US4] Add the failing mention-rendering test to `comment-row.test.tsx`: a body carrying
   `@[<user_id>]` renders the resolved display name, never the raw bracket syntax (FR-022, FR-023)
 
 ### Implementation for User Story 4
 
-- [ ] T062 [P] [US4] Implement `listMentionCandidates` in `src/features/activity/server/mention-queries.ts`
+- [X] T062 [P] [US4] Implement `listMentionCandidates` in `src/features/activity/server/mention-queries.ts`
   (FR-024, research E-2) — makes T057 green
-- [ ] T063 [P] [US4] Implement `resolveMentions` in `src/features/activity/server/mention-resolve.ts`
+- [X] T063 [P] [US4] Implement `resolveMentions` in `src/features/activity/server/mention-resolve.ts`
   (FR-022, FR-023, research E-1) — makes T058 green
-- [ ] T064 [US4] Wire `resolveMentions` into `comment-row.tsx`'s body rendering (FR-022) — depends on
+- [X] T064 [US4] Wire `resolveMentions` into `comment-row.tsx`'s body rendering (FR-022) — depends on
   T063; makes T061 green
-- [ ] T065 [US4] Implement `src/features/activity/components/mention-picker.tsx` from `Popover`/`ListBox`,
+- [X] T065 [US4] Implement `src/features/activity/components/mention-picker.tsx` from `Popover`/`ListBox`,
   querying `listMentionCandidates` debounced on every keystroke after `@`, ranked and alphabetized
   within each group (FR-024, FR-025, research E-3, E-4) — depends on T062; makes T059 green
-- [ ] T066 [US4] Wire the `@` trigger, the picker's open/close state, and the Escape/⌘-enter interplay
+- [X] T066 [US4] Wire the `@` trigger, the picker's open/close state, and the Escape/⌘-enter interplay
   into `composer.tsx` (FR-039, FR-063) — depends on T065; makes T060 green
-- [ ] T067 [US4] Refactor with the tests green across `mention-resolve.ts`, `mention-queries.ts`,
+- [X] T067 [US4] Refactor with the tests green across `mention-resolve.ts`, `mention-queries.ts`,
   `mention-picker.tsx` and `composer.tsx` (gates 2, 6)
 
 **Checkpoint**: a member can name someone while typing, and the name shown always matches who they go

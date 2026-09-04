@@ -6,6 +6,7 @@ function renderComposer(overrides: Partial<Parameters<typeof Composer>[0]> = {})
   const onSubmit = vi.fn();
   const utils = render(
     <Composer
+      target={{ projectId: "project-1" }}
       canPost={true}
       postReason={null}
       onSubmit={onSubmit}
