@@ -25,6 +25,12 @@ export type WriteActivityInput = {
   commentId?: string;
 };
 
+const ACTIVITY_VALUE_MAX_LENGTH = 200;
+
+export function truncateActivityValue(value: string | null): string | null {
+  return value === null ? null : value.slice(0, ACTIVITY_VALUE_MAX_LENGTH);
+}
+
 export async function writeActivity(tx: Transaction, input: WriteActivityInput): Promise<void> {
   await tx.insert(activity).values({
     actorId: input.actorId,

@@ -73,6 +73,7 @@ export async function createProject(
     startDate: input.startDate,
     targetDate: input.targetDate,
     memberIds,
+    actorId: actor.id,
   });
 
   if (result.status === "key_taken") {
@@ -171,7 +172,7 @@ export async function addProjectMember(input: MembershipPayload): Promise<Member
     notFound();
   }
 
-  await runAddProjectMember(project.id, input.userId);
+  await runAddProjectMember(project.id, input.userId, actor.id);
 
   refresh();
   return { status: "saved" };
@@ -189,7 +190,7 @@ export async function removeProjectMember(input: MembershipPayload): Promise<Mem
     notFound();
   }
 
-  await runRemoveProjectMember(project.id, input.userId);
+  await runRemoveProjectMember(project.id, input.userId, actor.id);
 
   refresh();
   return { status: "saved" };
@@ -217,7 +218,7 @@ export async function setProjectStatus(input: SetProjectStatusPayload): Promise<
     notFound();
   }
 
-  await runSetProjectStatus(project.id, input.status);
+  await runSetProjectStatus(project.id, input.status, actor.id);
 
   refresh();
   return { status: "saved" };

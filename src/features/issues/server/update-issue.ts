@@ -1,12 +1,14 @@
 import "server-only";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
-import { issue, project } from "@/db/schema";
+import { issue, project, user } from "@/db/schema";
 import { touched } from "@/db/touched";
+import { truncateActivityValue, writeActivity } from "@/features/activity/server/write-activity";
 import type { Actor } from "@/features/auth/server/actor";
+import { publicUser } from "@/features/auth/server/projections";
 import { isMember } from "@/features/projects/server/authorization";
 import { parseDescription, parseDueDate, parsePriority, parseTitle } from "./input";
-import { listAssigneePool } from "./issue-queries";
+import { listAssigneePool, listProjectColumns } from "./issue-queries";
 
 export type UpdateIssueField = "title" | "description" | "columnId" | "priority" | "assigneeId" | "dueDate";
 
@@ -162,7 +164,67 @@ async function runUpdateIssue(input: UpdateIssueInput): Promise<UpdateIssueResul
       return { status: "ok" };
     }
 
+    const diffs: { field: string; fromValue: string | null; toValue: string | null }[] = [];
+
+    if ("title" in fields) {
+      diffs.push({ field: "title", fromValue: row.title, toValue: fields.title as string });
+    }
+    if ("description" in fields) {
+      diffs.push({
+        field: "description",
+        fromValue: truncateActivityValue(row.description),
+        toValue: truncateActivityValue((fields.description as string | null) ?? null),
+      });
+    }
+    if ("priority" in fields) {
+      diffs.push({ field: "priority", fromValue: row.priority, toValue: fields.priority as string });
+    }
+    if ("dueDate" in fields) {
+      diffs.push({
+        field: "due_date",
+        fromValue: row.dueDate,
+        toValue: (fields.dueDate as string | null) ?? null,
+      });
+    }
+    if ("assigneeId" in fields) {
+      const newAssigneeId = fields.assigneeId as string | null;
+      const idsToResolve = [row.assigneeId, newAssigneeId].filter((id): id is string => id !== null);
+      const names =
+        idsToResolve.length > 0
+          ? await tx.select(publicUser).from(user).where(inArray(user.id, idsToResolve))
+          : [];
+      const nameById = new Map(
+        names.map((candidate) => [candidate.id, `${candidate.firstName} ${candidate.lastName}`]),
+      );
+      diffs.push({
+        field: "assignee",
+        fromValue: row.assigneeId ? (nameById.get(row.assigneeId) ?? null) : null,
+        toValue: newAssigneeId ? (nameById.get(newAssigneeId) ?? null) : null,
+      });
+    }
+    if ("columnId" in fields) {
+      const newColumnId = fields.columnId as string;
+      const columns = await listProjectColumns(projectRow.id);
+      const nameById = new Map(columns.map((column) => [column.id, column.name]));
+      diffs.push({
+        field: "column",
+        fromValue: nameById.get(row.columnId) ?? null,
+        toValue: nameById.get(newColumnId) ?? null,
+      });
+    }
+
     await tx.update(issue).set(touched(fields)).where(eq(issue.id, input.issueId));
+
+    for (const diff of diffs) {
+      await writeActivity(tx, {
+        type: "field_changed",
+        target: { issueId: input.issueId },
+        actorId: input.actor.id,
+        field: diff.field,
+        fromValue: diff.fromValue,
+        toValue: diff.toValue,
+      });
+    }
 
     return { status: "ok" };
   });

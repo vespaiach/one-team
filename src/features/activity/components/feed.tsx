@@ -3,9 +3,9 @@
 import { useOptimistic, useTransition } from "react";
 import { showToast } from "@/features/shell/components/toast-region";
 import { type CreateCommentResult, createComment } from "../actions";
-import type { FeedPage, FeedRow } from "../server/feed-queries";
-import { CommentRow } from "./comment-row";
+import type { FeedPage, FeedRow as FeedRowData } from "../server/feed-queries";
 import { Composer } from "./composer";
+import { FeedRow } from "./feed-row";
 
 type FeedTarget = { issueId: string } | { projectId: string };
 
@@ -23,7 +23,7 @@ function describeCreateCommentRefusal(result: Exclude<CreateCommentResult, { sta
   return "Couldn't post your comment. Try again.";
 }
 
-function buildOptimisticRow(tempId: string, body: string, viewer: Viewer): FeedRow {
+function buildOptimisticRow(tempId: string, body: string, viewer: Viewer): FeedRowData {
   return {
     id: tempId,
     kind: "comment",
@@ -60,10 +60,10 @@ export function Feed({
   postReason: string | null;
   viewer: Viewer;
 }) {
-  const [rows, addOptimisticRow] = useOptimistic(initialPage.rows, (state: FeedRow[], row: FeedRow) => [
-    row,
-    ...state,
-  ]);
+  const [rows, addOptimisticRow] = useOptimistic(
+    initialPage.rows,
+    (state: FeedRowData[], row: FeedRowData) => [row, ...state],
+  );
   const [, startTransition] = useTransition();
 
   function handleSubmit(body: string) {
@@ -87,12 +87,7 @@ export function Feed({
       <ul className="flex flex-col gap-4">
         {rows.map((row) => (
           <li key={row.id}>
-            <CommentRow
-              id={row.id}
-              actor={row.actor}
-              body={row.body ?? ""}
-              createdAt={row.createdAt}
-            />
+            <FeedRow row={row} />
           </li>
         ))}
       </ul>

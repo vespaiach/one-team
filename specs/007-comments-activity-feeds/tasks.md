@@ -254,87 +254,87 @@ change. Separately, create an issue, change its column and reassign it, and conf
 
 ### Tests for User Story 2 (write first, observe failing) ⚠️
 
-- [ ] T028 [P] [US2] Write the failing tests in `src/features/activity/components/activity-row.test.tsx`:
+- [X] T028 [P] [US2] Write the failing tests in `src/features/activity/components/activity-row.test.tsx`:
   each of the six non-comment types renders the sentence [`contracts/screens.md`](./contracts/screens.md)'s
   table states; a `null` `from_value` or `to_value` renders the literal string `"None"`; no row of any
   type ever carries an edit or delete control (FR-028, FR-030)
-- [ ] T029 [P] [US2] Write the failing test in `src/features/activity/components/feed-row.test.tsx`: a
+- [X] T029 [P] [US2] Write the failing test in `src/features/activity/components/feed-row.test.tsx`: a
   `comment`-kind row dispatches to `CommentRow`, every other kind dispatches to `ActivityRow` (FR-028)
-- [ ] T030 [P] [US2] Write the failing tests in `src/features/projects/server/create-project-activity.test.ts`:
+- [X] T030 [P] [US2] Write the failing tests in `src/features/projects/server/create-project-activity.test.ts`:
   `createProject` writes one `created` row naming the actor and one `member_added` row per seeded
   member, each carrying that member's display name in `to_value`, all inside the transaction that
   writes the project and its seeded rows; a call carrying no `actorId` — the shape R5's own
   `create-project.test.ts` already uses — writes no activity row and still creates the project exactly
   as before (FR-050, FR-054)
-- [ ] T031 [P] [US2] Write the failing tests in `src/features/projects/server/update-project-activity.test.ts`:
+- [X] T031 [P] [US2] Write the failing tests in `src/features/projects/server/update-project-activity.test.ts`:
   a call naming one differing field writes one `field_changed` row for it alone, naming `name`,
   `description`, `start_date` or `target_date` and the frozen old and new values; a call naming two
   differing fields writes two rows in the one transaction; a call whose named values all match the
   stored row writes nothing; the stored row is locked `FOR UPDATE` for the write's duration, verified by
   a concurrent `updateProject` on the same row waiting rather than reading a stale value (FR-051,
   SC-003, research D-2)
-- [ ] T032 [P] [US2] Write the failing tests in `src/features/projects/server/project-status-activity.test.ts`:
+- [X] T032 [P] [US2] Write the failing tests in `src/features/projects/server/project-status-activity.test.ts`:
   archiving writes one `archived` row and reopening writes one `reopened` row, each with no
   field/from/to, inside the same transaction as the status `UPDATE`; a call carrying no `actorId` — the
   shape R5's own `project-status.test.ts` already uses — writes no row and still changes the status
   exactly as before (FR-052, FR-054)
-- [ ] T033 [P] [US2] Write the failing tests in `src/features/projects/server/membership-activity.test.ts`:
+- [X] T033 [P] [US2] Write the failing tests in `src/features/projects/server/membership-activity.test.ts`:
   `addProjectMember` writes one `member_added` row carrying the added user's display name in `to_value`;
   `removeProjectMember` writes one `member_removed` row carrying the removed user's display name in
   `from_value`; both inside the same transaction as their own write; a call to either carrying no
   `actorId` — the shape R5's own `membership.test.ts` already uses — writes no row and still changes the
   roster exactly as before (FR-053, FR-054, research D-4)
-- [ ] T034 [P] [US2] Write the failing tests in `src/features/issues/server/create-issue-activity.test.ts`:
+- [X] T034 [P] [US2] Write the failing tests in `src/features/issues/server/create-issue-activity.test.ts`:
   `createIssue` writes one `created` row naming the actor, inside the same transaction as the issue, with
   no row for any optional value — column, priority, assignee, due date — set at creation (FR-055)
-- [ ] T035 [P] [US2] Write the failing tests in `src/features/issues/server/update-issue-activity.test.ts`:
+- [X] T035 [P] [US2] Write the failing tests in `src/features/issues/server/update-issue-activity.test.ts`:
   a call naming one differing field writes one `field_changed` row for it alone, naming `title`,
   `description`, `column`, `priority`, `assignee` or `due_date`; a changed column or assignee freezes
   the column's or the person's **name**, not its id, on both `from_value` and `to_value`; a call whose
   named values all match the stored row writes nothing (FR-056, SC-003)
-- [ ] T036 [P] [US2] Run R5's own suite (`npx vitest run src/features/projects`) and R6's own suite
+- [X] T036 [P] [US2] Run R5's own suite (`npx vitest run src/features/projects`) and R6's own suite
   (`npx vitest run src/features/issues`) unmodified against this feature's diff and confirm every test
   still passes — this is the task that proves FR-054 and FR-057, not a new test file of its own
 
 ### Implementation for User Story 2
 
-- [ ] T037 [P] [US2] Implement `src/features/activity/components/activity-row.tsx` per
+- [X] T037 [P] [US2] Implement `src/features/activity/components/activity-row.tsx` per
   [`contracts/screens.md`](./contracts/screens.md)'s sentence table, rendering a `null` from/to value as
   `"None"` (FR-030) — makes T028 green
-- [ ] T038 [US2] Implement `src/features/activity/components/feed-row.tsx` as the `kind` dispatcher, and
+- [X] T038 [US2] Implement `src/features/activity/components/feed-row.tsx` as the `kind` dispatcher, and
   switch `feed.tsx` to render every row through it instead of `comment-row.tsx` directly (FR-028) —
   depends on T023, T037; makes T029 green
-- [ ] T039 [US2] Add an optional `actorId` field to `CreateProjectInput` and, when present, call
+- [X] T039 [US2] Add an optional `actorId` field to `CreateProjectInput` and, when present, call
   `writeActivity` once for `type: 'created'` and once per seeded member for `type: 'member_added'`
   inside `createProject`'s existing transaction in `src/features/projects/server/create-project.ts`
   (FR-050, research D-1) — depends on T010; makes T030 green
-- [ ] T040 [US2] In `src/features/projects/server/update-project.ts`: lock the existing unconditional
+- [X] T040 [US2] In `src/features/projects/server/update-project.ts`: lock the existing unconditional
   read `FOR UPDATE` (widening scope on the same statement, not adding a second lock — T001, research
   D-2), diff each key in `changes` against the locked row, short-circuit to a no-op write when nothing
   differs, and call `writeActivity` once per differing field among `name`, `description`, `startDate`,
   `targetDate` (FR-051, SC-003, research D-2) — this feature's own reach-back beyond "add a call,"
   recorded per `plan.md`'s Complexity Tracking — depends on T010; makes T031 green
-- [ ] T041 [US2] Add an optional `actorId` parameter to `setProjectStatus` in
+- [X] T041 [US2] Add an optional `actorId` parameter to `setProjectStatus` in
   `src/features/projects/server/project-status.ts`, wrap its `UPDATE` in `db.transaction`, and call
   `writeActivity` for `type: 'archived'` or `'reopened'` when `actorId` is present (FR-052, T001) —
   depends on T010; makes T032 green
-- [ ] T042 [US2] Add an optional `actorId` parameter to `addProjectMember` and `removeProjectMember` in
+- [X] T042 [US2] Add an optional `actorId` parameter to `addProjectMember` and `removeProjectMember` in
   `src/features/projects/server/membership.ts`, wrap each in `db.transaction`, add the one `SELECT` each
   needs for the target user's `publicUser` row, and call `writeActivity` for `type: 'member_added'` or
   `'member_removed'` when `actorId` is present (FR-053, research D-4, T001) — depends on T010; makes
   T033 green
-- [ ] T043 [US2] Add one `writeActivity` call for `type: 'created'`, naming `input.actor.id`, inside
+- [X] T043 [US2] Add one `writeActivity` call for `type: 'created'`, naming `input.actor.id`, inside
   `createIssue`'s existing transaction in `src/features/issues/server/create-issue.ts` (FR-055, research
   D-5) — depends on T010; makes T034 green
-- [ ] T044 [US2] Add one `writeActivity` call per entry in the delta `updateIssue` already computes, in
+- [X] T044 [US2] Add one `writeActivity` call per entry in the delta `updateIssue` already computes, in
   `src/features/issues/server/update-issue.ts`, resolving the changed column's and the changed
   assignee's **names** (via `listProjectColumns`/`publicUser`, reading both the old and the new value)
   before freezing them (FR-056, research D-6) — depends on T010; makes T035 green
-- [ ] T045 [US2] Thread `actor.id` from each Server Action call site in
+- [X] T045 [US2] Thread `actor.id` from each Server Action call site in
   `src/features/projects/actions.ts` — `createProject`, `setProjectStatus`, `addProjectMember`,
   `removeProjectMember` — into the `actorId` parameter T039–T042 each added (FR-050, FR-052, FR-053) —
   depends on T039, T041, T042
-- [ ] T046 [US2] Refactor with the tests green across `activity-row.tsx`, `feed-row.tsx`, and the seven
+- [X] T046 [US2] Refactor with the tests green across `activity-row.tsx`, `feed-row.tsx`, and the seven
   mutator files: no comment added, the `actorId`-present guard stated once per mutator rather than
   duplicated (gates 2, 6)
 
