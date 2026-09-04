@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { getFeedFilter } from "@/features/activity/server/feed-filter";
 import { listFeed } from "@/features/activity/server/feed-queries";
 import { requireActor } from "@/features/auth/server/actor";
 import { NewIssueControl } from "@/features/issues/components/new-issue-control";
@@ -43,6 +44,7 @@ export default async function ProjectDetailsPage({ params }: { params: Promise<{
     { projectId: projectRow.id },
     { id: actor.id, isAdmin: actor.role === "admin" },
   );
+  const feedFilter = await getFeedFilter(actor.id);
   const commentPostReason = details.canEditRecord
     ? null
     : `Only project members can comment in ${details.record.name}.`;
@@ -61,6 +63,7 @@ export default async function ProjectDetailsPage({ params }: { params: Promise<{
       }
       feedProjectId={projectRow.id}
       feedInitialPage={feedInitialPage}
+      feedFilter={feedFilter}
       canComment={details.canEditRecord}
       commentPostReason={commentPostReason}
       viewer={{

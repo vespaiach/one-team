@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { Suspense } from "react";
 import { DateInput, DatePicker, DateSegment, Group } from "react-aria-components/DatePicker";
 import { Feed } from "@/features/activity/components/feed";
+import type { FeedFilterValue } from "@/features/activity/components/feed-filter-toggle";
 import { FeedSkeleton } from "@/features/activity/components/feed-skeleton";
 import type { FeedPage } from "@/features/activity/server/feed-queries";
 import type {
@@ -73,6 +74,7 @@ export function ProjectDetailsScreen({
   canComment = false,
   commentPostReason = null,
   viewer = null,
+  feedFilter = "all",
 }: {
   details: ProjectDetails;
   updateProjectAction: (input: UpdateProjectPayload) => Promise<UpdateProjectState>;
@@ -83,6 +85,7 @@ export function ProjectDetailsScreen({
   canComment?: boolean;
   commentPostReason?: string | null;
   viewer?: Viewer | null;
+  feedFilter?: FeedFilterValue;
 }) {
   const { record, columns, roster, canEditRecord } = details;
   const disabledReason = canEditRecord ? undefined : `Join ${record.name} to make changes.`;
@@ -202,6 +205,7 @@ export function ProjectDetailsScreen({
               canPost={canComment}
               postReason={commentPostReason}
               viewer={viewer}
+              feedFilter={feedFilter}
             />
           </Suspense>
         ) : null}

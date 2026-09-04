@@ -51,6 +51,7 @@ function renderFeed(initialPage: FeedPage) {
       canPost={true}
       postReason={null}
       viewer={VIEWER}
+      feedFilter="all"
     />,
   );
 }

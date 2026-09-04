@@ -27,6 +27,9 @@ vi.mock("@/features/labels/server/queries", () => ({
 vi.mock("@/features/activity/server/feed-queries", () => ({
   listFeed: vi.fn().mockResolvedValue({ rows: [], hasNextPage: false }),
 }));
+vi.mock("@/features/activity/server/feed-filter", () => ({
+  getFeedFilter: vi.fn().mockResolvedValue("all"),
+}));
 
 import { notFound } from "next/navigation";
 import { requireActor } from "@/features/auth/server/actor";

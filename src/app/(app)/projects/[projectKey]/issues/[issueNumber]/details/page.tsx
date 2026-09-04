@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { getFeedFilter } from "@/features/activity/server/feed-filter";
 import { listFeed } from "@/features/activity/server/feed-queries";
 import { requireActor } from "@/features/auth/server/actor";
 import { IssueDetail } from "@/features/issues/components/issue-detail";
@@ -39,16 +40,16 @@ export default async function IssueDetailsPage({
     notFound();
   }
 
-  const [columns, assigneePool, writeAccess, createAccess, labelOptions, feedInitialPage] = await Promise.all(
-    [
+  const [columns, assigneePool, writeAccess, createAccess, labelOptions, feedInitialPage, feedFilter] =
+    await Promise.all([
       listProjectColumns(project.id),
       listAssigneePool(project.id),
       resolveIssueWriteAccess(actor, project, "edit"),
       resolveIssueWriteAccess(actor, project, "create"),
       listLabelOptionsForIssue(issue.id),
       listFeed({ issueId: issue.id }, { id: actor.id, isAdmin: actor.role === "admin" }),
-    ],
-  );
+      getFeedFilter(actor.id),
+    ]);
   const deleteAccess = resolveIssueDeleteAccess(actor, project);
   const commentPostReason = writeAccess.canWrite
     ? null
@@ -78,6 +79,7 @@ export default async function IssueDetailsPage({
           labelOptions={labelOptions}
           canManageLabels={actor.role === "admin"}
           feedInitialPage={feedInitialPage}
+          feedFilter={feedFilter}
           canComment={writeAccess.canWrite}
           commentPostReason={commentPostReason}
           viewer={{

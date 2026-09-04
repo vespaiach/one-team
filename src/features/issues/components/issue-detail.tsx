@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Suspense } from "react";
 import { Feed } from "@/features/activity/components/feed";
+import type { FeedFilterValue } from "@/features/activity/components/feed-filter-toggle";
 import { FeedSkeleton } from "@/features/activity/components/feed-skeleton";
 import type { FeedPage } from "@/features/activity/server/feed-queries";
 import { addIssueLabel, removeIssueLabel } from "@/features/labels/actions";
@@ -39,6 +40,7 @@ export function IssueDetail({
   canComment = false,
   commentPostReason = null,
   viewer = null,
+  feedFilter = "all",
 }: {
   issue: IssueView;
   columns: IssueColumnOption[];
@@ -53,6 +55,7 @@ export function IssueDetail({
   canComment?: boolean;
   commentPostReason?: string | null;
   viewer?: Viewer | null;
+  feedFilter?: FeedFilterValue;
 }) {
   return (
     <div className="flex gap-6 p-4">
@@ -90,6 +93,7 @@ export function IssueDetail({
               canPost={canComment}
               postReason={commentPostReason}
               viewer={viewer}
+              feedFilter={feedFilter}
             />
           </Suspense>
         ) : null}

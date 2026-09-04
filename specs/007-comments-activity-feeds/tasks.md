@@ -464,41 +464,41 @@ appends the next 50 without a full reload.
 
 ### Tests for User Story 5 (write first, observe failing) ⚠️
 
-- [ ] T068 [P] [US5] Write the failing tests in `src/features/activity/server/feed-filter.test.ts`:
+- [X] T068 [P] [US5] Write the failing tests in `src/features/activity/server/feed-filter.test.ts`:
   `setFeedFilter` updates the caller's own `user.feed_filter`, requires nothing but a session, and
   writes no other row (FR-034, research C-6)
-- [ ] T069 [P] [US5] Write the failing tests in `src/features/activity/components/collapse.test.ts` (a
+- [X] T069 [P] [US5] Write the failing tests in `src/features/activity/components/collapse.test.ts` (a
   pure function, no rendering): consecutive non-comment rows by the same actor within five minutes of
   the immediately preceding row already in the run collapse into one group; a gap over five minutes, a
   different actor, or any comment row ends the run; re-running the function over an earlier page plus an
   appended one merges a run left open at the first page's foot with its continuation, rather than
   leaving two collapsed groups (FR-031, FR-062, research F-2)
-- [ ] T070 [P] [US5] Write the failing tests in `src/features/activity/components/feed-pagination.test.tsx`:
+- [X] T070 [P] [US5] Write the failing tests in `src/features/activity/components/feed-pagination.test.tsx`:
   the feed loads 50 rows on open; scrolling to the foot of what is loaded calls `listFeed` again with the
   last row's cursor and appends the result without a full reload; the 50-row count is of raw rows
   fetched, unaffected by how many collapse into fewer lines (FR-032, SC-008)
-- [ ] T071 [P] [US5] Write the failing tests in `src/features/activity/components/feed-filter-toggle.test.tsx`:
+- [X] T071 [P] [US5] Write the failing tests in `src/features/activity/components/feed-filter-toggle.test.tsx`:
   a two-state toggle calling `setFeedFilter` on change; **Comments only** hides every non-comment row
   from what is already loaded, client-side, issuing no re-fetch; the initial state comes from the
   `feedFilter` prop with no flash of the other state (FR-033, FR-034, SC-009, US5 s3, s5)
 
 ### Implementation for User Story 5
 
-- [ ] T072 [US5] Implement `setFeedFilter` in `src/features/activity/server/feed-filter.ts` and export it
+- [X] T072 [US5] Implement `setFeedFilter` in `src/features/activity/server/feed-filter.ts` and export it
   from `actions.ts` (FR-034) — makes T068 green
-- [ ] T073 [P] [US5] Implement the collapsing transform in `src/features/activity/components/collapse.ts`,
+- [X] T073 [P] [US5] Implement the collapsing transform in `src/features/activity/components/collapse.ts`,
   applied by `feed.tsx` at render time before handing rows to `feed-row.tsx` (FR-031, FR-062, research
   F-2) — depends on T038; makes T069 green
-- [ ] T074 [US5] Add "load more on scroll to the foot" to `feed.tsx`, calling `listFeed` with the last
+- [X] T074 [US5] Add "load more on scroll to the foot" to `feed.tsx`, calling `listFeed` with the last
   loaded row's `(createdAt, id)` cursor and appending the result (FR-032, research F-1) — depends on
   T023, T073; makes T070 green
-- [ ] T075 [P] [US5] Implement `src/features/activity/components/feed-filter-toggle.tsx` and wire it into
+- [X] T075 [P] [US5] Implement `src/features/activity/components/feed-filter-toggle.tsx` and wire it into
   `feed.tsx`, filtering the already-loaded rows client-side (FR-033, FR-034) — depends on T072; makes
   T071 green
-- [ ] T076 [US5] Read `user.feed_filter` server-side in both host pages
+- [X] T076 [US5] Read `user.feed_filter` server-side in both host pages
   (`.../issues/[issueNumber]/details/page.tsx`, `.../details/page.tsx`) and pass it as `feed.tsx`'s
   initial `feedFilter` prop (FR-033, SC-009) — depends on T075
-- [ ] T077 [US5] Refactor with the tests green across `collapse.ts`, `feed.tsx` and
+- [X] T077 [US5] Refactor with the tests green across `collapse.ts`, `feed.tsx` and
   `feed-filter-toggle.tsx` (gates 2, 6)
 
 **Checkpoint**: all five stories are complete.
