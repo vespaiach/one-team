@@ -22,6 +22,8 @@ const TRUNCATED_TABLES = [
   "session",
   "credential",
   "invite",
+  "comment",
+  "activity",
   "issue",
   "issue_label",
   "label",

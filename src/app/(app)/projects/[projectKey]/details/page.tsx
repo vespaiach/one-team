@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import { getFeedFilter } from "@/features/activity/server/feed-filter";
+import { countProjectComments, listFeed } from "@/features/activity/server/feed-queries";
 import { requireActor } from "@/features/auth/server/actor";
 import { NewIssueControl } from "@/features/issues/components/new-issue-control";
 import { buildIssueWriteReason } from "@/features/issues/server/issue-queries";
@@ -22,19 +24,31 @@ export default async function ProjectDetailsPage({ params }: { params: Promise<{
     notFound();
   }
 
+  const projectRow = await loadProjectByKey(projectKey);
+  if (!projectRow) {
+    notFound();
+  }
+
   let admin: ProjectDetailsScreenAdmin | undefined;
   if (details.canAdminister) {
-    const projectRow = await loadProjectByKey(projectKey);
-    if (projectRow) {
-      admin = {
-        candidates: await listAddableUsers({ excludeProjectId: projectRow.id }),
-        addProjectMemberAction: addProjectMember,
-        removeProjectMemberAction: removeProjectMember,
-        setProjectStatusAction: setProjectStatus,
-        deleteProjectAction: deleteProject,
-      };
-    }
+    admin = {
+      candidates: await listAddableUsers({ excludeProjectId: projectRow.id }),
+      addProjectMemberAction: addProjectMember,
+      removeProjectMemberAction: removeProjectMember,
+      setProjectStatusAction: setProjectStatus,
+      deleteProjectAction: deleteProject,
+    };
   }
+
+  const feedInitialPage = await listFeed(
+    { projectId: projectRow.id },
+    { id: actor.id, isAdmin: actor.role === "admin" },
+  );
+  const feedFilter = await getFeedFilter(actor.id);
+  const commentCount = await countProjectComments(projectRow.id);
+  const commentPostReason = details.canEditRecord
+    ? null
+    : `Only project members can comment in ${details.record.name}.`;
 
   return (
     <ProjectDetailsScreen
@@ -48,6 +62,18 @@ export default async function ProjectDetailsPage({ params }: { params: Promise<{
           writeReason={details.canEditRecord ? "" : buildIssueWriteReason("create", details.record.name)}
         />
       }
+      feedProjectId={projectRow.id}
+      feedInitialPage={feedInitialPage}
+      feedFilter={feedFilter}
+      commentCount={commentCount}
+      canComment={details.canEditRecord}
+      commentPostReason={commentPostReason}
+      viewer={{
+        id: actor.id,
+        firstName: actor.firstName,
+        lastName: actor.lastName,
+        avatarUrl: actor.avatarUrl,
+      }}
     />
   );
 }

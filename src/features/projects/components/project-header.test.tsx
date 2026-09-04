@@ -92,4 +92,43 @@ describe("ProjectHeader (FR-056)", () => {
 
     expect(screen.getByText("New issue control")).not.toBeNull();
   });
+
+  it("shows the project's own live comment count next to the tabs (FR-059)", () => {
+    render(
+      <ProjectHeader
+        projectKey="WR"
+        name="Website Redesign"
+        current="details"
+        commentCount={3}
+      />,
+    );
+
+    expect(screen.getByText("3 comments")).not.toBeNull();
+  });
+
+  it("uses singular wording for exactly one comment (FR-059)", () => {
+    render(
+      <ProjectHeader
+        projectKey="WR"
+        name="Website Redesign"
+        current="details"
+        commentCount={1}
+      />,
+    );
+
+    expect(screen.getByText("1 comment")).not.toBeNull();
+  });
+
+  it("shows zero comments when the project has none yet (FR-059)", () => {
+    render(
+      <ProjectHeader
+        projectKey="WR"
+        name="Website Redesign"
+        current="details"
+        commentCount={0}
+      />,
+    );
+
+    expect(screen.getByText("0 comments")).not.toBeNull();
+  });
 });

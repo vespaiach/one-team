@@ -4,6 +4,7 @@ import { generateKeyBetween } from "fractional-indexing";
 import { db } from "@/db";
 import { issue, issueCounter, issueLabel, label, project } from "@/db/schema";
 import { touched } from "@/db/touched";
+import { writeActivity } from "@/features/activity/server/write-activity";
 import type { Actor } from "@/features/auth/server/actor";
 import { isMember } from "@/features/projects/server/authorization";
 import { type IssuePriority, parseDescription, parseDueDate, parsePriority, parseTitle } from "./input";
@@ -184,6 +185,12 @@ export async function createIssue(input: CreateIssueInput): Promise<CreateIssueR
           .insert(issueLabel)
           .values(labelIds.map((labelId) => ({ issueId: insertedIssue.id, labelId })));
       }
+
+      await writeActivity(tx, {
+        type: "created",
+        target: { issueId: insertedIssue.id },
+        actorId: input.actor.id,
+      });
 
       return counterRow.lastNumber;
     });

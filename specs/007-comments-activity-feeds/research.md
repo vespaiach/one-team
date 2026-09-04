@@ -178,7 +178,7 @@ every caller has already run its own predicate before this is reached. Compute w
 gains the same shape here (§D-2); the writer receives the answer, never derives it. Its whole body is
 one `INSERT`.
 
-### B-4. Ten call sites exist inside this feature alone, which is what keeps it off Principle I's speculative list
+### B-4. Eight call sites exist inside this feature alone, which is what keeps it off Principle I's speculative list
 
 FR-012 states the count and this file is where it is verified: `createComment` (§C-1), `createProject`
 (§D-1), `updateProject` (§D-2, one call per differing field), `setProjectStatus` (§D-3),
@@ -392,10 +392,14 @@ together") still resolve to a stable order rather than an implementation-depende
 ### F-2. Collapsing (FR-031) is a client-side transform over an already-paginated page, and the query knows nothing about it
 
 FR-032 fixes the count "before FR-031's collapsing is applied", which settles the layering: the server
-returns 50 raw rows; the component folds consecutive same-actor non-`comment` rows within five minutes
-of each other into one expandable group as a rendering step. Moving collapsing into the query — a
-window function grouping adjacent rows — would make the *page size* depend on how bursty a given
-stretch of history happens to be, which is exactly what FR-032 rules out.
+returns 50 raw rows; the component folds a run of consecutive same-actor non-`comment` rows into one
+expandable group as a rendering step, chaining pairwise — each row compared to the immediately
+preceding row already in its run, not to the run's first row — and closing the run at anything five
+minutes or more past that preceding row. Moving collapsing into the query — a window function grouping
+adjacent rows — would make the *page size* depend on how bursty a given stretch of history happens to
+be, which is exactly what FR-032 rules out. FR-062 extends the same transform to re-run over the
+combined row set once a next page is appended, so a run left open at the foot of one page merges
+correctly with its continuation on the next rather than staying two collapsed lines.
 
 ### F-3. One component serves both call sites because both exist in this feature, at the exact place the roadmap names
 

@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { project, projectMember } from "@/db/schema";
 import { touched } from "@/db/touched";
+import { truncateActivityValue, writeActivity } from "@/features/activity/server/write-activity";
 
 export type UpdateProjectChanges = Partial<{
   name: string;
@@ -38,7 +39,7 @@ export async function updateProject(
 ): Promise<UpdateProjectResult> {
   try {
     return await db.transaction(async (tx) => {
-      const [row] = await tx.select().from(project).where(eq(project.id, projectId));
+      const [row] = await tx.select().from(project).where(eq(project.id, projectId)).for("update");
       if (!row) {
         return { status: "not_found" };
       }
@@ -75,7 +76,41 @@ export async function updateProject(
         fields.targetDate = changes.targetDate ?? null;
       }
 
+      const diffs: {
+        field: "name" | "description" | "start_date" | "target_date";
+        from: string | null;
+        to: string | null;
+      }[] = [];
+      if ("name" in fields && fields.name !== row.name) {
+        diffs.push({ field: "name", from: row.name, to: fields.name ?? null });
+      }
+      if ("description" in fields && fields.description !== row.description) {
+        diffs.push({ field: "description", from: row.description, to: fields.description ?? null });
+      }
+      if ("startDate" in fields && fields.startDate !== row.startDate) {
+        diffs.push({ field: "start_date", from: row.startDate, to: fields.startDate ?? null });
+      }
+      if ("targetDate" in fields && fields.targetDate !== row.targetDate) {
+        diffs.push({ field: "target_date", from: row.targetDate, to: fields.targetDate ?? null });
+      }
+
+      if (diffs.length === 0) {
+        return { status: "saved" };
+      }
+
       await tx.update(project).set(touched(fields)).where(eq(project.id, projectId));
+
+      for (const diff of diffs) {
+        await writeActivity(tx, {
+          type: "field_changed",
+          target: { projectId },
+          actorId: actor.id,
+          field: diff.field,
+          fromValue: truncateActivityValue(diff.from),
+          toValue: truncateActivityValue(diff.to),
+        });
+      }
+
       return { status: "saved" };
     });
   } catch (error) {

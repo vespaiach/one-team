@@ -43,6 +43,13 @@
       "when": 1788460328196,
       "tag": "0005_mature_typhoid_mary",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788478716197,
+      "tag": "0006_lying_sugar_man",
+      "breakpoints": true
     }
   ]
 }

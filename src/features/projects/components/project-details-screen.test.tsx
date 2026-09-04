@@ -71,6 +71,18 @@ describe("ProjectDetailsScreen (FR-035, FR-036, FR-037, FR-021)", () => {
     expect(screen.getByRole("tab", { name: "Details", selected: true })).not.toBeNull();
   });
 
+  it("passes the project's own live comment count through to the header (FR-059)", () => {
+    render(
+      <ProjectDetailsScreen
+        details={makeDetails()}
+        updateProjectAction={vi.fn()}
+        commentCount={7}
+      />,
+    );
+
+    expect(screen.getByText("7 comments")).not.toBeNull();
+  });
+
   it("states that the key is immutable", () => {
     render(
       <ProjectDetailsScreen

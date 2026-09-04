@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { getFeedFilter } from "@/features/activity/server/feed-filter";
+import { listFeed } from "@/features/activity/server/feed-queries";
 import { requireActor } from "@/features/auth/server/actor";
 import { IssueDetail } from "@/features/issues/components/issue-detail";
 import { IssueDetailSkeleton } from "@/features/issues/components/issue-skeletons";
@@ -38,14 +40,20 @@ export default async function IssueDetailsPage({
     notFound();
   }
 
-  const [columns, assigneePool, writeAccess, createAccess, labelOptions] = await Promise.all([
-    listProjectColumns(project.id),
-    listAssigneePool(project.id),
-    resolveIssueWriteAccess(actor, project, "edit"),
-    resolveIssueWriteAccess(actor, project, "create"),
-    listLabelOptionsForIssue(issue.id),
-  ]);
+  const [columns, assigneePool, writeAccess, createAccess, labelOptions, feedInitialPage, feedFilter] =
+    await Promise.all([
+      listProjectColumns(project.id),
+      listAssigneePool(project.id),
+      resolveIssueWriteAccess(actor, project, "edit"),
+      resolveIssueWriteAccess(actor, project, "create"),
+      listLabelOptionsForIssue(issue.id),
+      listFeed({ issueId: issue.id }, { id: actor.id, isAdmin: actor.role === "admin" }),
+      getFeedFilter(actor.id),
+    ]);
   const deleteAccess = resolveIssueDeleteAccess(actor, project);
+  const commentPostReason = writeAccess.canWrite
+    ? null
+    : `Only project members can comment in ${project.name}.`;
 
   return (
     <>
@@ -70,6 +78,16 @@ export default async function IssueDetailsPage({
           deleteReason={deleteAccess.deleteReason}
           labelOptions={labelOptions}
           canManageLabels={actor.role === "admin"}
+          feedInitialPage={feedInitialPage}
+          feedFilter={feedFilter}
+          canComment={writeAccess.canWrite}
+          commentPostReason={commentPostReason}
+          viewer={{
+            id: actor.id,
+            firstName: actor.firstName,
+            lastName: actor.lastName,
+            avatarUrl: actor.avatarUrl,
+          }}
         />
       </Suspense>
     </>

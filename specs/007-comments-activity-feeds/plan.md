@@ -25,11 +25,12 @@ something that already has an owner.
 **`updateProject` gains a diff it did not have before**, and this is the one reach-back in this feature
 that is not "add a call where the answer already exists." `updateIssue` already computes a full delta
 for its own SET-list (R6's own plan says so explicitly), so R7's edit there is one line. `updateProject`
-does not — R5's own contract reads the stored row only when a date field is part of the call, and
-writes whatever partial it is given with no comparison against what is stored. `FR-051` and `SC-003`
-both require knowing which named field actually changed, so this feature widens that conditional read
-into an unconditional one and adds the diff itself. It is recorded in *Complexity Tracking* below
-rather than left for a reviewer to discover mid-diff.
+does not — R5's shipped contract already reads the stored row unconditionally on every call, for its
+own membership check, but never compares that row against the fields it was given; it writes whatever
+partial it is given with no diff. `FR-051` and `SC-003` both require knowing which named field actually
+changed, so this feature adds the comparison and a `FOR UPDATE` lock on the read that already runs,
+neither of which R5 needed for its own contract. It is recorded in *Complexity Tracking* below rather
+than left for a reviewer to discover mid-diff.
 
 A third fact, not a decision: **`user.feed_filter` already exists.** R1's own migration added it to the
 `user` table it created, a release ahead of `FR-006`'s framing of it as this feature's column. This
@@ -41,16 +42,16 @@ composer and the mention picker in [`contracts/screens.md`](./contracts/screens.
 
 ## Technical Context
 
-**Precondition — entries R2, R5 and R6 are not implemented yet.** The tree today holds R1 only:
-`src/app`, `src/db`, `src/features/auth`, two migrations. R5 and R6 are each fully specified, planned
-and tasked (`specs/005-…/`, `specs/006-…/` each carry a complete `plan.md`, `research.md`,
-`data-model.md`, `contracts/` and `tasks.md`) but neither has a line of implementation. Every module
-this feature edits or renders inside — the `(app)` shell, the Forbidden screen, the toast convention
-and the skeleton-below-the-guard rule from R2; `project`, `project_member`, `isMember`, `isAdmin`,
-`createProject`, `updateProject`, `setProjectStatus`, `addProjectMember`, `removeProjectMember` and
-project details from R5; `issue`, `createIssue`, `updateIssue` and issue detail from R6 — is missing.
-This plan is complete and `/speckit-tasks` can be run against it, but **implementation is blocked
-until R2, R5 and R6 land**. Nothing below assumes otherwise.
+**Precondition — entries R2, R5 and R6 have since landed.** This plan was originally written against a
+tree holding R1 only. That is no longer this tree's state: `src/app/(app)` (R2's shell), and
+`src/features/projects/server/` and `src/features/issues/server/` (R5's and R6's mutators, including
+`createProject`, `updateProject`, `setProjectStatus`, `addProjectMember`, `removeProjectMember`,
+`createIssue` and `updateIssue`) all exist with passing test suites. `src/features/labels/` (R8) has
+also landed, ahead of its own roadmap dependency on this feature — nothing there is this feature's
+concern. `tasks.md`'s own T001 is where this plan's own facts about R5's and R6's exact shipped shape —
+most notably that `project` carries no `colour` column and that `updateProject`'s stored-row read is
+already unconditional, both reflected in this plan directly — are confirmed against the code before any
+later task depends on them. **Implementation is not blocked**; nothing below assumes otherwise.
 
 **R3 is not a precondition beyond the deactivation flag.** This feature excludes deactivated accounts
 from every mention list and ranked group by reading `user.deactivated_at`, a column R1's table already
@@ -98,8 +99,9 @@ scenarios and success criteria already promised (`FR-054`, `FR-057`) · no depen
 `AGENTS.md`'s table (IV) · no seam built for R8, R9 or R11 beyond the one primitive `FR-011` and
 `FR-012` justify today (I, III, VI).
 
-**Scale/Scope**: one installation, one team under twenty people. 61 functional requirements, 5 user
-stories, 36 acceptance scenarios, 10 edge cases, 14 success criteria, 2 tables added, 0 altered,
+**Scale/Scope**: one installation, one team under twenty people. 62 functional requirements (FR-001
+through FR-063, FR-009 retired — spec.md Assumptions), 5 user stories, 36 acceptance scenarios,
+10 edge cases, 14 success criteria, 2 tables added, 0 altered,
 4 Server Actions plus 7 mutator edits, 1 internal writer, 1 shared component rendering on 2 existing
 screens, 1 header edit.
 
@@ -142,8 +144,9 @@ version record (v1.0.0).
 
 **Re-evaluation after Phase 1.** The design added no dependency, no abstraction without its call sites
 already present, and no comment. One thing it *changed* beyond what `FR-050`–`FR-058` state directly:
-`updateProject`'s row read widened from conditional to unconditional, adding a `FOR UPDATE` lock to
-every save rather than only a save touching a date field. Recorded below rather than left in the diff.
+`updateProject`'s already-unconditional row read gains a `FOR UPDATE` lock and a diff against the
+locked row, neither of which its read needed before this feature. Recorded below rather than left in
+the diff.
 
 ## Project Structure
 
@@ -242,18 +245,21 @@ a second reusable primitive with two callers.
 
 ## Complexity Tracking
 
-Two items where this feature's reach-back into inherited work goes beyond "add a call at an existing
+Three items where this feature's reach-back into inherited work goes beyond "add a call at an existing
 point." Each is recorded so a reviewer meets it here rather than discovering it in the diff.
 
 | Violation | Why needed | Simpler alternative rejected because |
 | --- | --- | --- |
-| **`updateProject`'s stored-row read widens from conditional (dates only) to unconditional, and gains a diff it did not compute before** (a reach-back that changes an inherited mutator's shape, not only its output) | `FR-051` requires one `field_changed` row per field that actually differs from what is stored, across all five of `updateProject`'s fields, and `SC-003` requires zero rows for a call that changes nothing. R5's own contract never needed to know whether a named value differed from the stored one — it wrote whatever partial it was given — because no earlier requirement depended on that answer. `updateIssue` already computes this for its own SET-list (R6's own plan says so), so nothing is being invented; `updateProject` simply catches up to a shape a sibling mutator already has. | *Write a `field_changed` row unconditionally whenever `updateProject` is called with a field named.* `SC-003` refuses this directly — a call that resends an unchanged value would falsify the feed with a change that did not happen. *Compute the diff only for the fields already read (the date pair) and skip logging for the other three.* That would make `field_changed` coverage depend on which field happened to trigger a read for an unrelated reason, which is arbitrary rather than a rule a reader could state. |
+| **`updateProject`'s already-unconditional stored-row read gains a `FOR UPDATE` lock and a diff it did not compute before** (a reach-back that changes an inherited mutator's shape, not only its output) | `FR-051` requires one `field_changed` row per field that actually differs from what is stored, across all four of `updateProject`'s fields, and `SC-003` requires zero rows for a call that changes nothing. R5's shipped contract already reads the stored row on every call, for its own membership check, but never compares that row against the fields it was given — no earlier requirement depended on that answer. `updateIssue` already computes this for its own SET-list (R6's own plan says so), so nothing is being invented; `updateProject` simply catches up to a shape a sibling mutator already has. | *Write a `field_changed` row unconditionally whenever `updateProject` is called with a field named.* `SC-003` refuses this directly — a call that resends an unchanged value would falsify the feed with a change that did not happen. *Compute the diff without locking the row `FOR UPDATE`.* A concurrent `updateProject` on the same row could then read a stale value and write a `field_changed` row for a change that a second, interleaved write already overwrote. |
 | **`addProjectMember` and `removeProjectMember` each gain one `SELECT` they did not need before** (a reach-back adding a read, not only a write) | `FR-053` requires the added or removed member's display name frozen into `to_value` or `from_value` at write time (`FR-007`). Neither mutator previously read the target user's row — each already had both halves of the `(project_id, user_id)` pair it needed for its own `INSERT` or `DELETE`. | *Freeze the user id instead of the display name, and resolve it at render time.* That is exactly the opposite of `FR-007`'s rule: a `from_value`/`to_value` is frozen precisely so a later rename does not rewrite history, which `FR-007` and `FR-022` both state as one pair of opposite, deliberate rules. |
+| **`setProjectStatus`, `addProjectMember` and `removeProjectMember` each gain a `db.transaction` wrapper and an optional trailing `actorId` parameter they did not have before** (a reach-back changing three mutators' own shape, not only adding a call) | `FR-052` and `FR-053` require each write and its activity row to commit together, but all three run today as a single un-transacted statement with no actor parameter at all. `FR-054` requires R5's own test files — `project-status.test.ts`, `membership.test.ts`, which call all three with today's signature — to keep passing unmodified, so the new parameter must be optional rather than required. | *Add a required `actorId` parameter to all three.* This would break every existing call site R5's own test suite exercises, which `FR-054` forbids. *Call `writeActivity` after the mutator's own statement rather than wrapping both in one transaction.* That reopens the same partial-failure gap `FR-045`'s single-transaction rule closes for `createComment` — the status or roster change could commit while its activity row does not. |
 
-**Not recorded as a violation:** `createProject`, `setProjectStatus`, `createIssue` and `updateIssue`
-gaining their own `writeActivity` calls. Each is additive at a point its own inherited contract already
-names or a point requiring no new read (research D-1, D-3, D-5, D-6), which is the "insert a call
-where the answer already exists" shape Principle VI and Principle III both admit without comment.
+**Not recorded as a violation:** `createProject`, `createIssue` and `updateIssue` gaining their own
+`writeActivity` calls. Each is additive at a point its own inherited contract already names or a point
+requiring no new read (research D-1, D-5, D-6), which is the "insert a call where the answer already
+exists" shape Principle VI and Principle III both admit without comment. `createProject` already runs
+inside `db.transaction`, so only the optional `actorId` parameter is new for it, not a transaction
+wrapper.
 
 ## Phase status
 
@@ -261,6 +267,6 @@ where the answer already exists" shape Principle VI and Principle III both admit
 | --- | --- | --- |
 | 0 — Outline & research | [`research.md`](./research.md) | complete — 29 decisions in six groups, no unknown outstanding |
 | 1 — Design & contracts | [`data-model.md`](./data-model.md), [`contracts/`](./contracts/), [`quickstart.md`](./quickstart.md) | complete |
-| Constitution re-check | this file | complete — pass, two items in Complexity Tracking |
-| 2 — Tasks | [`tasks.md`](./tasks.md) | not yet run — `/speckit-tasks` |
-| Implementation | — | **blocked on entries R2, R5 and R6**, none built |
+| Constitution re-check | this file | complete — pass, three items in Complexity Tracking |
+| 2 — Tasks | [`tasks.md`](./tasks.md) | complete — `/speckit-tasks` has run |
+| Implementation | — | not blocked — R2, R5 and R6 have landed (Technical Context, `tasks.md` T001) |

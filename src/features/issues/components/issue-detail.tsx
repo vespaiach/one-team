@@ -1,4 +1,9 @@
 import type { ReactNode } from "react";
+import { Suspense } from "react";
+import { Feed } from "@/features/activity/components/feed";
+import type { FeedFilterValue } from "@/features/activity/components/feed-filter-toggle";
+import { FeedSkeleton } from "@/features/activity/components/feed-skeleton";
+import type { FeedPage } from "@/features/activity/server/feed-queries";
 import { addIssueLabel, removeIssueLabel } from "@/features/labels/actions";
 import type { LabelOption } from "@/features/labels/server/queries";
 import { deleteIssue, updateIssue } from "../actions";
@@ -7,6 +12,8 @@ import { CopyableKey } from "./copyable-key";
 import { DeleteIssueControl } from "./delete-issue-control";
 import { EditableText } from "./editable-text";
 import { IssueRail } from "./issue-rail";
+
+type Viewer = { id: string; firstName: string; lastName: string; avatarUrl: string | null };
 
 const TIMESTAMP_FORMAT = new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "UTC" });
 
@@ -29,6 +36,11 @@ export function IssueDetail({
   deleteReason = "",
   labelOptions = [],
   canManageLabels = false,
+  feedInitialPage = { rows: [], hasNextPage: false },
+  canComment = false,
+  commentPostReason = null,
+  viewer = null,
+  feedFilter = "all",
 }: {
   issue: IssueView;
   columns: IssueColumnOption[];
@@ -39,6 +51,11 @@ export function IssueDetail({
   deleteReason?: string;
   labelOptions?: LabelOption[];
   canManageLabels?: boolean;
+  feedInitialPage?: FeedPage;
+  canComment?: boolean;
+  commentPostReason?: string | null;
+  viewer?: Viewer | null;
+  feedFilter?: FeedFilterValue;
 }) {
   return (
     <div className="flex gap-6 p-4">
@@ -68,6 +85,18 @@ export function IssueDetail({
           writeReason={writeReason}
           updateIssueAction={updateIssue}
         />
+        {viewer ? (
+          <Suspense fallback={<FeedSkeleton />}>
+            <Feed
+              target={{ issueId: issue.id }}
+              initialPage={feedInitialPage}
+              canPost={canComment}
+              postReason={commentPostReason}
+              viewer={viewer}
+              feedFilter={feedFilter}
+            />
+          </Suspense>
+        ) : null}
       </div>
       <aside
         aria-label="Issue details"
