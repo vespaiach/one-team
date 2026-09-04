@@ -138,3 +138,11 @@ export async function listFeed(
 
   return { rows, hasNextPage };
 }
+
+export async function countProjectComments(projectId: string): Promise<number> {
+  const [row] = await db
+    .select({ count: sql<number>`count(*)`.mapWith(Number) })
+    .from(comment)
+    .where(eq(comment.projectId, projectId));
+  return row?.count ?? 0;
+}

@@ -114,6 +114,20 @@ describe("updateProject — activity (FR-051, SC-003, research D-2)", () => {
     expect(rows).toHaveLength(0);
   });
 
+  it("freezes a description change at 200 characters however long the field itself is (SC-004)", async () => {
+    const proj = await insertProject({ description: "Old ".repeat(100) });
+    const member = await insertUser();
+    await addMember(proj.id, member.id);
+    const longDescription = "New ".repeat(100);
+
+    await updateProject(proj.id, member, { description: longDescription });
+
+    const rows = await testDb.select().from(activity).where(eq(activity.projectId, proj.id));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.fromValue?.length).toBeLessThanOrEqual(200);
+    expect(rows[0]?.toValue?.length).toBeLessThanOrEqual(200);
+  });
+
   it("locks the stored row FOR UPDATE, so a concurrent update reads the committed value rather than a stale one", async () => {
     const proj = await insertProject({ name: "Original" });
     const member = await insertUser();

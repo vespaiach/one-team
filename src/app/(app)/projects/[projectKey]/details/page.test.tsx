@@ -17,12 +17,14 @@ vi.mock("@/features/projects/actions", () => ({
 }));
 vi.mock("@/features/activity/server/feed-queries", () => ({
   listFeed: vi.fn().mockResolvedValue({ rows: [], hasNextPage: false }),
+  countProjectComments: vi.fn().mockResolvedValue(0),
 }));
 vi.mock("@/features/activity/server/feed-filter", () => ({
   getFeedFilter: vi.fn().mockResolvedValue("all"),
 }));
 
 import { notFound } from "next/navigation";
+import { countProjectComments } from "@/features/activity/server/feed-queries";
 import { requireActor } from "@/features/auth/server/actor";
 import { NewIssueControl } from "@/features/issues/components/new-issue-control";
 import { updateProject } from "@/features/projects/actions";
@@ -104,6 +106,18 @@ describe("/projects/:projectKey/details page (FR-035, FR-040)", () => {
     expect(notFound).not.toHaveBeenCalled();
     expect(jsx.props.details).toBe(DETAILS);
     expect(jsx.props.updateProjectAction).toBe(updateProject);
+  });
+
+  it("reads the project's own live comment count and passes it to the screen (FR-059)", async () => {
+    vi.mocked(requireActor).mockResolvedValue(ACTOR);
+    vi.mocked(loadProjectDetails).mockResolvedValue(DETAILS);
+    vi.mocked(loadProjectByKey).mockResolvedValue(PROJECT_ROW);
+    vi.mocked(countProjectComments).mockResolvedValue(5);
+
+    const jsx = await ProjectDetailsPage({ params: Promise.resolve({ projectKey: "WR" }) });
+
+    expect(countProjectComments).toHaveBeenCalledWith(PROJECT_ROW.id);
+    expect(jsx.props.commentCount).toBe(5);
   });
 
   it("wires the header's New issue control, enabled for a member of the project (FR-028)", async () => {

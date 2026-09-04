@@ -87,6 +87,14 @@ describe("CommentRow — delete's inline Confirm/Cancel swap (FR-044, US3 s3, s7
     expect(deleteCommentMock).not.toHaveBeenCalled();
   });
 
+  it("moves keyboard focus onto Confirm delete so it is never lost when Delete unmounts (FR-061)", () => {
+    renderRow({ canDelete: true });
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete comment" }));
+
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: /confirm/i }));
+  });
+
   it("reverts to the original control on Cancel, deleting nothing", () => {
     renderRow({ canDelete: true });
 

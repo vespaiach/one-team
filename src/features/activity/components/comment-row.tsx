@@ -120,6 +120,7 @@ export function CommentRow({
 
   const editButtonRef = useRef<HTMLButtonElement>(null);
   const deleteButtonRef = useRef<HTMLButtonElement>(null);
+  const confirmDeleteButtonRef = useRef<HTMLButtonElement>(null);
   const wasEditingRef = useRef(false);
   const handledRef = useRef(false);
   const initialDraftRef = useRef("");
@@ -130,6 +131,12 @@ export function CommentRow({
     }
     wasEditingRef.current = isEditing;
   }, [isEditing]);
+
+  useEffect(() => {
+    if (isConfirmingDelete) {
+      confirmDeleteButtonRef.current?.focus();
+    }
+  }, [isConfirmingDelete]);
 
   function openEdit() {
     initialDraftRef.current = optimisticBody;
@@ -278,6 +285,7 @@ export function CommentRow({
               onBlur={handleDeleteGroupBlur}
               className="m-0 flex gap-2 border-0 p-0">
               <Button
+                ref={confirmDeleteButtonRef}
                 onPress={confirmDelete}
                 aria-label="Confirm delete">
                 Confirm delete

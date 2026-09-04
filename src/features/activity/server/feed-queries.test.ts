@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { activity, boardColumn, comment, issue, project, user } from "@/db/schema";
 import { testDb, truncateTestDatabase } from "@/db/test-database";
-import { listFeed } from "./feed-queries";
+import { countProjectComments, listFeed } from "./feed-queries";
 
 beforeEach(async () => {
   await truncateTestDatabase();
@@ -295,5 +295,37 @@ describe("listFeed — canEdit and canDelete (FR-032, data-model §4)", () => {
     const row = page.rows.find((candidate) => candidate.id === activityRow.id);
     expect(row?.canEdit).toBeNull();
     expect(row?.canDelete).toBeNull();
+  });
+});
+
+describe("countProjectComments (FR-059)", () => {
+  it("counts only comments attached to the project directly, not comments on its issues", async () => {
+    const fx = await fixture();
+    await insertComment(fx.userId, { projectId: fx.projectId });
+    await insertComment(fx.userId, { projectId: fx.projectId });
+    await insertComment(fx.userId, { issueId: fx.issueId });
+
+    const count = await countProjectComments(fx.projectId);
+
+    expect(count).toBe(2);
+  });
+
+  it("returns 0 for a project with no comments of its own", async () => {
+    const fx = await fixture();
+    await insertComment(fx.userId, { issueId: fx.issueId });
+
+    const count = await countProjectComments(fx.projectId);
+
+    expect(count).toBe(0);
+  });
+
+  it("does not count another project's own comments", async () => {
+    const fx = await fixture();
+    const otherProject = await insertProject();
+    await insertComment(fx.userId, { projectId: otherProject.id });
+
+    const count = await countProjectComments(fx.projectId);
+
+    expect(count).toBe(0);
   });
 });

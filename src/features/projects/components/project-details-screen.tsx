@@ -75,6 +75,7 @@ export function ProjectDetailsScreen({
   commentPostReason = null,
   viewer = null,
   feedFilter = "all",
+  commentCount,
 }: {
   details: ProjectDetails;
   updateProjectAction: (input: UpdateProjectPayload) => Promise<UpdateProjectState>;
@@ -86,6 +87,7 @@ export function ProjectDetailsScreen({
   commentPostReason?: string | null;
   viewer?: Viewer | null;
   feedFilter?: FeedFilterValue;
+  commentCount?: number;
 }) {
   const { record, columns, roster, canEditRecord } = details;
   const disabledReason = canEditRecord ? undefined : `Join ${record.name} to make changes.`;
@@ -121,6 +123,7 @@ export function ProjectDetailsScreen({
         name={record.name}
         current="details"
         newIssue={newIssue}
+        commentCount={commentCount}
       />
       <div className="flex flex-col gap-6 p-4">
         <section className="flex flex-col gap-3">

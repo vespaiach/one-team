@@ -507,31 +507,31 @@ appends the next 50 without a full reload.
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T078 [P] Write the failing test and implement `countProjectComments` in
+- [X] T078 [P] Write the failing test and implement `countProjectComments` in
   `src/features/activity/server/feed-queries.ts` — `count(*) FROM comment WHERE project_id = $1` — and
   wire it into `src/features/projects/components/project-header.tsx`, read live on every render, next to
   the existing Board/Details tabs (FR-059)
-- [ ] T079 [P] Write and confirm the failing-then-green absence test that `feed.tsx` and its host pages
+- [X] T079 [P] Write and confirm the failing-then-green absence test that `feed.tsx` and its host pages
   issue no `setInterval`/polling call of any kind — the feed re-queries only on navigation (FR-036,
   `OT-UX-006`)
-- [ ] T080 [P] Add the accessibility pass across `composer.tsx`, `mention-picker.tsx`,
+- [X] T080 [P] Add the accessibility pass across `composer.tsx`, `mention-picker.tsx`,
   `comment-row.tsx`'s delete confirmation and `feed-filter-toggle.tsx`: every disabled reason and inline
   error associated with its own control programmatically, every control an accessible name and a visible
   focus indicator, every colour-only state given a text or shape equivalent (FR-038, FR-061)
-- [ ] T081 Walk the twelve [`quickstart.md`](./quickstart.md) walkthroughs end to end against a running
+- [X] T081 Walk the twelve [`quickstart.md`](./quickstart.md) walkthroughs end to end against a running
   installation (`npm run dev`), including its closing "What a browser cannot show you" table, and
   confirm each of `SC-004`, `SC-005`, `SC-006`, `SC-011`, `SC-012` and `SC-013` names a test that exists
   and passes
-- [ ] T082 Audit the diff against gate 6 — no comment, no commented-out code, no dead code — with
+- [X] T082 Audit the diff against gate 6 — no comment, no commented-out code, no dead code — with
   particular attention to the `actorId`-present guard repeated across `create-project.ts`,
   `project-status.ts` and `membership.ts` (Principles V, VI)
-- [ ] T083 Audit the diff against gate 7 — every changed line traces to a requirement — confirming the
+- [X] T083 Audit the diff against gate 7 — every changed line traces to a requirement — confirming the
   only files touched outside `src/features/activity/` are the reach-backs `plan.md`'s Complexity
   Tracking and T001 name: `src/db/schema.ts`, `src/db/test-database.ts`, the four files in
   `src/features/projects/server/` and two in `src/features/issues/server/` `FR-050`…`FR-057` name, their
   `actions.ts` call sites, and the two host screens' pages and components
-- [ ] T084 Confirm `package.json` gained no new dependency (gate 4, `plan.md` Technical Context)
-- [ ] T085 Run `npm run verify` — `style-check`, `type-check`, `test`, `build` — and confirm it passes
+- [X] T084 Confirm `package.json` gained no new dependency (gate 4, `plan.md` Technical Context)
+- [X] T085 Run `npm run verify` — `style-check`, `type-check`, `test`, `build` — and confirm it passes
   with nothing failing or skipped. `--passWithNoTests` means a green run is not by itself evidence of
   gate 1; the commit order is (gates 5, 8)
 
