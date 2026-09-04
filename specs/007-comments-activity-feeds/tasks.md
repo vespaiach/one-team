@@ -170,68 +170,68 @@ succeeds on the project's own details feed. No other story needs to exist.
 
 ### Tests for User Story 1 (write first, observe failing) ⚠️
 
-- [ ] T014 [P] [US1] Write the failing tests in `src/features/activity/server/create-comment.test.ts`:
+- [X] T014 [P] [US1] Write the failing tests in `src/features/activity/server/create-comment.test.ts`:
   writes one `comment` row and exactly one `activity` row of type `comment` carrying the new comment's
   id in `comment_id` and no field/from/to, in one transaction; a whitespace-only or 10 001-character
   body is refused and writes neither row; a `{ projectId }` target derives `isMember` from the project
   itself, a `{ issueId }` target derives it from the stored issue's own `project_id` — never from a
   client-supplied project id; a non-member is refused independently of which target shape was sent
   (FR-015, FR-040, FR-041, FR-045, FR-046, `OT-AUTHZ-004`, US1 s1, s2, s4, s5, s6, s7)
-- [ ] T015 [P] [US1] Write the failing tests in `src/features/activity/components/comment-row.test.tsx`:
+- [X] T015 [P] [US1] Write the failing tests in `src/features/activity/components/comment-row.test.tsx`:
   shows avatar, display name, body and a relative time; carries `id="comment-<id>"` unconditionally in
   the markup; carries neither an edit nor a delete control when `canEdit` and `canDelete` are both false
   (FR-028, FR-029, US1 s1, s8)
-- [ ] T016 [P] [US1] Write the failing tests in `src/features/activity/components/composer.test.tsx`:
+- [X] T016 [P] [US1] Write the failing tests in `src/features/activity/components/composer.test.tsx`:
   grows with content; trims on submit and refuses an empty-after-trim submission inline, issuing no
   `createComment` call; refuses a 10 001-character body on the field naming the bound, never truncating;
   ⌘-enter submits; disabled with `postReason` as its accessible description when `canPost` is false,
   never hidden (FR-021, FR-035, FR-039, FR-040, FR-041, FR-042, FR-061, US1 s4, s5, s6)
-- [ ] T017 [P] [US1] Write the failing tests in `src/features/activity/components/feed.test.tsx`: renders
+- [X] T017 [P] [US1] Write the failing tests in `src/features/activity/components/feed.test.tsx`: renders
   `Composer` fixed at the head and the initial page's rows newest-first, no tabs; posting applies
   optimistically — the new row renders before the action resolves — and a refusal rolls the optimistic
   row back and raises a toast naming the server's own returned message, never a generic fallback string
   (FR-027, FR-037, US1 s1)
-- [ ] T018 [P] [US1] Write the failing test in `src/features/activity/components/feed-skeleton.test.tsx`:
+- [X] T018 [P] [US1] Write the failing test in `src/features/activity/components/feed-skeleton.test.tsx`:
   matches the feed's own layout rather than a full-screen spinner (FR-060)
 
 ### Implementation for User Story 1
 
-- [ ] T019 [US1] Implement `createComment` in `src/features/activity/server/create-comment.ts` — one
+- [X] T019 [US1] Implement `createComment` in `src/features/activity/server/create-comment.ts` — one
   transaction: resolve the target's project (the stored issue's `project_id` for `{ issueId }`, the
   target itself for `{ projectId }`), run `isMember`, validate the body with `parseCommentBody`, insert
   the comment, call `writeActivity` with `type: 'comment'` and the new comment's id (FR-015, FR-045,
   FR-046, contracts/mutators.md) — depends on T010, T011, T013; makes T014 green
-- [ ] T020 [US1] Export `createComment` from `src/features/activity/actions.ts` under one top-level
+- [X] T020 [US1] Export `createComment` from `src/features/activity/actions.ts` under one top-level
   `"use server"` — `assertSameOrigin` → `requireActor()` → delegate → `refresh()` → return the typed
   result, never redirecting (contracts/mutators.md's eight-step shape) — depends on T019
-- [ ] T021 [P] [US1] Implement `src/features/activity/components/comment-row.tsx` — avatar, display
+- [X] T021 [P] [US1] Implement `src/features/activity/components/comment-row.tsx` — avatar, display
   name, plain body (mention resolution is US4's own addition — no token can exist in a body yet), a
   relative time, and the `comment-<id>` anchor; edit/delete slots left absent until US3 wires them
   (FR-028, FR-029) — makes T015 green
-- [ ] T022 [P] [US1] Implement `src/features/activity/components/composer.tsx` as one `"use client"`
+- [X] T022 [P] [US1] Implement `src/features/activity/components/composer.tsx` as one `"use client"`
   component — the growing plain-text field, trim-and-require validation, the 10 000-character bound,
   ⌘-enter submit, and the disabled-with-`postReason` state via React Aria's own slot mechanism (FR-021,
   FR-035, FR-039…FR-042, FR-061) — makes T016 green
-- [ ] T023 [US1] Implement `src/features/activity/components/feed.tsx` as one `"use client"` component
+- [X] T023 [US1] Implement `src/features/activity/components/feed.tsx` as one `"use client"` component
   taking `{ target, initialPage, canPost, postReason }`, rendering `Composer` and each row through
   `comment-row.tsx` directly — no dispatcher yet, since every row this story can produce is a comment;
   `T038` introduces the dispatcher once activity rows exist — with `createComment` wrapped in a
   transition and `useOptimistic` for the post/reconcile/roll-back cycle, using `showToast` from
   `src/features/shell/components/toast-region.tsx` on refusal (FR-027, FR-037, research F-1) — depends
   on T020, T021; makes T017 green
-- [ ] T024 [P] [US1] Implement `src/features/activity/components/feed-skeleton.tsx` matching the feed's
+- [X] T024 [P] [US1] Implement `src/features/activity/components/feed-skeleton.tsx` matching the feed's
   own layout (FR-060) — makes T018 green
-- [ ] T025 [US1] Wire `<Feed target={{ issueId }} />` into `src/features/issues/components/issue-detail.tsx`
+- [X] T025 [US1] Wire `<Feed target={{ issueId }} />` into `src/features/issues/components/issue-detail.tsx`
   immediately after the description, computing `canPost`/`postReason` from `isMember` server-side in
   `src/app/(app)/projects/[projectKey]/issues/[issueNumber]/details/page.tsx` and passing `initialPage`
   from `listFeed({ issueId })`, `Suspense`-wrapped below the page's own guard with T024's skeleton
   (FR-026, FR-060, contracts/screens.md) — depends on T013, T023, T024
-- [ ] T026 [US1] Wire `<Feed target={{ projectId }} />` into
+- [X] T026 [US1] Wire `<Feed target={{ projectId }} />` into
   `src/features/projects/components/project-details-screen.tsx` as the screen's last section, after
   `DeleteProjectControl`, computed and wired the same way in
   `src/app/(app)/projects/[projectKey]/details/page.tsx` (FR-026, FR-060, contracts/screens.md) —
   depends on T013, T023, T024
-- [ ] T027 [US1] Refactor with the tests green across `create-comment.ts`, `comment-row.tsx`,
+- [X] T027 [US1] Refactor with the tests green across `create-comment.ts`, `comment-row.tsx`,
   `composer.tsx` and `feed.tsx`: no comment added, no dead code, no component taking a prop its scenario
   does not require (gates 2, 6)
 

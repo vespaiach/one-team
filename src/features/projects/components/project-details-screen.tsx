@@ -2,7 +2,11 @@
 
 import { type CalendarDate, parseDate } from "@internationalized/date";
 import type { ReactNode } from "react";
+import { Suspense } from "react";
 import { DateInput, DatePicker, DateSegment, Group } from "react-aria-components/DatePicker";
+import { Feed } from "@/features/activity/components/feed";
+import { FeedSkeleton } from "@/features/activity/components/feed-skeleton";
+import type { FeedPage } from "@/features/activity/server/feed-queries";
 import type {
   DeleteProjectPayload,
   DeleteProjectState,
@@ -21,6 +25,8 @@ import type { MembershipActionResult, MembershipPayload } from "./members-sectio
 import { MembersSection } from "./members-section";
 import { ProjectHeader } from "./project-header";
 import { StatusSwitch } from "./status-switch";
+
+type Viewer = { id: string; firstName: string; lastName: string; avatarUrl: string | null };
 
 function toCalendarDate(value: string): CalendarDate | null {
   return value ? parseDate(value) : null;
@@ -62,11 +68,21 @@ export function ProjectDetailsScreen({
   updateProjectAction,
   admin,
   newIssue,
+  feedProjectId = null,
+  feedInitialPage = { rows: [], hasNextPage: false },
+  canComment = false,
+  commentPostReason = null,
+  viewer = null,
 }: {
   details: ProjectDetails;
   updateProjectAction: (input: UpdateProjectPayload) => Promise<UpdateProjectState>;
   admin?: ProjectDetailsScreenAdmin;
   newIssue?: ReactNode;
+  feedProjectId?: string | null;
+  feedInitialPage?: FeedPage;
+  canComment?: boolean;
+  commentPostReason?: string | null;
+  viewer?: Viewer | null;
 }) {
   const { record, columns, roster, canEditRecord } = details;
   const disabledReason = canEditRecord ? undefined : `Join ${record.name} to make changes.`;
@@ -178,6 +194,17 @@ export function ProjectDetailsScreen({
           disabledReason={deleteDisabledReason}
           onDelete={runDelete}
         />
+        {feedProjectId && viewer ? (
+          <Suspense fallback={<FeedSkeleton />}>
+            <Feed
+              target={{ projectId: feedProjectId }}
+              initialPage={feedInitialPage}
+              canPost={canComment}
+              postReason={commentPostReason}
+              viewer={viewer}
+            />
+          </Suspense>
+        ) : null}
       </div>
     </>
   );

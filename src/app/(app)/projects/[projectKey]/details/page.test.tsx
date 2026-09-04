@@ -10,16 +10,20 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("@/features/projects/server/queries", () => ({
   loadProjectDetails: vi.fn(),
+  loadProjectByKey: vi.fn(),
 }));
 vi.mock("@/features/projects/actions", () => ({
   updateProject: vi.fn(),
+}));
+vi.mock("@/features/activity/server/feed-queries", () => ({
+  listFeed: vi.fn().mockResolvedValue({ rows: [], hasNextPage: false }),
 }));
 
 import { notFound } from "next/navigation";
 import { requireActor } from "@/features/auth/server/actor";
 import { NewIssueControl } from "@/features/issues/components/new-issue-control";
 import { updateProject } from "@/features/projects/actions";
-import { loadProjectDetails } from "@/features/projects/server/queries";
+import { loadProjectByKey, loadProjectDetails } from "@/features/projects/server/queries";
 import ProjectDetailsPage from "./page";
 
 const ACTOR = {
@@ -29,6 +33,18 @@ const ACTOR = {
   lastName: "Lovelace",
   avatarUrl: null,
   mustChangePassword: false,
+};
+
+const PROJECT_ROW = {
+  id: "project-1",
+  key: "WR",
+  name: "Website Redesign",
+  description: null,
+  status: "active" as const,
+  startDate: null,
+  targetDate: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
 };
 
 const DETAILS = {
@@ -76,6 +92,7 @@ describe("/projects/:projectKey/details page (FR-035, FR-040)", () => {
   it("renders the details screen for a signed-in user reading an existing project", async () => {
     vi.mocked(requireActor).mockResolvedValue(ACTOR);
     vi.mocked(loadProjectDetails).mockResolvedValue(DETAILS);
+    vi.mocked(loadProjectByKey).mockResolvedValue(PROJECT_ROW);
 
     const jsx = await ProjectDetailsPage({ params: Promise.resolve({ projectKey: "WR" }) });
 
@@ -89,6 +106,7 @@ describe("/projects/:projectKey/details page (FR-035, FR-040)", () => {
   it("wires the header's New issue control, enabled for a member of the project (FR-028)", async () => {
     vi.mocked(requireActor).mockResolvedValue(ACTOR);
     vi.mocked(loadProjectDetails).mockResolvedValue(DETAILS);
+    vi.mocked(loadProjectByKey).mockResolvedValue(PROJECT_ROW);
 
     const jsx = await ProjectDetailsPage({ params: Promise.resolve({ projectKey: "WR" }) });
 
@@ -101,6 +119,7 @@ describe("/projects/:projectKey/details page (FR-035, FR-040)", () => {
   it("disables the header's New issue control with a reason for a non-member", async () => {
     vi.mocked(requireActor).mockResolvedValue(ACTOR);
     vi.mocked(loadProjectDetails).mockResolvedValue({ ...DETAILS, canEditRecord: false });
+    vi.mocked(loadProjectByKey).mockResolvedValue(PROJECT_ROW);
 
     const jsx = await ProjectDetailsPage({ params: Promise.resolve({ projectKey: "WR" }) });
 
