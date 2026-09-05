@@ -18,7 +18,7 @@ export async function listProjectColumns(projectId: string): Promise<IssueColumn
     .select({ id: boardColumn.id, name: boardColumn.name })
     .from(boardColumn)
     .where(eq(boardColumn.projectId, projectId))
-    .orderBy(asc(boardColumn.sortOrder));
+    .orderBy(asc(boardColumn.sortOrder), asc(boardColumn.id));
 }
 
 export type AssigneeOption = {

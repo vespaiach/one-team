@@ -362,7 +362,7 @@ export const activity = pgTable(
     index("activity_project_id_created_at_idx").on(table.projectId, table.createdAt),
     check(
       "activity_type_valid",
-      sql`${table.type} in ('created', 'field_changed', 'member_added', 'member_removed', 'archived', 'reopened', 'comment')`,
+      sql`${table.type} in ('created', 'field_changed', 'member_added', 'member_removed', 'archived', 'reopened', 'comment', 'column_added', 'column_renamed', 'column_reordered', 'column_deleted')`,
     ),
     check("activity_from_value_length", sql`char_length(${table.fromValue}) <= 200`),
     check("activity_to_value_length", sql`char_length(${table.toValue}) <= 200`),

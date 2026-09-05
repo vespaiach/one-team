@@ -50,6 +50,13 @@
       "when": 1788478716197,
       "tag": "0006_lying_sugar_man",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1788550605112,
+      "tag": "0007_lean_titania",
+      "breakpoints": true
     }
   ]
 }

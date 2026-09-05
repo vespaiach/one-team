@@ -16,6 +16,12 @@ import type {
   UpdateProjectPayload,
   UpdateProjectState,
 } from "../actions";
+import type {
+  CreateColumnState,
+  DeleteColumnState,
+  MoveColumnState,
+  UpdateColumnState,
+} from "../column-actions";
 import type { ProjectDetails, RosterEntry } from "../server/queries";
 import { ColumnsSection } from "./columns-section";
 import { DeleteProjectControl } from "./delete-project-control";
@@ -62,6 +68,14 @@ export type ProjectDetailsScreenAdmin = {
   removeProjectMemberAction: (input: MembershipPayload) => Promise<MembershipActionResult>;
   setProjectStatusAction: (input: SetProjectStatusPayload) => Promise<SetProjectStatusState>;
   deleteProjectAction: (input: DeleteProjectPayload) => Promise<DeleteProjectState>;
+  createColumn: (input: { projectKey: string; name: string }) => Promise<CreateColumnState>;
+  updateColumn: (input: { columnId: string; name: string }) => Promise<UpdateColumnState>;
+  moveColumn: (input: {
+    columnId: string;
+    targetColumnId: string;
+    placement: "before" | "after";
+  }) => Promise<MoveColumnState>;
+  deleteColumn: (input: { columnId: string }) => Promise<DeleteColumnState>;
 };
 
 export function ProjectDetailsScreen({
@@ -179,7 +193,20 @@ export function ProjectDetailsScreen({
             onSave={saveStatus}
           />
         </section>
-        <ColumnsSection columns={columns} />
+        <ColumnsSection
+          columns={columns}
+          admin={
+            admin
+              ? {
+                  projectKey: record.key,
+                  createColumn: admin.createColumn,
+                  updateColumn: admin.updateColumn,
+                  moveColumn: admin.moveColumn,
+                  deleteColumn: admin.deleteColumn,
+                }
+              : undefined
+          }
+        />
         <MembersSection
           roster={roster}
           admin={

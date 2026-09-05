@@ -103,6 +103,76 @@ describe("ActivityRow (FR-028, FR-030, contracts/screens.md)", () => {
     expect(screen.getByText("Ada Lovelace reopened this")).not.toBeNull();
   });
 
+  it("renders 'column_added' naming the actor and the new column", () => {
+    render(
+      <ActivityRow
+        actor={ACTOR}
+        type="column_added"
+        field="Review"
+        fromValue={null}
+        toValue={null}
+      />,
+    );
+
+    expect(screen.getByText("Ada Lovelace added column Review")).not.toBeNull();
+  });
+
+  it("renders 'column_renamed' naming the actor, the old name and the new name", () => {
+    render(
+      <ActivityRow
+        actor={ACTOR}
+        type="column_renamed"
+        field="Todo"
+        fromValue="Todo"
+        toValue="Up next"
+      />,
+    );
+
+    expect(screen.getByText("Ada Lovelace renamed column Todo to Up next")).not.toBeNull();
+  });
+
+  it("renders 'column_reordered' with a null to_value as a move to first", () => {
+    render(
+      <ActivityRow
+        actor={ACTOR}
+        type="column_reordered"
+        field="Canceled"
+        fromValue={null}
+        toValue={null}
+      />,
+    );
+
+    expect(screen.getByText("Ada Lovelace moved column Canceled to first")).not.toBeNull();
+  });
+
+  it("renders 'column_reordered' with a to_value as a move after that column", () => {
+    render(
+      <ActivityRow
+        actor={ACTOR}
+        type="column_reordered"
+        field="Canceled"
+        fromValue={null}
+        toValue="Todo"
+      />,
+    );
+
+    expect(screen.getByText("Ada Lovelace moved column Canceled after Todo")).not.toBeNull();
+  });
+
+  it("renders 'column_deleted' naming the actor and the deleted column", () => {
+    render(
+      <ActivityRow
+        actor={ACTOR}
+        type="column_deleted"
+        field="Review"
+        fromValue={null}
+        toValue={null}
+      />,
+    );
+
+    expect(screen.getByText("Ada Lovelace deleted column Review")).not.toBeNull();
+  });
+
   it("carries no edit or delete control, of any type", () => {
     render(
       <ActivityRow

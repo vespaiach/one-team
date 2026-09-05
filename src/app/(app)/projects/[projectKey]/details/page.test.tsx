@@ -1,3 +1,4 @@
+import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/features/auth/server/actor", () => ({
@@ -7,13 +8,30 @@ vi.mock("next/navigation", () => ({
   notFound: vi.fn(() => {
     throw new Error("NEXT_NOT_FOUND");
   }),
+  forbidden: vi.fn(() => {
+    throw new Error("NEXT_FORBIDDEN");
+  }),
+  redirect: vi.fn(() => {
+    throw new Error("NEXT_REDIRECT");
+  }),
 }));
 vi.mock("@/features/projects/server/queries", () => ({
   loadProjectDetails: vi.fn(),
   loadProjectByKey: vi.fn(),
+  listAddableUsers: vi.fn().mockResolvedValue([]),
 }));
 vi.mock("@/features/projects/actions", () => ({
   updateProject: vi.fn(),
+  addProjectMember: vi.fn(),
+  removeProjectMember: vi.fn(),
+  setProjectStatus: vi.fn(),
+  deleteProject: vi.fn(),
+}));
+vi.mock("@/features/projects/column-actions", () => ({
+  createColumn: vi.fn(),
+  updateColumn: vi.fn(),
+  moveColumn: vi.fn(),
+  deleteColumn: vi.fn(),
 }));
 vi.mock("@/features/activity/server/feed-queries", () => ({
   listFeed: vi.fn().mockResolvedValue({ rows: [], hasNextPage: false }),
@@ -23,12 +41,14 @@ vi.mock("@/features/activity/server/feed-filter", () => ({
   getFeedFilter: vi.fn().mockResolvedValue("all"),
 }));
 
-import { notFound } from "next/navigation";
+import { forbidden, notFound, redirect } from "next/navigation";
 import { countProjectComments } from "@/features/activity/server/feed-queries";
 import { requireActor } from "@/features/auth/server/actor";
 import { NewIssueControl } from "@/features/issues/components/new-issue-control";
 import { updateProject } from "@/features/projects/actions";
+import { createColumn, deleteColumn, moveColumn, updateColumn } from "@/features/projects/column-actions";
 import { loadProjectByKey, loadProjectDetails } from "@/features/projects/server/queries";
+import NotFound from "../../../not-found";
 import ProjectDetailsPage from "./page";
 
 const ACTOR = {
@@ -144,5 +164,72 @@ describe("/projects/:projectKey/details page (FR-035, FR-040)", () => {
     expect(jsx.props.newIssue.props.writeReason).toBe(
       "Only project members can create issues in Website Redesign.",
     );
+  });
+});
+describe("/projects/:projectKey/details — the column actions (FR-013)", () => {
+  it("passes createColumn and updateColumn on the existing canAdminister branch", async () => {
+    vi.mocked(requireActor).mockResolvedValue({ ...ACTOR, role: "admin" });
+    vi.mocked(loadProjectDetails).mockResolvedValue({ ...DETAILS, canAdminister: true });
+    vi.mocked(loadProjectByKey).mockResolvedValue(PROJECT_ROW);
+
+    const jsx = await ProjectDetailsPage({ params: Promise.resolve({ projectKey: "WR" }) });
+
+    expect(jsx.props.admin.createColumn).toBe(createColumn);
+    expect(jsx.props.admin.updateColumn).toBe(updateColumn);
+    expect(jsx.props.admin.moveColumn).toBe(moveColumn);
+    expect(jsx.props.admin.deleteColumn).toBe(deleteColumn);
+  });
+
+  it("gives a non-admin no admin bundle and so none of the column actions", async () => {
+    vi.mocked(requireActor).mockResolvedValue(ACTOR);
+    vi.mocked(loadProjectDetails).mockResolvedValue(DETAILS);
+    vi.mocked(loadProjectByKey).mockResolvedValue(PROJECT_ROW);
+
+    const jsx = await ProjectDetailsPage({ params: Promise.resolve({ projectKey: "WR" }) });
+
+    expect(jsx.props.admin).toBeUndefined();
+  });
+});
+describe("/projects/:projectKey/details — a key that matches no project (FR-016, US4-6)", () => {
+  const READERS: [string, typeof ACTOR][] = [
+    ["an admin", { ...ACTOR, role: "admin" }],
+    ["a project member", ACTOR],
+    ["a signed-in non-member", { ...ACTOR, id: "outsider-1" }],
+  ];
+
+  it.each(
+    READERS,
+  )("answers %s the missing-row route and never a hidden-access state", async (_reader, actor) => {
+    vi.mocked(requireActor).mockResolvedValue(actor);
+    vi.mocked(loadProjectDetails).mockResolvedValue(null);
+
+    await expect(ProjectDetailsPage({ params: Promise.resolve({ projectKey: "NOPE" }) })).rejects.toThrow(
+      "NEXT_NOT_FOUND",
+    );
+    expect(notFound).toHaveBeenCalledTimes(1);
+    expect(forbidden).not.toHaveBeenCalled();
+    expect(redirect).not.toHaveBeenCalled();
+    expect(loadProjectByKey).not.toHaveBeenCalled();
+  });
+
+  it("answers the same way when the project row itself is gone, never reaching the screen", async () => {
+    vi.mocked(requireActor).mockResolvedValue(ACTOR);
+    vi.mocked(loadProjectDetails).mockResolvedValue(DETAILS);
+    vi.mocked(loadProjectByKey).mockResolvedValue(null);
+
+    await expect(ProjectDetailsPage({ params: Promise.resolve({ projectKey: "NOPE" }) })).rejects.toThrow(
+      "NEXT_NOT_FOUND",
+    );
+    expect(notFound).toHaveBeenCalledTimes(1);
+    expect(forbidden).not.toHaveBeenCalled();
+    expect(countProjectComments).not.toHaveBeenCalled();
+  });
+
+  it('reads "This doesn\'t exist" at the boundary that answer renders, naming no access state', () => {
+    render(<NotFound />);
+
+    expect(screen.getByText("This doesn't exist")).not.toBeNull();
+    expect(screen.queryByText("403")).toBeNull();
+    expect(screen.queryByText(/access/i)).toBeNull();
   });
 });

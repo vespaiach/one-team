@@ -26,6 +26,16 @@ function buildSentence(
       return `${actorName} archived this`;
     case "reopened":
       return `${actorName} reopened this`;
+    case "column_added":
+      return `${actorName} added column ${field}`;
+    case "column_renamed":
+      return `${actorName} renamed column ${displayOrNone(fromValue)} to ${displayOrNone(toValue)}`;
+    case "column_reordered":
+      return toValue === null
+        ? `${actorName} moved column ${field} to first`
+        : `${actorName} moved column ${field} after ${toValue}`;
+    case "column_deleted":
+      return `${actorName} deleted column ${field}`;
   }
 }
 

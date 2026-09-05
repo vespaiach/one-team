@@ -156,3 +156,46 @@ describe("writeActivity (FR-011, FR-013, contracts/mutators.md)", () => {
     expect(rows).toHaveLength(1);
   });
 });
+
+describe("writeActivity column rows (FR-042, FR-043)", () => {
+  it.each([
+    ["column_added", { field: "Review" }],
+    ["column_renamed", { field: "Todo", fromValue: "Todo", toValue: "Up next" }],
+    ["column_reordered", { field: "Canceled", toValue: "Todo" }],
+    ["column_deleted", { field: "Review" }],
+  ] as const)("inserts exactly one %s row against the project, with no issue and no comment", async (type, extra) => {
+    const actorRow = await insertUser();
+    const projectRow = await insertProject();
+
+    await testDb.transaction(async (tx) => {
+      await writeActivity(tx, { type, target: { projectId: projectRow.id }, actorId: actorRow.id, ...extra });
+    });
+
+    const rows = await testDb.select().from(activity).where(eq(activity.projectId, projectRow.id));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      type,
+      actorId: actorRow.id,
+      projectId: projectRow.id,
+      issueId: null,
+      commentId: null,
+      field: "field" in extra ? extra.field : null,
+      fromValue: "fromValue" in extra ? extra.fromValue : null,
+      toValue: "toValue" in extra ? extra.toValue : null,
+    });
+  });
+
+  it("refuses column_recolored — the constraint admits four column values, not five", async () => {
+    const actorRow = await insertUser();
+    const projectRow = await insertProject();
+
+    await expect(
+      testDb.insert(activity).values({
+        actorId: actorRow.id,
+        type: "column_recolored",
+        projectId: projectRow.id,
+        createdAt: new Date(),
+      }),
+    ).rejects.toMatchObject({ cause: { code: "23514" } });
+  });
+});

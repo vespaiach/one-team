@@ -3,6 +3,8 @@ import { and, asc, eq, isNull, ne, notExists, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { boardColumn, project, projectMember, user } from "@/db/schema";
 import { publicUser } from "@/features/auth/server/projections";
+import { type ColumnDeleteRefusal, selectColumnDeleteRefusal } from "./column-delete-refusal";
+import { countIssuesByColumn } from "./column-queries";
 
 export async function hasProjectMemberRow(projectId: string, userId: string): Promise<boolean> {
   const [row] = await db
@@ -98,6 +100,7 @@ export type ProjectColumnRow = {
   kind: "open" | "done" | "canceled";
   position: number;
   issueCount: number;
+  deleteRefusal: ColumnDeleteRefusal | null;
 };
 
 export type ProjectDetails = {
@@ -122,7 +125,9 @@ export async function loadProjectDetails(
     .select()
     .from(boardColumn)
     .where(eq(boardColumn.projectId, row.id))
-    .orderBy(asc(boardColumn.sortOrder));
+    .orderBy(asc(boardColumn.sortOrder), asc(boardColumn.id));
+
+  const issueCounts = await countIssuesByColumn(db, row.id);
 
   const rosterRows = await db
     .select({ ...publicUser })
@@ -140,6 +145,8 @@ export async function loadProjectDetails(
   }));
 
   const isAdmin = actor.role === "admin";
+  const canceledKindCount = columnRows.filter((column) => column.kind === "canceled").length;
+  const doneKindCount = columnRows.filter((column) => column.kind === "done").length;
 
   return {
     record: {
@@ -150,13 +157,25 @@ export async function loadProjectDetails(
       startDate: row.startDate,
       targetDate: row.targetDate,
     },
-    columns: columnRows.map((column, index) => ({
-      id: column.id,
-      name: column.name,
-      kind: column.kind as "open" | "done" | "canceled",
-      position: index,
-      issueCount: 0,
-    })),
+    columns: columnRows.map((column, index) => {
+      const kind = column.kind as "open" | "done" | "canceled";
+      const issueCount = issueCounts.get(column.id) ?? 0;
+      return {
+        id: column.id,
+        name: column.name,
+        kind,
+        position: index,
+        issueCount,
+        deleteRefusal: isAdmin
+          ? selectColumnDeleteRefusal({
+              holdsIssues: issueCount > 0,
+              isLastColumn: columnRows.length === 1,
+              isLastCanceledKind: kind === "canceled" && canceledKindCount === 1,
+              isLastDoneKind: kind === "done" && doneKindCount === 1,
+            })
+          : null,
+      };
+    }),
     roster,
     cascadeCount: columnRows.length + rosterRows.length,
     canEditRecord: isAdmin || roster.some((entry) => entry.userId === actor.id),
