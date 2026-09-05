@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { ProjectDetails } from "../server/queries";
 import type { ProjectDetailsScreenAdmin } from "./project-details-screen";
@@ -14,9 +14,21 @@ function adminBundle(overrides: Partial<ProjectDetailsScreenAdmin> = {}): Projec
     addProjectMemberAction: vi.fn().mockResolvedValue({ status: "saved" }),
     removeProjectMemberAction: vi.fn().mockResolvedValue({ status: "saved" }),
     setProjectStatusAction: vi.fn().mockResolvedValue({ status: "saved" }),
+    createColumn: vi.fn().mockResolvedValue({ ok: true }),
+    updateColumn: vi.fn().mockResolvedValue({ ok: true }),
+    moveColumn: vi.fn().mockResolvedValue({ ok: true }),
+    deleteColumn: vi.fn().mockResolvedValue({ ok: true }),
     deleteProjectAction: vi.fn().mockResolvedValue({ status: "deleted" }),
     ...overrides,
   };
+}
+
+function projectDeleteControl() {
+  const outsideTheColumns = screen
+    .getAllByRole("button", { name: "Delete" })
+    .filter((button) => button.closest('[role="grid"]') === null);
+  expect(outsideTheColumns).toHaveLength(1);
+  return outsideTheColumns[0] as HTMLElement;
 }
 
 function makeDetails(overrides: Partial<ProjectDetails> = {}): ProjectDetails {
@@ -30,11 +42,11 @@ function makeDetails(overrides: Partial<ProjectDetails> = {}): ProjectDetails {
       targetDate: null,
     },
     columns: [
-      { id: "1", name: "Backlog", kind: "open", position: 0, issueCount: 0 },
-      { id: "2", name: "Todo", kind: "open", position: 1, issueCount: 0 },
-      { id: "3", name: "In Progress", kind: "open", position: 2, issueCount: 0 },
-      { id: "4", name: "Done", kind: "done", position: 3, issueCount: 0 },
-      { id: "5", name: "Canceled", kind: "canceled", position: 4, issueCount: 0 },
+      { id: "1", name: "Backlog", kind: "open", position: 0, issueCount: 0, deleteRefusal: null },
+      { id: "2", name: "Todo", kind: "open", position: 1, issueCount: 0, deleteRefusal: null },
+      { id: "3", name: "In Progress", kind: "open", position: 2, issueCount: 0, deleteRefusal: null },
+      { id: "4", name: "Done", kind: "done", position: 3, issueCount: 0, deleteRefusal: null },
+      { id: "5", name: "Canceled", kind: "canceled", position: 4, issueCount: 0, deleteRefusal: null },
     ],
     roster: [],
     cascadeCount: 5,
@@ -187,7 +199,7 @@ describe("ProjectDetailsScreen — status and delete (FR-041, FR-042, FR-047, FR
     );
 
     expect((screen.getByRole("switch") as HTMLInputElement).hasAttribute("disabled")).toBe(true);
-    const deleteButton = screen.getByRole("button", { name: "Delete" });
+    const deleteButton = projectDeleteControl();
     expect(deleteButton.hasAttribute("disabled")).toBe(true);
     expect(screen.getByText("Only admins can change a project's status.")).not.toBeNull();
     expect(screen.getByText("Only admins can delete a project.")).not.toBeNull();
@@ -209,7 +221,7 @@ describe("ProjectDetailsScreen — status and delete (FR-041, FR-042, FR-047, FR
     expect(control.hasAttribute("disabled")).toBe(false);
     expect(control.checked).toBe(true);
 
-    const deleteButton = screen.getByRole("button", { name: "Delete" });
+    const deleteButton = projectDeleteControl();
     expect(deleteButton.hasAttribute("disabled")).toBe(false);
   });
 
@@ -222,7 +234,7 @@ describe("ProjectDetailsScreen — status and delete (FR-041, FR-042, FR-047, FR
       />,
     );
 
-    const deleteButton = screen.getByRole("button", { name: "Delete" });
+    const deleteButton = projectDeleteControl();
     expect(deleteButton.hasAttribute("disabled")).toBe(true);
     expect(screen.getByText(/Archive Website Redesign/)).not.toBeNull();
   });
@@ -254,5 +266,121 @@ describe("ProjectDetailsScreen — status and delete (FR-041, FR-042, FR-047, FR
     );
 
     expect(screen.getByText("New issue control")).not.toBeNull();
+  });
+});
+describe("ProjectDetailsScreen — the column actions (FR-013, contracts/screens.md)", () => {
+  it("carries createColumn and updateColumn alongside the other admin actions", () => {
+    const admin = adminBundle();
+    render(
+      <ProjectDetailsScreen
+        details={makeDetails()}
+        updateProjectAction={vi.fn()}
+        admin={admin}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Add column" })).not.toBeNull();
+    expect(screen.getAllByRole("button", { name: "Column name" })).toHaveLength(5);
+  });
+
+  it("passes the project key through to the add form", async () => {
+    const admin = adminBundle();
+    render(
+      <ProjectDetailsScreen
+        details={makeDetails()}
+        updateProjectAction={vi.fn()}
+        admin={admin}
+      />,
+    );
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Column name" }), { target: { value: "Review" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add column" }));
+
+    await waitFor(() =>
+      expect(admin.createColumn).toHaveBeenCalledWith({ projectKey: "WR", name: "Review" }),
+    );
+  });
+
+  it("gives a non-admin none of them, and ColumnsSection no admin prop", () => {
+    render(
+      <ProjectDetailsScreen
+        details={makeDetails({ canEditRecord: false, canAdminister: false })}
+        updateProjectAction={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "Add column" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Column name" })).toBeNull();
+    expect(screen.queryByRole("textbox", { name: "Column name" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Drag Backlog" })).toBeNull();
+    for (const row of screen.getAllByRole("row")) {
+      expect(within(row).queryAllByRole("button")).toHaveLength(0);
+    }
+  });
+
+  it("carries deleteColumn through to every column row (FR-013)", async () => {
+    const admin = adminBundle();
+    render(
+      <ProjectDetailsScreen
+        details={makeDetails()}
+        updateProjectAction={vi.fn()}
+        admin={admin}
+      />,
+    );
+
+    const rows = screen.getAllByRole("row");
+    expect(rows).toHaveLength(5);
+    for (const row of rows) {
+      expect(within(row).getByRole("button", { name: "Delete" })).not.toBeNull();
+    }
+
+    fireEvent.click(within(rows[0] as HTMLElement).getByRole("button", { name: "Delete" }));
+
+    expect((await screen.findByRole("dialog")).textContent).toContain("Backlog");
+    fireEvent.click(screen.getByRole("button", { name: "Confirm delete" }));
+
+    await waitFor(() => expect(admin.deleteColumn).toHaveBeenCalledWith({ columnId: "1" }));
+    expect(admin.deleteColumn).toHaveBeenCalledTimes(1);
+  });
+
+  it("carries moveColumn through to the columns section (FR-013)", async () => {
+    const admin = adminBundle();
+    render(
+      <ProjectDetailsScreen
+        details={makeDetails()}
+        updateProjectAction={vi.fn()}
+        admin={admin}
+      />,
+    );
+
+    const handle = screen.getByRole("button", { name: "Drag Backlog" });
+    handle.focus();
+    fireEvent.keyDown(handle, { key: "Enter" });
+    fireEvent.keyUp(handle, { key: "Enter" });
+    const onDropIndicator = async () => {
+      await waitFor(() =>
+        expect((document.activeElement as HTMLElement).getAttribute("aria-label")).toMatch(/^Insert/),
+      );
+      return (document.activeElement as HTMLElement).getAttribute("aria-label");
+    };
+    await onDropIndicator();
+    for (let step = 0; step < 12; step += 1) {
+      if ((await onDropIndicator()) === "Insert between Done and Canceled") {
+        break;
+      }
+      fireEvent.keyDown(document.activeElement as HTMLElement, { key: "ArrowDown" });
+      fireEvent.keyUp(document.activeElement as HTMLElement, { key: "ArrowDown" });
+    }
+    const dropTarget = document.activeElement as HTMLElement;
+    expect(dropTarget.getAttribute("aria-label")).toBe("Insert between Done and Canceled");
+    fireEvent.keyDown(dropTarget, { key: "Enter" });
+    fireEvent.keyUp(dropTarget, { key: "Enter" });
+
+    await waitFor(() => expect(admin.moveColumn).toHaveBeenCalledTimes(1));
+    expect(admin.moveColumn).toHaveBeenCalledWith({
+      columnId: "1",
+      targetColumnId: "5",
+      placement: "before",
+    });
   });
 });

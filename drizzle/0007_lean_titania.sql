@@ -1,0 +1,2 @@
+ALTER TABLE "activity" DROP CONSTRAINT "activity_type_valid";--> statement-breakpoint
+ALTER TABLE "activity" ADD CONSTRAINT "activity_type_valid" CHECK ("activity"."type" in ('created', 'field_changed', 'member_added', 'member_removed', 'archived', 'reopened', 'comment', 'column_added', 'column_renamed', 'column_reordered', 'column_deleted'));

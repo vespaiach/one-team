@@ -1,5 +1,8 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
-import { boardColumn, project, projectMember, user } from "@/db/schema";
+import { boardColumn, issue, project, projectMember, user } from "@/db/schema";
 import { testDb, truncateTestDatabase } from "@/db/test-database";
 import { SEED_COLUMNS } from "../seed-columns";
 import {
@@ -69,6 +72,20 @@ async function insertSeedColumns(projectId: string) {
       updatedAt: now,
     })),
   );
+}
+
+async function insertIssue(projectId: string, columnId: string, createdBy: string, number: number) {
+  const now = new Date();
+  await testDb.insert(issue).values({
+    projectId,
+    number,
+    title: `Issue ${number}`,
+    columnId,
+    createdBy,
+    sortOrder: `a${number}`,
+    createdAt: now,
+    updatedAt: now,
+  });
 }
 
 describe("hasProjectMemberRow (FR-013, OT-AUTHZ-001)", () => {
@@ -233,6 +250,35 @@ describe("loadProjectDetails (FR-035, FR-044, FR-045, FR-048)", () => {
     expect(details?.columns.every((column) => column.issueCount === 0)).toBe(true);
   });
 
+  it("returns a live issueCount per column, counting only that column's issues", async () => {
+    const admin = await insertUser({ role: "admin" });
+    const proj = await insertProject({ key: "WR" });
+    await insertSeedColumns(proj.id);
+    const columns = await testDb.select().from(boardColumn).where(eq(boardColumn.projectId, proj.id));
+    const backlog = columns.find((column) => column.name === "Backlog");
+    const todo = columns.find((column) => column.name === "Todo");
+    if (!backlog || !todo) {
+      throw new Error("seed columns are missing");
+    }
+    await insertIssue(proj.id, backlog.id, admin.id, 1);
+    await insertIssue(proj.id, backlog.id, admin.id, 2);
+    await insertIssue(proj.id, todo.id, admin.id, 3);
+
+    const details = await loadProjectDetails("WR", admin);
+
+    expect(details?.columns.find((column) => column.name === "Backlog")?.issueCount).toBe(2);
+    expect(details?.columns.find((column) => column.name === "Todo")?.issueCount).toBe(1);
+    expect(details?.columns.find((column) => column.name === "Done")?.issueCount).toBe(0);
+  });
+
+  it("reads the columns ordered by sort_order then id, so a tie is never rendered two ways", () => {
+    const source = readFileSync(join(__dirname, "queries.ts"), "utf8");
+    const ordering = source.match(/from\(boardColumn\)[\s\S]*?\.orderBy\(([^)]*\)[^;]*?)\);/);
+
+    expect(ordering?.[1]).toContain("asc(boardColumn.sortOrder)");
+    expect(ordering?.[1]).toContain("asc(boardColumn.id)");
+  });
+
   it("returns the roster ordered by lower(last_name), lower(first_name), reading project_member rows only", async () => {
     const admin = await insertUser({ role: "admin" });
     const proj = await insertProject({ key: "WR" });
@@ -297,6 +343,145 @@ describe("loadProjectDetails (FR-035, FR-044, FR-045, FR-048)", () => {
 
     expect(details?.canEditRecord).toBe(true);
     expect(details?.canAdminister).toBe(false);
+  });
+
+  it("carries deleteRefusal null for a column an admin can delete", async () => {
+    const admin = await insertUser({ role: "admin" });
+    const proj = await insertProject({ key: "WR" });
+    await insertSeedColumns(proj.id);
+
+    const details = await loadProjectDetails("WR", admin);
+
+    expect(details?.columns.find((column) => column.name === "Backlog")?.deleteRefusal).toBeNull();
+    expect(details?.columns.find((column) => column.name === "Todo")?.deleteRefusal).toBeNull();
+    expect(details?.columns.find((column) => column.name === "In Progress")?.deleteRefusal).toBeNull();
+  });
+
+  it("carries the refusal each column would meet, in the mutator's precedence", async () => {
+    const admin = await insertUser({ role: "admin" });
+    const proj = await insertProject({ key: "WR" });
+    await insertSeedColumns(proj.id);
+    const columns = await testDb.select().from(boardColumn).where(eq(boardColumn.projectId, proj.id));
+    const todo = columns.find((column) => column.name === "Todo");
+    if (!todo) {
+      throw new Error("seed columns are missing");
+    }
+    await insertIssue(proj.id, todo.id, admin.id, 1);
+
+    const details = await loadProjectDetails("WR", admin);
+
+    expect(details?.columns.find((column) => column.name === "Todo")?.deleteRefusal).toBe("holds_issues");
+    expect(details?.columns.find((column) => column.name === "Done")?.deleteRefusal).toBe("last_done_kind");
+    expect(details?.columns.find((column) => column.name === "Canceled")?.deleteRefusal).toBe(
+      "last_canceled_kind",
+    );
+    expect(details?.columns.find((column) => column.name === "Backlog")?.deleteRefusal).toBeNull();
+  });
+
+  it("reports last_column for a project's only column, ahead of the kind refusals it also meets", async () => {
+    const admin = await insertUser({ role: "admin" });
+    const proj = await insertProject({ key: "WR" });
+    const now = new Date();
+    await testDb.insert(boardColumn).values({
+      projectId: proj.id,
+      name: "Done",
+      kind: "done",
+      sortOrder: "a0",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    const details = await loadProjectDetails("WR", admin);
+
+    expect(details?.columns).toHaveLength(1);
+    expect(details?.columns[0]?.deleteRefusal).toBe("last_column");
+  });
+
+  it("reports holds_issues for a non-empty column that is also the project's last", async () => {
+    const admin = await insertUser({ role: "admin" });
+    const proj = await insertProject({ key: "WR" });
+    const now = new Date();
+    const [only] = await testDb
+      .insert(boardColumn)
+      .values({
+        projectId: proj.id,
+        name: "Backlog",
+        kind: "open",
+        sortOrder: "a0",
+        createdAt: now,
+        updatedAt: now,
+      })
+      .returning();
+    if (!only) {
+      throw new Error("column insert produced no row");
+    }
+    await insertIssue(proj.id, only.id, admin.id, 1);
+
+    const details = await loadProjectDetails("WR", admin);
+
+    expect(details?.columns[0]?.deleteRefusal).toBe("holds_issues");
+  });
+
+  it("refuses neither of two done-kind columns, the restriction being on the last of a kind", async () => {
+    const admin = await insertUser({ role: "admin" });
+    const proj = await insertProject({ key: "WR" });
+    await insertSeedColumns(proj.id);
+    const now = new Date();
+    await testDb.insert(boardColumn).values({
+      projectId: proj.id,
+      name: "Shipped",
+      kind: "done",
+      sortOrder: "a5",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    const details = await loadProjectDetails("WR", admin);
+
+    expect(details?.columns.find((column) => column.name === "Done")?.deleteRefusal).toBeNull();
+    expect(details?.columns.find((column) => column.name === "Shipped")?.deleteRefusal).toBeNull();
+  });
+
+  it("leaves deleteRefusal null for every column a non-admin reads, who is offered no Delete control", async () => {
+    const proj = await insertProject({ key: "WR" });
+    await insertSeedColumns(proj.id);
+    const member = await insertUser({ role: "member" });
+    await addMember(proj.id, member.id);
+    const columns = await testDb.select().from(boardColumn).where(eq(boardColumn.projectId, proj.id));
+    const todo = columns.find((column) => column.name === "Todo");
+    if (!todo) {
+      throw new Error("seed columns are missing");
+    }
+    await insertIssue(proj.id, todo.id, member.id, 1);
+
+    const details = await loadProjectDetails("WR", member);
+
+    expect(details?.canAdminister).toBe(false);
+    expect(details?.columns.every((column) => column.deleteRefusal === null)).toBe(true);
+  });
+
+  it("exposes no sort_order on a column row", async () => {
+    const admin = await insertUser({ role: "admin" });
+    const proj = await insertProject({ key: "WR" });
+    await insertSeedColumns(proj.id);
+
+    const details = await loadProjectDetails("WR", admin);
+
+    expect(Object.keys(details?.columns[0] ?? {}).sort()).toEqual([
+      "deleteRefusal",
+      "id",
+      "issueCount",
+      "kind",
+      "name",
+      "position",
+    ]);
+  });
+
+  it("chooses deleteRefusal through the same selector deleteColumn uses", () => {
+    const source = readFileSync(join(__dirname, "queries.ts"), "utf8");
+
+    expect(source).toContain('from "./column-delete-refusal"');
+    expect(source).toContain("selectColumnDeleteRefusal");
   });
 });
 

@@ -81,6 +81,32 @@ describe("listProjectColumns (FR-032, FR-052)", () => {
     expect(columns.map((column) => column.name)).toEqual(["Backlog", "Todo", "Done"]);
   });
 
+  it("breaks a shared sort_order by id, identically on every read (FR-033)", async () => {
+    const proj = await insertProject();
+    const seeded = Array.from({ length: 8 }, (_, n) => ({
+      id: `0000000${n}-0000-4000-8000-000000000000`,
+      sortOrder: n % 2 === 0 ? "a0" : "a1",
+    }));
+    for (const column of [...seeded].reverse()) {
+      await insertColumn({
+        projectId: proj.id,
+        id: column.id,
+        name: `Column ${column.id}`,
+        sortOrder: column.sortOrder,
+      });
+    }
+    const bySortOrderThenId = [
+      ...seeded.filter((column) => column.sortOrder === "a0").map((column) => column.id),
+      ...seeded.filter((column) => column.sortOrder === "a1").map((column) => column.id),
+    ];
+
+    const first = await listProjectColumns(proj.id);
+    const second = await listProjectColumns(proj.id);
+
+    expect(first.map((column) => column.id)).toEqual(bySortOrderThenId);
+    expect(second).toEqual(first);
+  });
+
   it("returns no columns from another project", async () => {
     const proj = await insertProject();
     const other = await insertProject({

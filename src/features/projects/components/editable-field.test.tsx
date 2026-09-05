@@ -305,3 +305,70 @@ describe("EditableField — empty values (FR-039)", () => {
     expect(screen.getByRole("button", { name: "Description" }).textContent).toBe("Add a description");
   });
 });
+describe("EditableField — the conflict variant (FR-025, FR-027, OT-UX-012)", () => {
+  it("renders the message inline as an alert, associated to the control, and raises no toast", async () => {
+    const onSave = vi.fn().mockResolvedValue({
+      status: "conflict",
+      message: "That name is already taken by the column Backlog.",
+    });
+    render(
+      <EditableField
+        label="Name"
+        value="Todo"
+        onSave={onSave}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Name" }));
+    const input = await screen.findByRole("textbox", { name: "Name" });
+    fireEvent.change(input, { target: { value: "Backlog" } });
+    fireEvent.blur(input);
+
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toBe("That name is already taken by the column Backlog.");
+    const button = screen.getByRole("button", { name: "Name" });
+    expect(button.getAttribute("aria-describedby")).toBe(alert.getAttribute("id"));
+    expect(alert.getAttribute("id")).not.toBeNull();
+    expect(showToastMock).not.toHaveBeenCalled();
+  });
+
+  it("still rolls the optimistic value back", async () => {
+    const onSave = vi.fn().mockResolvedValue({ status: "conflict", message: "Taken." });
+    render(
+      <EditableField
+        label="Name"
+        value="Todo"
+        onSave={onSave}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Name" }));
+    const input = await screen.findByRole("textbox", { name: "Name" });
+    fireEvent.change(input, { target: { value: "Backlog" } });
+    fireEvent.blur(input);
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Name" }).textContent).toBe("Todo"));
+  });
+
+  it("clears the conflict message when the field is opened again", async () => {
+    const onSave = vi.fn().mockResolvedValue({ status: "conflict", message: "Taken." });
+    render(
+      <EditableField
+        label="Name"
+        value="Todo"
+        onSave={onSave}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Name" }));
+    fireEvent.change(await screen.findByRole("textbox", { name: "Name" }), {
+      target: { value: "Backlog" },
+    });
+    fireEvent.blur(screen.getByRole("textbox", { name: "Name" }));
+    await screen.findByRole("alert");
+
+    fireEvent.click(screen.getByRole("button", { name: "Name" }));
+
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+});

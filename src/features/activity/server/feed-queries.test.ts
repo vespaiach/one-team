@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { activity, boardColumn, comment, issue, project, user } from "@/db/schema";
 import { testDb, truncateTestDatabase } from "@/db/test-database";
+import type { Actor } from "@/features/auth/server/actor";
+import { createColumn } from "@/features/projects/server/create-column";
+import { deleteColumn } from "@/features/projects/server/delete-column";
+import { moveColumn } from "@/features/projects/server/move-column";
+import { updateColumn } from "@/features/projects/server/update-column";
+import { collapseFeed } from "../components/collapse";
 import { countProjectComments, listFeed } from "./feed-queries";
 
 beforeEach(async () => {
@@ -327,5 +333,77 @@ describe("countProjectComments (FR-059)", () => {
     const count = await countProjectComments(fx.projectId);
 
     expect(count).toBe(0);
+  });
+});
+function adminActorFor(row: { id: string; role: string }): Actor {
+  return {
+    id: row.id,
+    role: row.role,
+    firstName: "Ada",
+    lastName: "Lovelace",
+    avatarUrl: null,
+    mustChangePassword: false,
+  };
+}
+
+async function columnFixture() {
+  const admin = await insertUser({ role: "admin" });
+  const projectRow = await insertProject();
+  const columnRow = await insertColumn(projectRow.id);
+  const issueRow = await insertIssue(projectRow.id, columnRow.id, admin.id);
+  return {
+    actor: adminActorFor(admin),
+    actorId: admin.id,
+    projectId: projectRow.id,
+    projectKey: projectRow.key,
+    columnId: columnRow.id,
+    issueId: issueRow.id,
+  };
+}
+
+describe("listFeed — a column edit belongs to the project, never to an issue (FR-044, US5-6)", () => {
+  it("shows a column edit on the project's feed and on no issue's feed in that project", async () => {
+    const fx = await columnFixture();
+
+    const created = await createColumn({ actor: fx.actor, projectKey: fx.projectKey, name: "Review" });
+    expect(created.ok).toBe(true);
+
+    const projectFeed = await listFeed({ projectId: fx.projectId }, { id: fx.actorId, isAdmin: true });
+    expect(projectFeed.rows.map((row) => row.kind)).toEqual(["column_added"]);
+    expect(projectFeed.rows[0]).toMatchObject({ actorId: fx.actorId, field: "Review" });
+
+    const issueFeed = await listFeed({ issueId: fx.issueId }, { id: fx.actorId, isAdmin: true });
+    expect(issueFeed.rows).toHaveLength(0);
+  });
+});
+
+describe("listFeed — a run of column edits collapses into one line (FR-031, US5-7)", () => {
+  it("folds four column edits by one admin inside five minutes into a single expandable group", async () => {
+    const fx = await columnFixture();
+
+    const created = await createColumn({ actor: fx.actor, projectKey: fx.projectKey, name: "Review" });
+    if (!created.ok) {
+      throw new Error("createColumn refused");
+    }
+    await updateColumn({ actor: fx.actor, columnId: created.column.id, name: "In Review" });
+    await moveColumn({
+      actor: fx.actor,
+      columnId: created.column.id,
+      targetColumnId: fx.columnId,
+      placement: "before",
+    });
+    await deleteColumn({ actor: fx.actor, projectId: fx.projectId, columnId: created.column.id });
+
+    const page = await listFeed({ projectId: fx.projectId }, { id: fx.actorId, isAdmin: true });
+    expect(page.rows.map((row) => row.kind)).toEqual([
+      "column_deleted",
+      "column_reordered",
+      "column_renamed",
+      "column_added",
+    ]);
+
+    const groups = collapseFeed(page.rows);
+    expect(groups).toHaveLength(1);
+    expect(groups[0]).toHaveLength(4);
   });
 });

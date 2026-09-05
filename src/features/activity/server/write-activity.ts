@@ -13,7 +13,11 @@ export type ActivityType =
   | "member_removed"
   | "archived"
   | "reopened"
-  | "comment";
+  | "comment"
+  | "column_added"
+  | "column_renamed"
+  | "column_reordered"
+  | "column_deleted";
 
 export type WriteActivityInput = {
   type: ActivityType;

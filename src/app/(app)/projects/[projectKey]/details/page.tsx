@@ -11,6 +11,7 @@ import {
   setProjectStatus,
   updateProject,
 } from "@/features/projects/actions";
+import { createColumn, deleteColumn, moveColumn, updateColumn } from "@/features/projects/column-actions";
 import type { ProjectDetailsScreenAdmin } from "@/features/projects/components/project-details-screen";
 import { ProjectDetailsScreen } from "@/features/projects/components/project-details-screen";
 import { listAddableUsers, loadProjectByKey, loadProjectDetails } from "@/features/projects/server/queries";
@@ -37,6 +38,10 @@ export default async function ProjectDetailsPage({ params }: { params: Promise<{
       removeProjectMemberAction: removeProjectMember,
       setProjectStatusAction: setProjectStatus,
       deleteProjectAction: deleteProject,
+      createColumn,
+      updateColumn,
+      moveColumn,
+      deleteColumn,
     };
   }
 

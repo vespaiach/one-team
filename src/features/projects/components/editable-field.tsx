@@ -1,7 +1,7 @@
 "use client";
 
 import type { KeyboardEvent, ReactNode } from "react";
-import { useEffect, useOptimistic, useRef, useState, useTransition } from "react";
+import { useEffect, useId, useOptimistic, useRef, useState, useTransition } from "react";
 import { Button } from "react-aria-components/Button";
 import { Input, TextArea, TextField } from "react-aria-components/TextField";
 import { showToast } from "@/features/shell/components/toast-region";
@@ -9,7 +9,8 @@ import { showToast } from "@/features/shell/components/toast-region";
 export type EditableFieldSaveResult =
   | { status: "saved" }
   | { status: "invalid"; reason: string }
-  | { status: "forbidden" };
+  | { status: "forbidden" }
+  | { status: "conflict"; message: string };
 
 export type EditableFieldEditorProps = {
   value: string;
@@ -88,7 +89,9 @@ export function EditableField({
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState("");
+  const [conflictMessage, setConflictMessage] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+  const conflictAlertId = useId();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const wasEditingRef = useRef(false);
   const handledRef = useRef(false);
@@ -105,6 +108,7 @@ export function EditableField({
     const current = optimisticValue ?? "";
     initialDraftRef.current = current;
     setDraft(current);
+    setConflictMessage(null);
     handledRef.current = false;
     setIsEditing(true);
   }
@@ -125,6 +129,10 @@ export function EditableField({
     startTransition(async () => {
       setOptimisticValue(nextValue);
       const result = await onSave(nextValue);
+      if (result.status === "conflict") {
+        setConflictMessage(result.message);
+        return;
+      }
       if (result.status !== "saved") {
         const reason = result.status === "invalid" ? result.reason : result.status;
         showToast({ kind: "error", message: defaultErrorMessage(reason, label) });
@@ -189,6 +197,8 @@ export function EditableField({
 
   const hasValue = optimisticValue !== null && optimisticValue.length > 0;
   const reasonId = disabledReason ? `${label}-disabled-reason` : undefined;
+  const conflictId = conflictMessage ? conflictAlertId : undefined;
+  const describedBy = [reasonId, conflictId].filter(Boolean).join(" ") || undefined;
 
   return (
     <>
@@ -197,7 +207,7 @@ export function EditableField({
         onPress={openEdit}
         isDisabled={isDisabled}
         aria-label={label}
-        aria-describedby={reasonId}
+        aria-describedby={describedBy}
         className={`block w-full whitespace-pre-wrap text-start text-control ${multiline ? "min-h-[4.5rem]" : ""} ${
           hasValue ? "text-(--color-text)" : "text-(--color-text-placeholder)"
         }`}>
@@ -208,6 +218,14 @@ export function EditableField({
           id={reasonId}
           className="text-label text-(--color-text-muted)">
           {disabledReason}
+        </p>
+      ) : null}
+      {conflictMessage ? (
+        <p
+          id={conflictId}
+          role="alert"
+          className="text-label text-(--color-danger-text)">
+          {conflictMessage}
         </p>
       ) : null}
     </>
