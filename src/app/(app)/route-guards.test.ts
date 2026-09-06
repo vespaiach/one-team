@@ -2,6 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 
 const { requireActorMock } = vi.hoisted(() => ({ requireActorMock: vi.fn() }));
 vi.mock("@/features/auth/server/actor", () => ({ requireActor: requireActorMock }));
+vi.mock("@/features/notifications/server/notification-queries", () => ({
+  countUnreadNotifications: vi.fn().mockResolvedValue(0),
+  listNotifications: vi.fn().mockResolvedValue([]),
+}));
 
 const REDIRECT_ERROR = Object.assign(new Error("NEXT_REDIRECT"), {
   digest: "NEXT_REDIRECT;replace;/signin;307;",
@@ -56,6 +60,7 @@ const SIGNED_IN_ROUTES = [
 
 const DELIVERED_SIGNED_IN_ROUTE_NAMES = new Set([
   "/profile",
+  "/notifications",
   "/projects/[projectKey]",
   "/projects/[projectKey]/details",
   "/projects/[projectKey]/issues/new",
@@ -145,6 +150,13 @@ describe("Route guards (FR-014, FR-019, FR-021, FR-022, FR-029, research D-1)", 
   it("/profile renders the screen, rather than 404, for a signed-in member", async () => {
     requireActorMock.mockResolvedValue(member);
     const { default: Page } = await import("./profile/page");
+
+    await expect(Page()).resolves.not.toBeNull();
+  });
+
+  it("/notifications renders the screen, rather than 404, for a signed-in member (R11 FR-010)", async () => {
+    requireActorMock.mockResolvedValue(member);
+    const { default: Page } = await import("./notifications/page");
 
     await expect(Page()).resolves.not.toBeNull();
   });

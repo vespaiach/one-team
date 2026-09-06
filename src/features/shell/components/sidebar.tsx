@@ -11,11 +11,13 @@ export function Sidebar({
   avatarUrl,
   isAdmin,
   projects = [],
+  unreadNotificationCount = 0,
 }: {
   displayName: string;
   avatarUrl: string | null;
   isAdmin: boolean;
   projects?: ProjectListRegionEntry[];
+  unreadNotificationCount?: number;
 }) {
   return (
     <nav
@@ -35,8 +37,18 @@ export function Sidebar({
       />
       <Link
         href="/notifications"
+        aria-label={
+          unreadNotificationCount > 0 ? `Notifications, ${unreadNotificationCount} unread` : undefined
+        }
         className={NAV_LINK_CLASSES}>
         Notifications
+        {unreadNotificationCount > 0 ? (
+          <span
+            aria-hidden="true"
+            className="ms-2">
+            {unreadNotificationCount}
+          </span>
+        ) : null}
       </Link>
       {isAdmin ? (
         <Link

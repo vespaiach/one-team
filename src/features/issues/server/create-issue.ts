@@ -6,6 +6,8 @@ import { issue, issueCounter, issueLabel, label, project } from "@/db/schema";
 import { touched } from "@/db/touched";
 import { writeActivity } from "@/features/activity/server/write-activity";
 import type { Actor } from "@/features/auth/server/actor";
+import { dispatchNotificationMail } from "@/features/notifications/server/mail";
+import { writeAssignmentNotifications } from "@/features/notifications/server/write-notifications";
 import { isMember } from "@/features/projects/server/authorization";
 import { type IssuePriority, parseDescription, parseDueDate, parsePriority, parseTitle } from "./input";
 import { listAssigneePool, listProjectColumns } from "./issue-queries";
@@ -135,6 +137,7 @@ export async function createIssue(input: CreateIssueInput): Promise<CreateIssueR
   }
 
   const now = new Date();
+  let pendingMail: string[] = [];
 
   try {
     const number = await db.transaction(async (tx) => {
@@ -180,6 +183,12 @@ export async function createIssue(input: CreateIssueInput): Promise<CreateIssueR
         throw new Error("createIssue produced no issue row");
       }
 
+      pendingMail = await writeAssignmentNotifications(tx, {
+        issueId: insertedIssue.id,
+        assigneeId,
+        actorId: input.actor.id,
+      });
+
       if (labelIds.length > 0) {
         await tx
           .insert(issueLabel)
@@ -194,6 +203,8 @@ export async function createIssue(input: CreateIssueInput): Promise<CreateIssueR
 
       return counterRow.lastNumber;
     });
+
+    dispatchNotificationMail(pendingMail);
 
     return { status: "ok", projectKey: projectRow.key, number };
   } catch (error) {

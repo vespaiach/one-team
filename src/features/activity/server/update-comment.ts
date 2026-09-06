@@ -4,6 +4,8 @@ import { db } from "@/db";
 import { comment } from "@/db/schema";
 import { touched } from "@/db/touched";
 import type { Actor } from "@/features/auth/server/actor";
+import { dispatchNotificationMail } from "@/features/notifications/server/mail";
+import { writeMentionDiffNotifications } from "@/features/notifications/server/write-notifications";
 import { parseCommentBody } from "./input";
 
 export type UpdateCommentField = "body";
@@ -48,7 +50,43 @@ export async function updateComment(input: UpdateCommentInput): Promise<UpdateCo
     };
   }
 
-  await db.update(comment).set(touched({ body })).where(eq(comment.id, input.commentId));
+  let pendingMail: string[] = [];
+  const result = await db.transaction(async (tx): Promise<UpdateCommentResult> => {
+    const [current] = await tx
+      .select({ body: comment.body, issueId: comment.issueId, projectId: comment.projectId })
+      .from(comment)
+      .where(eq(comment.id, input.commentId))
+      .for("update");
 
-  return { status: "ok" };
+    if (!current) {
+      return { status: "not-found" };
+    }
+
+    await tx.update(comment).set(touched({ body })).where(eq(comment.id, input.commentId));
+
+    const diff = {
+      commentId: input.commentId,
+      actorId: input.actor.id,
+      previousBody: current.body,
+      nextBody: body,
+    };
+
+    if (current.issueId !== null) {
+      pendingMail = await writeMentionDiffNotifications(tx, {
+        ...diff,
+        target: { issueId: current.issueId },
+      });
+    } else if (current.projectId !== null) {
+      pendingMail = await writeMentionDiffNotifications(tx, {
+        ...diff,
+        target: { projectId: current.projectId },
+      });
+    }
+
+    return { status: "ok" };
+  });
+
+  dispatchNotificationMail(pendingMail);
+
+  return result;
 }

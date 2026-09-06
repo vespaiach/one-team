@@ -1,6 +1,17 @@
 import { eq } from "drizzle-orm";
+import nodemailer from "nodemailer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { authAttempt, invite, resetToken, session, user } from "@/db/schema";
+import {
+  authAttempt,
+  boardColumn,
+  invite,
+  issue,
+  notification,
+  project,
+  resetToken,
+  session,
+  user,
+} from "@/db/schema";
 import { testDb, truncateTestDatabase } from "@/db/test-database";
 import { startSweep, sweep } from "./sweep";
 
@@ -234,5 +245,112 @@ describe("sweep timer (FR-069, FR-070, FR-071)", () => {
 
     await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
     expect(runSweep).toHaveBeenCalledTimes(1);
+  });
+});
+describe("sweep drives the notification mail retry on the same clock (FR-068, research D-5)", () => {
+  const MAIL_ENV = {
+    APP_URL: process.env.APP_URL,
+    SMTP_URL: process.env.SMTP_URL,
+    MAIL_FROM: process.env.MAIL_FROM,
+  };
+
+  beforeEach(() => {
+    process.env.APP_URL = "https://app.example.com";
+    process.env.SMTP_URL = "smtp://localhost:1025";
+    process.env.MAIL_FROM = "no-reply@example.com";
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.spyOn(nodemailer, "createTransport").mockReturnValue({
+      sendMail: vi.fn().mockRejectedValue(new Error("connection refused")),
+    } as unknown as ReturnType<typeof nodemailer.createTransport>);
+  });
+
+  afterEach(() => {
+    process.env.APP_URL = MAIL_ENV.APP_URL;
+    process.env.SMTP_URL = MAIL_ENV.SMTP_URL;
+    process.env.MAIL_FROM = MAIL_ENV.MAIL_FROM;
+    vi.restoreAllMocks();
+  });
+
+  async function seedNotification(ageMinutes: number) {
+    const recipient = await insertUser();
+    const actorRow = await insertUser();
+    const [projectRow] = await testDb
+      .insert(project)
+      .values({
+        key: `P${crypto.randomUUID().replace(/-/g, "").slice(0, 6).toUpperCase()}`,
+        name: "Website Redesign",
+        createdAt: NOW,
+        updatedAt: NOW,
+      })
+      .returning();
+    if (!projectRow) {
+      throw new Error("insertProject produced no row");
+    }
+    const [column] = await testDb
+      .insert(boardColumn)
+      .values({
+        projectId: projectRow.id,
+        name: "Backlog",
+        kind: "open",
+        sortOrder: "a0",
+        createdAt: NOW,
+        updatedAt: NOW,
+      })
+      .returning();
+    if (!column) {
+      throw new Error("insertColumn produced no row");
+    }
+    const [issueRow] = await testDb
+      .insert(issue)
+      .values({
+        projectId: projectRow.id,
+        number: 1,
+        title: "Fix the header",
+        columnId: column.id,
+        createdBy: actorRow.id,
+        sortOrder: "a0",
+        createdAt: NOW,
+        updatedAt: NOW,
+      })
+      .returning();
+    if (!issueRow) {
+      throw new Error("insertIssue produced no row");
+    }
+    const createdAt = new Date(NOW.getTime() - ageMinutes * 60 * 1000);
+    const [row] = await testDb
+      .insert(notification)
+      .values({
+        userId: recipient.id,
+        actorId: actorRow.id,
+        type: "assignment",
+        issueId: issueRow.id,
+        sendAttempts: 1,
+        createdAt,
+        updatedAt: createdAt,
+      })
+      .returning();
+    if (!row) {
+      throw new Error("seedNotification produced no row");
+    }
+    return row;
+  }
+
+  it("retries a notification that is due against the clock it was given", async () => {
+    const row = await seedNotification(16);
+
+    await sweep(NOW);
+
+    const [after] = await testDb.select().from(notification).where(eq(notification.id, row.id));
+    expect(after?.sendAttempts).toBe(2);
+    expect(after?.emailedAt).toBeNull();
+  });
+
+  it("leaves a notification that is not yet due against that same clock alone", async () => {
+    const row = await seedNotification(10);
+
+    await sweep(NOW);
+
+    const [after] = await testDb.select().from(notification).where(eq(notification.id, row.id));
+    expect(after?.sendAttempts).toBe(1);
   });
 });

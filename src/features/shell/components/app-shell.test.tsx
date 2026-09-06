@@ -198,3 +198,31 @@ describe("AppShell connection banner (FR-034, FR-057)", () => {
     expect(screen.queryByRole("alert")).toBeNull();
   });
 });
+
+describe("AppShell unread notification count (FR-033)", () => {
+  it("forwards the count to the sidebar and renders nothing with it itself", () => {
+    render(
+      <AppShell
+        {...baseProps}
+        unreadNotificationCount={3}>
+        <p>page content</p>
+      </AppShell>,
+    );
+
+    expect(screen.getByRole("link", { name: "Notifications, 3 unread" })).not.toBeNull();
+    expect(screen.getByRole("main").textContent).toBe("page content");
+  });
+
+  it("forwards a zero count as no count at all", () => {
+    render(
+      <AppShell
+        {...baseProps}
+        unreadNotificationCount={0}>
+        <p>page content</p>
+      </AppShell>,
+    );
+
+    expect(screen.getByRole("link", { name: "Notifications" })).not.toBeNull();
+    expect(screen.getByRole("main").textContent).toBe("page content");
+  });
+});

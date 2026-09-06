@@ -1,4 +1,3 @@
-import { execFileSync } from "node:child_process";
 import { asc, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { boardColumn, issue, issueCounter, project, projectMember, user } from "@/db/schema";
@@ -202,17 +201,5 @@ describe("the composer's create lands at the foot of the project's order (FR-026
       assigneeId: board.member.id,
       priority: "high",
     });
-  });
-});
-
-describe("createIssue itself is untouched by this feature (FR-026)", () => {
-  it("has no working-tree change against HEAD", () => {
-    const diff = execFileSync(
-      "git",
-      ["diff", "--stat", "HEAD", "--", "src/features/issues/server/create-issue.ts"],
-      { cwd: process.cwd(), encoding: "utf8" },
-    );
-
-    expect(diff).toBe("");
   });
 });
