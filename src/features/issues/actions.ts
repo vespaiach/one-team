@@ -7,11 +7,13 @@ import { requireActor } from "@/features/auth/server/actor";
 import { assertSameOrigin } from "@/features/auth/server/origin";
 import { type CreateIssueResult, createIssue as runCreateIssue } from "./server/create-issue";
 import { type DeleteIssueResult, deleteIssue as runDeleteIssue } from "./server/delete-issue";
+import { type MoveIssueState, moveIssue as runMoveIssue } from "./server/move-issue";
 import { updateIssue as runUpdateIssue, type UpdateIssueResult } from "./server/update-issue";
 
 export type CreateIssueState = CreateIssueResult | { status: "idle" };
 export type { UpdateIssueResult };
 export type { DeleteIssueResult };
+export type { MoveIssueState };
 
 export async function createIssue(
   _prevState: CreateIssueState,
@@ -42,6 +44,40 @@ export async function createIssue(
   }
 
   redirect(`/projects/${result.projectKey}/issues/${result.number}/details`);
+}
+
+export type CreateBoardCardPayload = {
+  projectId: unknown;
+  title: unknown;
+  columnId: unknown;
+  assigneeId?: unknown;
+  priority?: unknown;
+};
+
+export async function createBoardCard(input: CreateBoardCardPayload): Promise<CreateIssueResult> {
+  assertSameOrigin({ headers: await headers() });
+  const actor = await requireActor();
+
+  if (typeof input.projectId !== "string") {
+    return { status: "not-found" };
+  }
+
+  const result = await runCreateIssue({
+    projectId: input.projectId,
+    actor,
+    title: input.title,
+    description: null,
+    columnId: input.columnId,
+    priority: input.priority,
+    assigneeId: input.assigneeId,
+    dueDate: null,
+  });
+
+  if (result.status === "ok") {
+    refresh();
+  }
+
+  return result;
 }
 
 export type UpdateIssuePayload = {
@@ -100,4 +136,19 @@ export async function deleteIssue(input: DeleteIssuePayload): Promise<DeleteIssu
   }
 
   return result;
+}
+
+export type MoveIssuePayload = {
+  issueId: unknown;
+  grouping: unknown;
+  laneId: unknown;
+  targetIssueId: unknown;
+  placement: unknown;
+};
+
+export async function moveIssue(input: MoveIssuePayload): Promise<MoveIssueState> {
+  assertSameOrigin({ headers: await headers() });
+  const actor = await requireActor();
+
+  return runMoveIssue({ actor, ...input });
 }

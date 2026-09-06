@@ -8,18 +8,21 @@ export function ProjectHeader({
   projectKey,
   name,
   current,
+  control,
   newIssue,
   commentCount,
 }: {
   projectKey: string;
   name: string;
   current: "board" | "details";
+  control?: ReactNode;
   newIssue?: ReactNode;
   commentCount?: number;
 }) {
   return (
     <ScreenHeader
       name={name}
+      control={control}
       newIssue={newIssue}
       context={
         <div className="flex items-center gap-3">

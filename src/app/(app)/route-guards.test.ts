@@ -35,7 +35,7 @@ const SIGNED_IN_ROUTES = [
   {
     name: "/projects/[projectKey]",
     importPage: () => import("./projects/[projectKey]/page"),
-    params: undefined,
+    params: { projectKey: "WR" } as Record<string, string> | undefined,
   },
   {
     name: "/projects/[projectKey]/details",
@@ -56,6 +56,7 @@ const SIGNED_IN_ROUTES = [
 
 const DELIVERED_SIGNED_IN_ROUTE_NAMES = new Set([
   "/profile",
+  "/projects/[projectKey]",
   "/projects/[projectKey]/details",
   "/projects/[projectKey]/issues/new",
   "/projects/[projectKey]/issues/[issueNumber]/details",

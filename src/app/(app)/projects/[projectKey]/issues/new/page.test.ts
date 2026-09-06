@@ -24,9 +24,15 @@ vi.mock("@/features/issues/server/issue-queries", () => ({
 vi.mock("@/features/issues/actions", () => ({
   createIssue: vi.fn(),
 }));
+vi.mock("@/features/labels/server/queries", () => ({
+  listLabelOptionsForIssue: vi.fn().mockResolvedValue([]),
+}));
 
 import { forbidden, notFound } from "next/navigation";
+import { isValidElement, type ReactElement, type ReactNode, Suspense } from "react";
 import { requireActor } from "@/features/auth/server/actor";
+import { CreateIssueForm } from "@/features/issues/components/create-issue-form";
+import { listAssigneePool, listProjectColumns } from "@/features/issues/server/issue-queries";
 import { isMember } from "@/features/projects/server/authorization";
 import { loadProjectByKey } from "@/features/projects/server/queries";
 import NewIssuePage from "./page";
@@ -134,5 +140,137 @@ describe("/projects/:projectKey/issues/new page (FR-027, FR-029, FR-046, researc
     expect(jsx).toBeDefined();
     expect(forbidden).not.toHaveBeenCalled();
     expect(notFound).not.toHaveBeenCalled();
+  });
+});
+
+const COLUMNS = [
+  { id: "0198d2b1-0000-7000-8000-0000000000c1", name: "Backlog" },
+  { id: "0198d2b1-0000-7000-8000-0000000000c2", name: "In progress" },
+];
+
+const POOL = [
+  {
+    id: "0198d2b1-0000-7000-8000-0000000000a1",
+    firstName: "Ada",
+    lastName: "Lovelace",
+    avatarUrl: null,
+    jobTitle: null,
+  },
+];
+
+function pageProps(projectKey: string, query: Record<string, string | string[]>) {
+  return {
+    params: Promise.resolve({ projectKey }),
+    searchParams: Promise.resolve(query),
+  };
+}
+
+function elements(node: ReactNode): ReactElement<{ children?: ReactNode }>[] {
+  if (Array.isArray(node)) {
+    return node.flatMap(elements);
+  }
+  if (!isValidElement(node)) {
+    return [];
+  }
+  const element = node as ReactElement<{ children?: ReactNode }>;
+  return [element, ...elements(element.props.children)];
+}
+
+function findByType(node: ReactNode, type: unknown): ReactElement<Record<string, unknown>> | undefined {
+  return elements(node).find((element) => element.type === type) as
+    | ReactElement<Record<string, unknown>>
+    | undefined;
+}
+
+async function formPropsFor(query: Record<string, string | string[]>): Promise<Record<string, unknown>> {
+  vi.mocked(requireActor).mockResolvedValue(ACTOR);
+  vi.mocked(loadProjectByKey).mockResolvedValue(PROJECT);
+  vi.mocked(isMember).mockResolvedValue(true);
+  vi.mocked(listProjectColumns).mockResolvedValue(COLUMNS);
+  vi.mocked(listAssigneePool).mockResolvedValue(POOL);
+
+  const boundary = findByType(await NewIssuePage(pageProps("WEB", query)), Suspense);
+  const child = boundary?.props.children;
+  if (!isValidElement(child) || typeof child.type !== "function") {
+    throw new Error("the create-issue form data boundary is not a component");
+  }
+  const renderFormData = child.type as (props: unknown) => Promise<ReactNode>;
+  const form = findByType(await renderFormData(child.props), CreateIssueForm);
+  if (!form) {
+    throw new Error("no CreateIssueForm was rendered");
+  }
+  return form.props;
+}
+
+describe("/projects/:projectKey/issues/new preselection from searchParams (FR-048, FR-053, II, gate 3)", () => {
+  it("preselects a column the project actually has", async () => {
+    const props = await formPropsFor({ columnId: COLUMNS[1].id });
+
+    expect(props.initialColumnId).toBe(COLUMNS[1].id);
+  });
+
+  it("drops a columnId naming another project's column and leaves the form its own default", async () => {
+    const props = await formPropsFor({ columnId: "0198d2b1-0000-7000-8000-00000000ffff" });
+
+    expect(props.initialColumnId).toBeUndefined();
+  });
+
+  it("preselects an assignee who is in the pool", async () => {
+    const props = await formPropsFor({ assigneeId: POOL[0].id });
+
+    expect(props.initialAssigneeId).toBe(POOL[0].id);
+  });
+
+  it("drops an assigneeId outside the assignee pool", async () => {
+    const props = await formPropsFor({ assigneeId: "0198d2b1-0000-7000-8000-00000000eeee" });
+
+    expect(props.initialAssigneeId).toBeUndefined();
+  });
+
+  it("preselects a priority parsePriority admits, and drops one it does not", async () => {
+    expect((await formPropsFor({ priority: "high" })).initialPriority).toBe("high");
+    expect((await formPropsFor({ priority: "critical" })).initialPriority).toBeUndefined();
+  });
+
+  it("carries a typed title through trimmed, and drops one that is blank or too long", async () => {
+    expect((await formPropsFor({ title: "  Ship the board  " })).initialTitle).toBe("Ship the board");
+    expect((await formPropsFor({ title: "   " })).initialTitle).toBeUndefined();
+    expect((await formPropsFor({ title: "x".repeat(201) })).initialTitle).toBeUndefined();
+  });
+
+  it("drops a repeated parameter rather than taking one of its values", async () => {
+    const props = await formPropsFor({
+      columnId: [COLUMNS[0].id, COLUMNS[1].id],
+      priority: ["low", "high"],
+      title: ["one", "two"],
+      assigneeId: [POOL[0].id, POOL[0].id],
+    });
+
+    expect(props.initialColumnId).toBeUndefined();
+    expect(props.initialAssigneeId).toBeUndefined();
+    expect(props.initialPriority).toBeUndefined();
+    expect(props.initialTitle).toBeUndefined();
+  });
+
+  it("passes no preselection at all when the query string is empty", async () => {
+    const props = await formPropsFor({});
+
+    expect(props.initialColumnId).toBeUndefined();
+    expect(props.initialAssigneeId).toBeUndefined();
+    expect(props.initialPriority).toBeUndefined();
+    expect(props.initialTitle).toBeUndefined();
+  });
+
+  it("still gives a non-member the Forbidden screen when the URL carries a full preselection", async () => {
+    vi.mocked(requireActor).mockResolvedValue(ACTOR);
+    vi.mocked(loadProjectByKey).mockResolvedValue(PROJECT);
+    vi.mocked(isMember).mockResolvedValue(false);
+
+    await expect(
+      NewIssuePage(pageProps("WEB", { columnId: COLUMNS[0].id, priority: "high" })),
+    ).rejects.toThrow("NEXT_FORBIDDEN");
+
+    expect(forbidden).toHaveBeenCalled();
+    expect(listProjectColumns).not.toHaveBeenCalled();
   });
 });

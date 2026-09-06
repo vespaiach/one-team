@@ -38,7 +38,14 @@ afterEach(() => {
 function renderForm(
   action: CreateIssueActionMock,
   pool: AssigneeOption[] = assigneePool,
-  overrides: Partial<{ labelOptions: LabelOption[]; canManageLabels: boolean }> = {},
+  overrides: Partial<{
+    labelOptions: LabelOption[];
+    canManageLabels: boolean;
+    initialTitle: string;
+    initialColumnId: string;
+    initialAssigneeId: string;
+    initialPriority: "none" | "low" | "medium" | "high" | "urgent";
+  }> = {},
 ) {
   return render(
     <CreateIssueForm
@@ -49,6 +56,10 @@ function renderForm(
       createIssueAction={action}
       labelOptions={overrides.labelOptions ?? labelOptions}
       canManageLabels={overrides.canManageLabels}
+      initialTitle={overrides.initialTitle}
+      initialColumnId={overrides.initialColumnId}
+      initialAssigneeId={overrides.initialAssigneeId}
+      initialPriority={overrides.initialPriority}
     />,
   );
 }
@@ -209,5 +220,72 @@ describe("CreateIssueForm — the label picker, between Priority and Assignee (F
     await vi.waitFor(() => expect(action).toHaveBeenCalled());
     const formData = action.mock.calls[0]?.[1] as FormData;
     expect(formData.getAll("labelIds")).toEqual([]);
+  });
+});
+describe("CreateIssueForm — optional initial values seeding the state already there (FR-048)", () => {
+  it("seeds the title from initialTitle", () => {
+    const action = vi.fn();
+    renderForm(action, assigneePool, { initialTitle: "Fix the header" });
+
+    expect((screen.getByLabelText("Title") as HTMLInputElement).value).toBe("Fix the header");
+  });
+
+  it("seeds the column from initialColumnId rather than the first column", () => {
+    const action = vi.fn();
+    renderForm(action, assigneePool, { initialColumnId: "col-2" });
+
+    expect(screen.getByLabelText("Column").textContent).toBe("Todo");
+  });
+
+  it("seeds the assignee from initialAssigneeId rather than Unassigned", () => {
+    const action = vi.fn();
+    renderForm(action, assigneePool, { initialAssigneeId: "user-1" });
+
+    expect(screen.getByLabelText("Assignee").textContent).toBe("Ada Lovelace");
+  });
+
+  it("seeds the priority from initialPriority rather than none", () => {
+    const action = vi.fn();
+    renderForm(action, assigneePool, { initialPriority: "high" });
+
+    expect(screen.getByLabelText("Priority").textContent).toBe("High");
+  });
+
+  it("carries every seeded value into the submission without further typing", async () => {
+    const action = vi.fn().mockResolvedValue({ status: "idle" });
+    renderForm(action, assigneePool, {
+      initialTitle: "Fix the header",
+      initialColumnId: "col-2",
+      initialAssigneeId: "user-1",
+      initialPriority: "urgent",
+    });
+
+    submit();
+
+    await vi.waitFor(() => expect(action).toHaveBeenCalled());
+    const formData = action.mock.calls[0]?.[1] as FormData;
+    expect(formData.get("title")).toBe("Fix the header");
+    expect(formData.get("columnId")).toBe("col-2");
+    expect(formData.get("assigneeId")).toBe("user-1");
+    expect(formData.get("priority")).toBe("urgent");
+  });
+
+  it("behaves exactly as it does now for a caller passing none", () => {
+    const action = vi.fn();
+    renderForm(action);
+
+    expect((screen.getByLabelText("Title") as HTMLInputElement).value).toBe("");
+    expect(screen.getByLabelText("Column").textContent).toBe("Backlog");
+    expect(screen.getByLabelText("Priority").textContent).toBe("No priority");
+    expect(screen.getByLabelText("Assignee").textContent).toBe("Unassigned");
+  });
+
+  it("still edits freely after seeding, the seed being an initial value and not a lock", () => {
+    const action = vi.fn();
+    renderForm(action, assigneePool, { initialTitle: "Fix the header" });
+
+    fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Fix the footer" } });
+
+    expect((screen.getByLabelText("Title") as HTMLInputElement).value).toBe("Fix the footer");
   });
 });
