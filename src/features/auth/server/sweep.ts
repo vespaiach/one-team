@@ -2,6 +2,7 @@ import "server-only";
 import { isNotNull, lt, or } from "drizzle-orm";
 import { db } from "@/db";
 import { authAttempt, resetToken, session } from "@/db/schema";
+import { sweepNotificationMail } from "@/features/notifications/server/mail-sweep";
 import { logUnhandledServerError } from "./log";
 
 const ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
@@ -13,6 +14,7 @@ export async function sweep(now: Date = new Date()): Promise<void> {
     .where(lt(authAttempt.attemptedAt, new Date(now.getTime() - ATTEMPT_WINDOW_MS)));
   await db.delete(session).where(lt(session.expiresAt, now));
   await db.delete(resetToken).where(or(isNotNull(resetToken.usedAt), lt(resetToken.expiresAt, now)));
+  await sweepNotificationMail(now);
 }
 
 export function startSweep(runSweep: (now?: Date) => Promise<void> = sweep): () => void {

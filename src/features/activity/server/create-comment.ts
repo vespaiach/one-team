@@ -4,6 +4,8 @@ import { db } from "@/db";
 import { comment, issue, project, user } from "@/db/schema";
 import type { Actor } from "@/features/auth/server/actor";
 import { publicUser } from "@/features/auth/server/projections";
+import { dispatchNotificationMail } from "@/features/notifications/server/mail";
+import { writeCommentNotifications } from "@/features/notifications/server/write-notifications";
 import { isMember } from "@/features/projects/server/authorization";
 import type { FeedRow } from "./feed-queries";
 import { parseCommentBody } from "./input";
@@ -69,6 +71,7 @@ export async function createComment(input: CreateCommentInput): Promise<CreateCo
   }
 
   const now = new Date();
+  let pendingMail: string[] = [];
 
   const insertedComment = await db.transaction(async (tx) => {
     const [row] = await tx
@@ -87,8 +90,17 @@ export async function createComment(input: CreateCommentInput): Promise<CreateCo
       commentId: row.id,
     });
 
+    pendingMail = await writeCommentNotifications(tx, {
+      commentId: row.id,
+      target: input.target,
+      actorId: input.actor.id,
+      body,
+    });
+
     return row;
   });
+
+  dispatchNotificationMail(pendingMail);
 
   return {
     status: "ok",

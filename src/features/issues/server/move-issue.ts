@@ -7,6 +7,8 @@ import { boardColumn, issue, project, user } from "@/db/schema";
 import { touched } from "@/db/touched";
 import { truncateActivityValue, writeActivity } from "@/features/activity/server/write-activity";
 import type { Actor } from "@/features/auth/server/actor";
+import { dispatchNotificationMail } from "@/features/notifications/server/mail";
+import { writeAssignmentNotifications } from "@/features/notifications/server/write-notifications";
 import { isMember } from "@/features/projects/server/authorization";
 import { parseColumnId, parsePlacement } from "@/features/projects/server/column-input";
 import { displayName } from "@/lib/display-name";
@@ -193,7 +195,9 @@ export async function moveIssue(input: MoveIssueInput): Promise<MoveIssueState> 
     notFound();
   }
 
-  return db.transaction(async (tx): Promise<MoveIssueState> => {
+  let pendingMail: string[] = [];
+
+  const state = await db.transaction(async (tx): Promise<MoveIssueState> => {
     const [row] = await tx.select().from(issue).where(eq(issue.id, movedId)).for("update");
     if (!row) {
       return { ok: false, error: "not_found" };
@@ -279,6 +283,14 @@ export async function moveIssue(input: MoveIssueInput): Promise<MoveIssueState> 
     await tx.update(issue).set(touched(fields)).where(eq(issue.id, moved.id));
 
     if (!laneUnchanged) {
+      if (lane.field === "assignee") {
+        pendingMail = await writeAssignmentNotifications(tx, {
+          issueId: moved.id,
+          assigneeId: lane.assigneeId,
+          actorId: input.actor.id,
+        });
+      }
+
       const diff = await laneDiff(tx, projectRow.id, row, lane);
       await writeActivity(tx, {
         type: "field_changed",
@@ -292,4 +304,8 @@ export async function moveIssue(input: MoveIssueInput): Promise<MoveIssueState> 
 
     return { ok: true };
   });
+
+  dispatchNotificationMail(pendingMail);
+
+  return state;
 }

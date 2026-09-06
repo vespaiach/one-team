@@ -6,6 +6,8 @@ import { touched } from "@/db/touched";
 import { truncateActivityValue, writeActivity } from "@/features/activity/server/write-activity";
 import type { Actor } from "@/features/auth/server/actor";
 import { publicUser } from "@/features/auth/server/projections";
+import { dispatchNotificationMail } from "@/features/notifications/server/mail";
+import { writeAssignmentNotifications } from "@/features/notifications/server/write-notifications";
 import { isMember } from "@/features/projects/server/authorization";
 import { parseDescription, parseDueDate, parsePriority, parseTitle } from "./input";
 import { listAssigneePool, listProjectColumns } from "./issue-queries";
@@ -64,7 +66,9 @@ export async function updateIssue(input: UpdateIssueInput): Promise<UpdateIssueR
 }
 
 async function runUpdateIssue(input: UpdateIssueInput): Promise<UpdateIssueResult> {
-  return db.transaction(async (tx) => {
+  let pendingMail: string[] = [];
+
+  const result = await db.transaction(async (tx): Promise<UpdateIssueResult> => {
     const [row] = await tx.select().from(issue).where(eq(issue.id, input.issueId)).for("update");
     if (!row) {
       return { status: "not-found" };
@@ -215,6 +219,14 @@ async function runUpdateIssue(input: UpdateIssueInput): Promise<UpdateIssueResul
 
     await tx.update(issue).set(touched(fields)).where(eq(issue.id, input.issueId));
 
+    if ("assigneeId" in fields) {
+      pendingMail = await writeAssignmentNotifications(tx, {
+        issueId: input.issueId,
+        assigneeId: fields.assigneeId ?? null,
+        actorId: input.actor.id,
+      });
+    }
+
     for (const diff of diffs) {
       await writeActivity(tx, {
         type: "field_changed",
@@ -228,4 +240,8 @@ async function runUpdateIssue(input: UpdateIssueInput): Promise<UpdateIssueResul
 
     return { status: "ok" };
   });
+
+  dispatchNotificationMail(pendingMail);
+
+  return result;
 }

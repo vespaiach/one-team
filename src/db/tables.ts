@@ -1,4 +1,5 @@
 export const ALL_TABLES = [
+  "notification",
   "auth_attempt",
   "reset_token",
   "session",

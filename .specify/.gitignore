@@ -7,3 +7,7 @@ feature.json
 
 # Per-machine extension config overrides.
 extensions/*/local-config.yml
+
+# Live orchestration state for the current implement loop. Per-run, per-checkout,
+# like feature.json above.
+loop-state.json

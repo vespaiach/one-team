@@ -10,6 +10,7 @@ export function AppShell({
   isAdmin,
   showPasswordBanner,
   projects = [],
+  unreadNotificationCount = 0,
   children,
 }: {
   displayName: string;
@@ -17,6 +18,7 @@ export function AppShell({
   isAdmin: boolean;
   showPasswordBanner: boolean;
   projects?: ProjectListRegionEntry[];
+  unreadNotificationCount?: number;
   children: ReactNode;
 }) {
   return (
@@ -31,6 +33,7 @@ export function AppShell({
         avatarUrl={avatarUrl}
         isAdmin={isAdmin}
         projects={projects}
+        unreadNotificationCount={unreadNotificationCount}
       />
       <main
         id="main-content"

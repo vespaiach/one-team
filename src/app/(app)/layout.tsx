@@ -1,4 +1,5 @@
 import { loadActor } from "@/features/auth/server/actor";
+import { countUnreadNotifications } from "@/features/notifications/server/notification-queries";
 import { listProjectsForSidebar } from "@/features/projects/server/queries";
 import { AppShell } from "@/features/shell/components/app-shell";
 import { ToastRegion } from "@/features/shell/components/toast-region";
@@ -10,6 +11,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     return children;
   }
   const projects = await listProjectsForSidebar();
+  const unreadNotificationCount = await countUnreadNotifications(actor.id);
   return (
     <>
       <AppShell
@@ -17,7 +19,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         avatarUrl={actor.avatarUrl}
         isAdmin={actor.role === "admin"}
         showPasswordBanner={actor.mustChangePassword}
-        projects={projects}>
+        projects={projects}
+        unreadNotificationCount={unreadNotificationCount}>
         {children}
       </AppShell>
       <ToastRegion />

@@ -373,3 +373,42 @@ export const activity = pgTable(
     ),
   ],
 );
+
+export const notification = pgTable(
+  "notification",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .$defaultFn(() => uuidv7()),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => user.id),
+    actorId: uuid("actor_id")
+      .notNull()
+      .references(() => user.id),
+    type: text("type").notNull(),
+    issueId: uuid("issue_id").references(() => issue.id, { onDelete: "cascade" }),
+    projectId: uuid("project_id").references(() => project.id, { onDelete: "cascade" }),
+    commentId: uuid("comment_id").references(() => comment.id, { onDelete: "cascade" }),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    emailedAt: timestamp("emailed_at", { withTimezone: true }),
+    sendAttempts: integer("send_attempts").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    index("notification_user_id_created_at_idx").on(table.userId, table.createdAt),
+    index("notification_user_id_unread_idx").on(table.userId).where(sql`${table.readAt} is null`),
+    uniqueIndex("notification_user_id_comment_id_idx")
+      .on(table.userId, table.commentId)
+      .where(sql`${table.commentId} is not null`),
+    check("notification_type_valid", sql`${table.type} in ('mention', 'assignment', 'comment')`),
+    check("notification_target_exactly_one", sql`num_nonnulls(${table.issueId}, ${table.projectId}) = 1`),
+    check("notification_actor_not_recipient", sql`${table.userId} <> ${table.actorId}`),
+    check(
+      "notification_comment_id_matches_type",
+      sql`(${table.type} = 'assignment') = (${table.commentId} is null)`,
+    ),
+    check("notification_send_attempts_range", sql`${table.sendAttempts} between 0 and 4`),
+  ],
+);

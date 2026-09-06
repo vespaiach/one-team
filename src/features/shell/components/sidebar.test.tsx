@@ -220,3 +220,59 @@ describe("Sidebar entries (FR-005, FR-006, FR-011, FR-012, FR-016, FR-031, SC-00
     }
   });
 });
+
+describe("Sidebar unread notification count (FR-033, FR-034, FR-035, SC-012, SC-016)", () => {
+  it("carries the count inside the entry's accessible name, with the visible badge hidden from assistive technology", () => {
+    render(
+      <Sidebar
+        {...baseProps}
+        isAdmin={false}
+        unreadNotificationCount={3}
+      />,
+    );
+
+    const entry = screen.getByRole("link", { name: "Notifications, 3 unread" });
+    const badge = entry.querySelector('[aria-hidden="true"]');
+    expect(badge?.textContent).toBe("3");
+  });
+
+  it("carries a count that exceeds the 200-row list cap", () => {
+    render(
+      <Sidebar
+        {...baseProps}
+        isAdmin={false}
+        unreadNotificationCount={250}
+      />,
+    );
+
+    expect(screen.getByRole("link", { name: "Notifications, 250 unread" })).not.toBeNull();
+  });
+
+  it("renders no count, no zero and no aria-label override when nothing is unread", () => {
+    render(
+      <Sidebar
+        {...baseProps}
+        isAdmin={false}
+        unreadNotificationCount={0}
+      />,
+    );
+
+    const entry = screen.getByRole("link", { name: "Notifications" });
+    expect(entry.getAttribute("aria-label")).toBeNull();
+    expect(entry.textContent).toBe("Notifications");
+    expect(screen.queryByText("0")).toBeNull();
+  });
+
+  it("leaves the admin-only entries hidden rather than disabled while carrying a count", () => {
+    render(
+      <Sidebar
+        {...baseProps}
+        isAdmin={false}
+        unreadNotificationCount={3}
+      />,
+    );
+
+    expect(screen.queryByRole("link", { name: "Accounts" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Labels" })).toBeNull();
+  });
+});
