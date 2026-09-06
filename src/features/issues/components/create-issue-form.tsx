@@ -52,6 +52,10 @@ export function CreateIssueForm({
   createIssueAction,
   labelOptions = [],
   canManageLabels = false,
+  initialTitle = "",
+  initialColumnId,
+  initialAssigneeId,
+  initialPriority = "none",
 }: {
   projectId: string;
   projectKey: string;
@@ -60,17 +64,21 @@ export function CreateIssueForm({
   createIssueAction: (prevState: CreateIssueState, formData: FormData) => Promise<CreateIssueState>;
   labelOptions?: LabelOption[];
   canManageLabels?: boolean;
+  initialTitle?: string;
+  initialColumnId?: string;
+  initialAssigneeId?: string;
+  initialPriority?: "none" | "low" | "medium" | "high" | "urgent";
 }) {
   const router = useRouter();
   const [, formAction, isPending] = useActionState(createIssueAction, INITIAL_STATE);
 
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState(initialTitle);
   const [titleTouched, setTitleTouched] = useState(false);
   const [description, setDescription] = useState("");
   const [descriptionTouched, setDescriptionTouched] = useState(false);
-  const [columnId, setColumnId] = useState(columns[0]?.id ?? "");
-  const [priority, setPriority] = useState<"none" | "low" | "medium" | "high" | "urgent">("none");
-  const [assigneeId, setAssigneeId] = useState(UNASSIGNED);
+  const [columnId, setColumnId] = useState(initialColumnId ?? columns[0]?.id ?? "");
+  const [priority, setPriority] = useState<"none" | "low" | "medium" | "high" | "urgent">(initialPriority);
+  const [assigneeId, setAssigneeId] = useState(initialAssigneeId ?? UNASSIGNED);
   const [dueDate, setDueDate] = useState("");
   const [selectedLabelIds, setSelectedLabelIds] = useState<Set<string>>(new Set());
   const [submitted, setSubmitted] = useState(false);

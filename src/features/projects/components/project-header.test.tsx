@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { ProjectHeader } from "./project-header";
 
@@ -130,5 +130,58 @@ describe("ProjectHeader (FR-056)", () => {
     );
 
     expect(screen.getByText("0 comments")).not.toBeNull();
+  });
+
+  it("renders the header's per-screen control slot when given one (FR-005)", () => {
+    render(
+      <ProjectHeader
+        projectKey="WR"
+        name="Website Redesign"
+        current="board"
+        control={<span>Grouping control</span>}
+      />,
+    );
+
+    expect(screen.getByText("Grouping control")).not.toBeNull();
+  });
+
+  it("leaves the tabs, the comment count and the New issue button unchanged beside a control (FR-004)", () => {
+    render(
+      <ProjectHeader
+        projectKey="WR"
+        name="Website Redesign"
+        current="board"
+        newIssue={<span>New issue control</span>}
+        commentCount={3}
+        control={<span>Grouping control</span>}
+      />,
+    );
+
+    expect(screen.getByRole("tab", { name: "Board", selected: true })).not.toBeNull();
+    expect(screen.getByRole("tab", { name: "Details" })).not.toBeNull();
+    expect(screen.getByText("3 comments")).not.toBeNull();
+    expect(screen.getByText("New issue control")).not.toBeNull();
+    expect(screen.getByText("Grouping control")).not.toBeNull();
+  });
+
+  it("adds nothing to the header but that one control, and nothing at all without it (FR-004)", () => {
+    const withoutControl = render(
+      <ProjectHeader
+        projectKey="WR"
+        name="Website Redesign"
+        current="board"
+      />,
+    );
+    const withControl = render(
+      <ProjectHeader
+        projectKey="WR"
+        name="Website Redesign"
+        current="board"
+        control={<span>Grouping control</span>}
+      />,
+    );
+
+    expect(within(withoutControl.container).getByRole("banner").children.length).toBe(1);
+    expect(within(withControl.container).getByRole("banner").children.length).toBe(2);
   });
 });
