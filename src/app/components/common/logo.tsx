@@ -30,7 +30,7 @@ export default function Logo({ className }: { className?: string }) {
           fill="currentColor"
         />
       </svg>
-      <span className="font-heading text-control font-extrabold tracking-[-0.01em] text-(--color-text)">
+      <span className="font-[family-name:var(--font-heading)] text-control font-extrabold tracking-[-0.01em] text-(--color-text)">
         One Team
       </span>
     </div>

@@ -12,11 +12,11 @@ describe("Banner", () => {
     expect(alert.querySelector("svg")).not.toBeNull();
   });
 
-  it("carries the accent-tinted banner classes", () => {
+  it("carries the accent-2-tinted (danger) banner classes", () => {
     render(<Banner icon={XCircleIcon}>Message</Banner>);
 
     const alert = screen.getByRole("alert");
     expect(alert.className).toContain("border-l-[3px]");
-    expect(alert.className).toContain("bg-[var(--color-accent-100)]");
+    expect(alert.className).toContain("bg-[var(--color-accent-2-100)]");
   });
 });

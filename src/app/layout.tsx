@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Archivo } from "next/font/google";
+import { Archivo, JetBrains_Mono, Source_Serif_4 } from "next/font/google";
 import { headers } from "next/headers";
 import { isRTL } from "react-aria-components/I18nProvider";
 import { ClientProviders } from "./provider";
@@ -7,6 +7,16 @@ import "./globals.css";
 
 const archivo = Archivo({
   variable: "--font-archivo",
+  subsets: ["latin"],
+});
+
+const sourceSerif = Source_Serif_4({
+  variable: "--font-source-serif",
+  subsets: ["latin"],
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-mono-ui",
   subsets: ["latin"],
 });
 
@@ -23,7 +33,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang={lang}
       dir={isRTL(lang) ? "rtl" : "ltr"}
-      className={`${archivo.variable} h-full antialiased`}>
+      className={`${archivo.variable} ${sourceSerif.variable} ${jetbrainsMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         <ClientProviders lang={lang}>{children}</ClientProviders>
       </body>
