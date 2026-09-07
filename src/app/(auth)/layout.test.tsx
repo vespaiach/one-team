@@ -4,8 +4,8 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import AuthLayout from "./layout";
 
-describe("(auth) layout (research A-1, A-2, OT-UX-001)", () => {
-  it("renders a <main> landmark carrying the page background and the card", () => {
+describe("(auth) layout", () => {
+  it("renders a <main> landmark scoped to the Broadsheet palette", () => {
     render(
       <AuthLayout>
         <p>page content</p>
@@ -13,35 +13,41 @@ describe("(auth) layout (research A-1, A-2, OT-UX-001)", () => {
     );
 
     const main = screen.getByRole("main");
-    expect(main.className).toContain("--color-bg");
+    expect(main.style.getPropertyValue("--color-bg")).toBe("#f8f2ed");
+    expect(main.className).toContain("bg-[var(--color-bg)]");
     expect(screen.getByText("page content")).not.toBeNull();
   });
 
-  it("centres the card on the page and renders no app mark of its own", () => {
+  it("renders no bordered card around the page content", () => {
     render(
       <AuthLayout>
         <p>page content</p>
       </AuthLayout>,
     );
 
-    const main = screen.getByRole("main");
-    expect(main.className).toContain("items-center");
-    expect(main.className).toContain("justify-center");
-    expect(main.querySelector("svg")).toBeNull();
-    expect(screen.queryByText("One Team")).toBeNull();
+    const content = screen.getByText("page content");
+    expect(content.closest(".border-2")).toBeNull();
   });
 
-  it("renders the card with a 2px divider border, no radius and the page's own background", () => {
+  it("renders the One Team mark exactly once, in the form pane", () => {
     render(
       <AuthLayout>
         <p>page content</p>
       </AuthLayout>,
     );
 
-    const card = screen.getByText("page content").closest("div");
-    expect(card?.className).toContain("border-2");
-    expect(card?.className).toContain("border-[var(--color-divider)]");
-    expect(card?.className).toContain("bg-[var(--color-bg)]");
+    expect(screen.getAllByText("One Team")).toHaveLength(1);
+  });
+
+  it("renders a decorative illustration pane hidden from assistive tech", () => {
+    const { container } = render(
+      <AuthLayout>
+        <p>page content</p>
+      </AuthLayout>,
+    );
+
+    const hiddenNodes = [...container.querySelectorAll('[aria-hidden="true"]')];
+    expect(hiddenNodes.some((node) => node.textContent?.includes("One team, one workspace."))).toBe(true);
   });
 
   it("is a Server Component holding no state, and imports nothing from react-aria-components", () => {

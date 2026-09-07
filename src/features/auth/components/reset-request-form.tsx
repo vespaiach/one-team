@@ -3,7 +3,6 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { Button } from "react-aria-components/Button";
 import { Form } from "react-aria-components/Form";
-import Logo from "@/app/components/common/logo";
 import { type RequestPasswordResetState, requestPasswordReset } from "../actions";
 import { BackToSignInFooter } from "./back-to-sign-in-footer";
 import { EmailField } from "./email-field";
@@ -60,12 +59,12 @@ export function ResetRequestForm() {
         <span className="mb-3 flex-none text-(--color-accent)">
           <MailCheckIcon size={24} />
         </span>
-        <h1 className="text-h4">Check your email</h1>
+        <h1 className="text-h1">Check your email</h1>
         <p className="mb-5 text-[13px] text-[color-mix(in_srgb,var(--color-text)_62%,transparent)]">
           If that address has an account, a link is on the way.
         </p>
-        <div className="flex items-start gap-2 border border-(--color-divider) bg-(--color-surface) px-3.5 py-3 text-[13px] leading-normal">
-          <span className="mt-px flex-none text-[color-mix(in_srgb,var(--color-text)_62%,transparent)]">
+        <div className="flex items-start gap-2 border-l-[2px] border-(--color-accent) bg-(--color-accent-100) px-3.5 py-3 text-[13px] leading-normal">
+          <span className="mt-px flex-none text-(--color-accent)">
             <InfoIcon size={16} />
           </span>
           <span>
@@ -99,9 +98,8 @@ export function ResetRequestForm() {
       onSubmit={handleSubmit}
       validationBehavior="aria"
       className="flex flex-col gap-5">
-      <Logo className="mb-2" />
       <div>
-        <h1 className="text-h4">Reset your password</h1>
+        <h1 className="text-h1">Reset your password</h1>
         <p className="text-[13px] text-[color-mix(in_srgb,var(--color-text)_62%,transparent)]">
           We&rsquo;ll email a link that sets a new one.
         </p>
