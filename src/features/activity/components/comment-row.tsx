@@ -5,6 +5,7 @@ import { useEffect, useOptimistic, useRef, useState, useTransition } from "react
 import { Button } from "react-aria-components/Button";
 import { FieldError, TextArea, TextField } from "react-aria-components/TextField";
 import { showToast } from "@/features/shell/components/toast-region";
+import { formatRelativeTime } from "@/lib/relative-time";
 import { deleteComment, resolveCommentMentions, type UpdateCommentResult, updateComment } from "../actions";
 
 const MAX_COMMENT_BODY_LENGTH = 10000;
@@ -44,26 +45,6 @@ function renderResolvedBody(body: string, mentionNames: Record<string, string>):
   }
 
   return nodes;
-}
-
-const RELATIVE_TIME_FORMAT = new Intl.RelativeTimeFormat("en-US", { numeric: "auto" });
-
-const RELATIVE_TIME_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
-  ["year", 365 * 24 * 60 * 60],
-  ["month", 30 * 24 * 60 * 60],
-  ["day", 24 * 60 * 60],
-  ["hour", 60 * 60],
-  ["minute", 60],
-];
-
-function formatRelativeTime(createdAt: Date, now: Date): string {
-  const seconds = Math.round((createdAt.getTime() - now.getTime()) / 1000);
-  for (const [unit, unitSeconds] of RELATIVE_TIME_UNITS) {
-    if (Math.abs(seconds) >= unitSeconds) {
-      return RELATIVE_TIME_FORMAT.format(Math.round(seconds / unitSeconds), unit);
-    }
-  }
-  return RELATIVE_TIME_FORMAT.format(0, "minute");
 }
 
 function describeUpdateRefusal(result: Exclude<UpdateCommentResult, { status: "ok" }>): string {
