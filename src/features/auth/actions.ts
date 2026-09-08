@@ -12,7 +12,7 @@ import { findResetCandidate, setCredentialPassword } from "./server/credentials"
 import { hashPassword } from "./server/crypto";
 import { parseEmail } from "./server/input";
 import { sendPasswordResetMail } from "./server/mail";
-import { assertSameOrigin } from "./server/origin";
+import { assertSameOrigin, ForbiddenOriginError } from "./server/origin";
 import { assertPasswordPolicy, type PasswordPolicyFailure } from "./server/password-policy";
 import { issueResetToken, resolveResetTokenState, spendResetToken } from "./server/reset-tokens";
 import { deleteAllSessionsForUser, deleteSession, SESSION_COOKIE_NAME } from "./server/sessions";
@@ -113,7 +113,14 @@ export async function completePasswordReset(
   _prevState: CompletePasswordResetState,
   formData: FormData,
 ): Promise<CompletePasswordResetState> {
-  assertSameOrigin({ headers: await headers() });
+  try {
+    assertSameOrigin({ headers: await headers() });
+  } catch (error) {
+    if (error instanceof ForbiddenOriginError) {
+      return { status: "unknown" };
+    }
+    throw error;
+  }
 
   const password = readFormString(formData, "password");
   const confirmPassword = readFormString(formData, "confirmPassword");

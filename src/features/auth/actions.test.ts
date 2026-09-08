@@ -511,19 +511,19 @@ describe("completePasswordReset (FR-035, FR-027, FR-038, FR-050, FR-066, SC-008)
     expect(result).toEqual({ status: "policy", failure: "too_long" });
   });
 
-  it("refuses a request whose Origin does not match APP_URL", async () => {
+  it("returns unknown, not a thrown error, when the Origin does not match APP_URL", async () => {
     currentOrigin = "https://evil.example.com";
 
-    await expect(
-      completePasswordReset(
-        "whatever",
-        { status: "idle" },
-        formData({
-          password: "a-compliant-password-1",
-          confirmPassword: "a-compliant-password-1",
-        }),
-      ),
-    ).rejects.toThrow();
+    const result = await completePasswordReset(
+      "whatever",
+      { status: "idle" },
+      formData({
+        password: "a-compliant-password-1",
+        confirmPassword: "a-compliant-password-1",
+      }),
+    );
+
+    expect(result).toEqual({ status: "unknown" });
   });
 });
 
