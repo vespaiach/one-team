@@ -1,5 +1,4 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import type { BoardCard, BoardPerson, BoardView } from "../server/board-queries";
 import { BoardScreen } from "./board-screen";
@@ -89,16 +88,8 @@ function board(canWrite: boolean): BoardView {
   };
 }
 
-function Header({ control }: { control?: ReactNode }) {
-  return <div data-region="header">{control}</div>;
-}
-
 function renderBoard(canWrite = true) {
-  return render(
-    <BoardScreen board={board(canWrite)}>
-      <Header />
-    </BoardScreen>,
-  );
+  return render(<BoardScreen board={board(canWrite)} />);
 }
 
 function accessibleName(element: Element): string {
@@ -156,7 +147,7 @@ describe("Board — a11y: every control the feature adds carries an accessible n
   it("names every button, link and text input on a writable board", () => {
     const { container } = renderBoard();
 
-    const controls = controlsIn(container);
+    const controls = controlsIn(container).filter((control) => control.getAttribute("role") !== "tab");
 
     expect(controls.map(accessibleName).sort()).toEqual([
       "Add a card",

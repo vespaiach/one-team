@@ -2,7 +2,6 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { isValidElement, type ReactElement, type ReactNode, Suspense } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { MoveIssuePayload, MoveIssueState } from "@/features/issues/actions";
-import { ProjectHeader } from "@/features/projects/components/project-header";
 import type { BoardCard, BoardView } from "../server/board-queries";
 import { BoardScreen } from "./board-screen";
 
@@ -177,12 +176,14 @@ function elements(node: ReactNode): ReactElement<{ children?: ReactNode }>[] {
   if (!isValidElement(node)) {
     return [];
   }
-  const element = node as ReactElement<{ children?: ReactNode }>;
-  return [element, ...elements(element.props.children)];
+  const element = node as ReactElement<{ children?: ReactNode | ((control: ReactNode) => ReactNode) }>;
+  const { children } = element.props;
+  const resolvedChildren = typeof children === "function" ? children(null) : children;
+  return [element as ReactElement<{ children?: ReactNode }>, ...elements(resolvedChildren)];
 }
 
-function headerOf(node: ReactNode): ReactElement<{ newIssue?: ReactNode }> | undefined {
-  return elements(node).find((element) => element.type === ProjectHeader) as
+function boardScreenOf(node: ReactNode): ReactElement<{ newIssue?: ReactNode }> | undefined {
+  return elements(node).find((element) => element.type === BoardScreen) as
     | ReactElement<{ newIssue?: ReactNode }>
     | undefined;
 }
@@ -194,7 +195,7 @@ async function headerNewIssue(canWrite: boolean): Promise<ReactNode> {
   const boundary = elements(jsx).find((element) => element.type === Suspense);
   const child = boundary?.props.children as ReactElement<Record<string, unknown>>;
   const renderBoardData = child.type as (props: Record<string, unknown>) => Promise<ReactNode>;
-  return headerOf(await renderBoardData(child.props))?.props.newIssue;
+  return boardScreenOf(await renderBoardData(child.props))?.props.newIssue;
 }
 
 describe("BoardScreen — a non-member's lanes receive no drag hooks (FR-065, US6 sc.2)", () => {

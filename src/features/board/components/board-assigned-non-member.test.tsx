@@ -1,5 +1,4 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { MoveIssuePayload, MoveIssueState } from "@/features/issues/actions";
 import { buildIssueWriteReason } from "@/features/issues/server/issue-queries";
@@ -98,16 +97,8 @@ async function chooseAssigneeGrouping() {
   await waitFor(() => expect(screen.getByRole("button", { name: /Group by/ }).textContent).toBe("Assignee"));
 }
 
-function Header({ control }: { control?: ReactNode }) {
-  return <div data-region="header">{control}</div>;
-}
-
 function renderBoard() {
-  return render(
-    <BoardScreen board={BOARD}>
-      <Header />
-    </BoardScreen>,
-  );
+  return render(<BoardScreen board={BOARD} />);
 }
 
 function rowsIn(laneName: string): (string | null)[] {

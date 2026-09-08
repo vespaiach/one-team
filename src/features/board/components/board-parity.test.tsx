@@ -1,5 +1,4 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import type { BoardCard, BoardPerson, BoardView } from "../server/board-queries";
 import { BoardScreen } from "./board-screen";
@@ -81,16 +80,8 @@ const BOARD: BoardView = {
 
 const GROUPINGS = ["Column", "Assignee", "Priority"];
 
-function Header({ control }: { control?: ReactNode }) {
-  return <div data-region="header">{control}</div>;
-}
-
 function renderBoard(canWrite: boolean) {
-  return render(
-    <BoardScreen board={{ ...BOARD, canWrite, writeReason: canWrite ? "" : WRITE_REASON }}>
-      <Header />
-    </BoardScreen>,
-  );
+  return render(<BoardScreen board={{ ...BOARD, canWrite, writeReason: canWrite ? "" : WRITE_REASON }} />);
 }
 
 function pressKey(key: string) {
