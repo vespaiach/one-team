@@ -42,7 +42,10 @@ export function StatusSwitch({
         onChange={handleChange}
         isDisabled={isDisabled}
         aria-describedby={reasonId}
-        className="flex items-center gap-2">
+        className="group flex items-center gap-2 data-[disabled]:opacity-60">
+        <span className="relative inline-flex h-5 w-9 flex-none items-center rounded-full bg-(--color-neutral-300) transition-colors group-data-[hovered]:bg-(--color-neutral-400) group-data-[selected]:bg-(--color-accent) group-data-[focus-visible]:outline-2 group-data-[focus-visible]:outline-offset-2 group-data-[focus-visible]:outline-(--color-accent)">
+          <span className="inline-block h-4 w-4 translate-x-0.5 rounded-full bg-(--color-bg) transition-transform group-data-[selected]:translate-x-[18px]" />
+        </span>
         {isArchived ? "Archived" : "Active"}
       </Switch>
       {isDisabled && disabledReason ? (

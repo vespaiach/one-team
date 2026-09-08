@@ -132,8 +132,10 @@ export function ColumnRow({
           <span className="text-control text-(--color-text)">{column.name}</span>
         )}
       </div>
-      <span className="text-control text-(--color-text-muted)">{column.kind}</span>
-      <span className="text-control text-(--color-text-muted)">{column.issueCount}</span>
+      <span className="inline-flex items-center rounded-[var(--radius-sm)] border border-(--color-divider) px-1.5 py-0.5 text-control text-(--color-text-muted)">
+        {column.kind}
+      </span>
+      <span className="font-mono text-control text-(--color-text-muted)">{column.issueCount}</span>
       {deleteColumn ? (
         <ColumnDeleteControl
           column={column}

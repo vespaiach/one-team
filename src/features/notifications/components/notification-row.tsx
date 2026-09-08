@@ -33,7 +33,7 @@ export function NotificationRow({ item }: { item: NotificationListItem }) {
       <span className="font-medium">{item.actorName}</span>
       <span className="text-(--color-text-muted)">{TYPE_PHRASES[item.type]}</span>
       <span className="min-w-0 truncate">{item.targetLabel}</span>
-      <span className="ms-auto flex-none text-label text-(--color-text-muted)">
+      <span className="ms-auto flex-none font-mono text-label text-(--color-text-muted)">
         {formatRelativeTime(item.createdAt, new Date())}
       </span>
     </Link>

@@ -35,7 +35,7 @@ export function MarkAllReadControl({ unreadCount }: { unreadCount: number }) {
         onPress={() => {
           void markAll();
         }}
-        className="border border-(--color-divider) px-3 py-1 text-control text-(--color-text) data-[disabled]:text-(--color-text-muted) data-[focus-visible]:outline-2 data-[focus-visible]:outline-(--color-accent) data-[hovered]:bg-(--color-surface)">
+        className="rounded-[var(--radius-md)] border border-(--color-divider) px-3 py-1 text-control text-(--color-text) data-[disabled]:text-(--color-text-muted) data-[focus-visible]:outline-2 data-[focus-visible]:outline-(--color-accent) data-[hovered]:bg-(--color-surface)">
         Mark all read
       </Button>
       {pending ? <span className="text-label text-(--color-text-muted)">Marking…</span> : null}

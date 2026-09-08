@@ -175,14 +175,14 @@ export function EditableField({
             rows={3}
             onKeyDown={handleKeyDown}
             onBlur={handleBlur}
-            className="min-h-[4.5rem] w-full resize-none border border-(--color-divider) bg-(--color-surface) px-3 py-2 text-control text-(--color-text)"
+            className="min-h-[4.5rem] w-full resize-none rounded-[var(--radius-md)] border border-(--color-divider) bg-(--color-surface) px-3 py-2 text-control text-(--color-text)"
           />
         ) : (
           <Input
             autoFocus
             onKeyDown={handleKeyDown}
             onBlur={handleBlur}
-            className="w-full border border-(--color-divider) bg-(--color-surface) px-3 py-2 text-control text-(--color-text)"
+            className="w-full rounded-[var(--radius-md)] border border-(--color-divider) bg-(--color-surface) px-3 py-2 text-control text-(--color-text)"
           />
         )}
         {error ? <FieldError className="text-label text-(--color-accent-700)">{error}</FieldError> : null}

@@ -34,7 +34,7 @@ export function GroupingControl({
       <Button className="border border-(--color-divider) px-2 py-1 text-control text-(--color-text) data-[hovered]:bg-(--color-surface-hover) data-[pressed]:bg-(--color-surface) data-[focus-visible]:outline-2 data-[focus-visible]:outline-(--color-accent)">
         <SelectValue />
       </Button>
-      <Popover className="min-w-[140px] border border-(--color-divider) bg-(--color-surface) py-1">
+      <Popover className="min-w-[140px] rounded-[var(--radius-md)] border border-(--color-divider) bg-(--color-surface) py-1 shadow-md">
         <ListBox className="flex flex-col">
           {GROUPINGS.map((candidate) => (
             <ListBoxItem

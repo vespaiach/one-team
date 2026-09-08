@@ -16,7 +16,7 @@ export async function StatCards({ userId }: { userId: string }) {
       {cards.map((card) => (
         <li
           key={card.label}
-          className="flex flex-1 flex-col gap-1 border border-(--color-divider) px-4 py-3">
+          className="flex flex-1 flex-col gap-1 rounded-[var(--radius-md)] border border-(--color-divider) px-4 py-3">
           <span className="text-h5 text-(--color-text)">{card.count}</span>
           <span className="text-label text-(--color-text-muted)">{card.label}</span>
         </li>

@@ -43,7 +43,7 @@ export function ProjectHeader({
             </TabList>
           </Tabs>
           {commentCount !== undefined ? (
-            <span className="text-label text-(--color-text-muted)">
+            <span className="font-mono text-label text-(--color-text-muted)">
               {commentCount} {commentCount === 1 ? "comment" : "comments"}
             </span>
           ) : null}

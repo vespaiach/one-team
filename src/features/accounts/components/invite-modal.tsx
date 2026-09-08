@@ -62,7 +62,7 @@ function InviteModalContent({
           : blurCheck;
 
   return (
-    <Dialog className="flex w-full max-w-[420px] flex-col gap-[14px] bg-(--color-bg) p-4 shadow-lg">
+    <Dialog className="flex w-full max-w-[420px] flex-col gap-[14px] rounded-[var(--radius-lg)] bg-(--color-bg) p-4 shadow-lg">
       <h2 className="text-h5">Invite someone</h2>
       <Form
         action={formAction}
@@ -78,7 +78,10 @@ function InviteModalContent({
           isInvalid={refusal?.result === "malformed"}
           className="flex flex-col gap-[5px]">
           <Label>Email</Label>
-          <Input placeholder="name@example.com" />
+          <Input
+            placeholder="name@example.com"
+            className="rounded-[var(--radius-md)] border border-(--color-divider) bg-(--color-surface) px-2 py-1.5 text-control text-(--color-text)"
+          />
           {refusal?.result === "malformed" && <FieldError>Enter a valid email address.</FieldError>}
         </TextField>
 
@@ -127,12 +130,14 @@ function InviteModalContent({
         <div className="flex justify-end gap-[8px]">
           <Button
             type="button"
-            onPress={close}>
+            onPress={close}
+            className="rounded-[var(--radius-md)] border border-(--color-divider) px-[14px] py-[11px] text-control text-(--color-text) data-[hovered]:bg-(--color-surface-hover)">
             Cancel
           </Button>
           <Button
             type="submit"
-            isDisabled={isPending}>
+            isDisabled={isPending}
+            className="rounded-[var(--radius-md)] bg-(--color-accent) px-[14px] py-[11px] text-control text-(--color-bg) data-[disabled]:cursor-not-allowed data-[disabled]:opacity-45">
             {isPending ? "Sending…" : "Invite"}
           </Button>
         </div>

@@ -58,6 +58,7 @@
   /* --- semantic · the only names a component uses ---------------
      Every one points at a role or a ramp step, never a hex. */
   --color-surface-sunken: var(--color-neutral-100);
+  --color-surface-hover: color-mix(in srgb, var(--color-text) 8%, transparent);
   --color-border: var(--color-divider);
   --color-border-control: var(--color-neutral-600);
   --color-border-strong: var(--color-neutral-900);

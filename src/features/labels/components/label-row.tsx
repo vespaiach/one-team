@@ -18,10 +18,14 @@ export function LabelRow({
   deleteLabelAction: (id: string) => Promise<DeleteLabelResult>;
 }) {
   return (
-    <tr>
-      <td>{label.name}</td>
-      <td>{label.issueCount}</td>
-      <td>
+    <tr className="border-b border-(--color-divider) hover:bg-(--color-surface-hover)">
+      <td className="px-3 py-2">
+        <span className="inline-flex items-center rounded-[var(--radius-sm)] border border-(--color-divider) px-1.5 py-0.5 text-label text-(--color-text-muted)">
+          {label.name}
+        </span>
+      </td>
+      <td className="px-3 py-2 font-mono">{label.issueCount}</td>
+      <td className="px-3 py-2">
         <LabelFormModal
           label={label}
           createLabelAction={createLabelAction}
@@ -29,7 +33,7 @@ export function LabelRow({
           checkNameAvailable={checkNameAvailable}
         />
       </td>
-      <td>
+      <td className="px-3 py-2">
         <DeleteLabelDialog
           labelId={label.id}
           labelName={label.name}

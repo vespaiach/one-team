@@ -21,6 +21,13 @@ export type MembersSectionAdmin = {
 const DEFAULT_DISABLED_REASON = "Only admins can change project membership.";
 const DISABLED_REASON_ID = "members-section-disabled-reason";
 
+function memberInitials(displayName: string): string {
+  const parts = displayName.trim().split(/\s+/);
+  const first = parts[0]?.[0] ?? "";
+  const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? "") : "";
+  return `${first}${last}`.toUpperCase();
+}
+
 export function MembersSection({
   roster,
   admin,
@@ -78,7 +85,12 @@ export function MembersSection({
           <li
             key={member.userId}
             className="flex items-center justify-between gap-2">
-            <span>{member.displayName}</span>
+            <div className="flex items-center gap-2">
+              <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-(--color-accent-200) font-mono text-[11px] text-(--color-accent-900)">
+                {memberInitials(member.displayName)}
+              </span>
+              <span className="text-(--color-text)">{member.displayName}</span>
+            </div>
             <Button
               onPress={() => handleRemove(member)}
               isDisabled={isDisabled}
@@ -101,10 +113,17 @@ export function MembersSection({
         <Input
           placeholder="Add a member"
           aria-describedby={reasonId}
+          className="rounded-[var(--radius-md)] border border-(--color-divider) bg-(--color-surface) px-2 py-1 text-control text-(--color-text)"
         />
-        <Popover>
-          <ListBox>
-            {(item: RosterEntry) => <ListBoxItem id={item.userId}>{item.displayName}</ListBoxItem>}
+        <Popover className="rounded-[var(--radius-md)] border border-(--color-divider) bg-(--color-surface) shadow-md">
+          <ListBox className="py-1">
+            {(item: RosterEntry) => (
+              <ListBoxItem
+                id={item.userId}
+                className="cursor-default px-3 py-1.5 text-control text-(--color-text) data-[hovered]:bg-(--color-surface-hover) data-[focus-visible]:outline-2 data-[focus-visible]:outline-(--color-accent)">
+                {item.displayName}
+              </ListBoxItem>
+            )}
           </ListBox>
         </Popover>
       </ComboBox>

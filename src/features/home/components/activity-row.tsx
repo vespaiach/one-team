@@ -29,7 +29,7 @@ export function ActivityRow({ row }: { row: InstallationActivityRow }) {
       {targetIsTheProject ? null : (
         <span className="flex-none text-(--color-text-muted)">{row.projectName}</span>
       )}
-      <span className="ms-auto flex-none text-label text-(--color-text-muted)">
+      <span className="ms-auto flex-none font-mono text-label text-(--color-text-muted)">
         {formatRelativeTime(row.createdAt, new Date())}
       </span>
     </Link>

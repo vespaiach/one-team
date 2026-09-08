@@ -67,7 +67,7 @@ export function MentionPicker({
           onClose();
         }
       }}
-      className="min-w-[200px] border border-(--color-divider) bg-(--color-surface) py-1 shadow-lg">
+      className="min-w-[200px] rounded-[var(--radius-md)] border border-(--color-divider) bg-(--color-surface) py-1 shadow-lg">
       <ListBox
         aria-label="Mention suggestions"
         renderEmptyState={() => (

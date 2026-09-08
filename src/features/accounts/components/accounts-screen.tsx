@@ -114,8 +114,16 @@ export function AccountsScreen({
         selectedKey={selectedKey}
         onSelectionChange={(key) => setSelectedKey(String(key))}>
         <TabList aria-label="Accounts sections">
-          <Tab id="invitations">Invitations</Tab>
-          <Tab id="accounts">Accounts</Tab>
+          <Tab
+            id="invitations"
+            className="mr-3 text-control text-(--color-text-muted) data-[hovered]:text-(--color-text) data-[selected]:text-(--color-text) data-[focus-visible]:outline-2 data-[focus-visible]:outline-(--color-accent)">
+            Invitations
+          </Tab>
+          <Tab
+            id="accounts"
+            className="text-control text-(--color-text-muted) data-[hovered]:text-(--color-text) data-[selected]:text-(--color-text) data-[focus-visible]:outline-2 data-[focus-visible]:outline-(--color-accent)">
+            Accounts
+          </Tab>
         </TabList>
         <TabPanel id="invitations">
           <InviteModal

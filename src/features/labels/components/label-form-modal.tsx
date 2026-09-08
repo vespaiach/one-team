@@ -79,7 +79,7 @@ function LabelFormDialogContent({
   const clash = state.status === "duplicate_name" ? state.holder : blurCheck;
 
   return (
-    <Dialog className="flex w-full max-w-[420px] flex-col gap-[14px] bg-(--color-bg) p-4 shadow-lg">
+    <Dialog className="flex w-full max-w-[420px] flex-col gap-[14px] rounded-[var(--radius-lg)] bg-(--color-bg) p-4 shadow-lg">
       <h2 className="text-h5">{isEdit ? "Edit label" : "New label"}</h2>
       <Form
         onSubmit={handleSubmit}
@@ -93,19 +93,24 @@ function LabelFormDialogContent({
           isInvalid={clash !== null}
           className="flex flex-col gap-[5px]">
           <Label>Name</Label>
-          <Input autoFocus />
+          <Input
+            autoFocus
+            className="rounded-[var(--radius-md)] border border-(--color-divider) bg-(--color-surface) px-2 py-1.5 text-control text-(--color-text)"
+          />
           {clash && <FieldError>"{clash.name}" already exists.</FieldError>}
         </TextField>
 
         <div className="flex justify-end gap-[8px]">
           <Button
             type="button"
-            onPress={close}>
+            onPress={close}
+            className="rounded-[var(--radius-md)] border border-(--color-divider) px-3 py-1.5 data-[hovered]:bg-(--color-surface-hover)">
             Cancel
           </Button>
           <Button
             type="submit"
-            isDisabled={isPending}>
+            isDisabled={isPending}
+            className="rounded-[var(--radius-md)] bg-(--color-accent) px-3 py-1.5 text-(--color-bg) data-[hovered]:bg-(--color-accent-hover) data-[pressed]:bg-(--color-accent-pressed)">
             {isEdit ? (isPending ? "Saving…" : "Save") : isPending ? "Creating…" : "Create label"}
           </Button>
         </div>
@@ -127,7 +132,9 @@ export function LabelFormModal({
 }) {
   return (
     <DialogTrigger>
-      <Button>{label ? "Edit" : "New label"}</Button>
+      <Button className="rounded-[var(--radius-md)] border border-(--color-divider) px-3 py-1.5 data-[hovered]:bg-(--color-surface-hover)">
+        {label ? "Edit" : "New label"}
+      </Button>
       <Modal
         isDismissable={false}
         className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">

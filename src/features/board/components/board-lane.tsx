@@ -83,7 +83,7 @@ export function BoardLane({
       className="flex w-[288px] shrink-0 flex-col gap-3">
       <div className="flex items-baseline justify-between">
         <h2 className="text-control text-(--color-text)">{lane.name}</h2>
-        <span className="text-label text-(--color-text-muted)">{lane.cards.length}</span>
+        <span className="font-mono text-label text-(--color-text-muted)">{lane.cards.length}</span>
       </div>
       <GridList
         key={canWrite ? "draggable" : "read-only"}

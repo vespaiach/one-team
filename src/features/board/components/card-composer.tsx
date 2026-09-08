@@ -168,7 +168,7 @@ export function CardComposer(props: CardComposerProps) {
         <Input
           placeholder={label}
           onKeyDown={handleKeyDown}
-          className="w-full border border-(--color-divider) bg-(--color-surface) px-3 py-2 text-control text-(--color-text) data-[focus-visible]:outline-2 data-[focus-visible]:outline-(--color-accent)"
+          className="w-full rounded-[var(--radius-md)] border border-(--color-divider) bg-(--color-surface) px-3 py-2 text-control text-(--color-text) data-[focus-visible]:outline-2 data-[focus-visible]:outline-(--color-accent)"
         />
         {refusal !== null && <FieldError>{refusal}</FieldError>}
       </TextField>
@@ -176,7 +176,7 @@ export function CardComposer(props: CardComposerProps) {
         aria-label={chevronLabel}
         isDisabled={pending || disabledReason !== null}
         onPress={openFullForm}
-        className="border border-(--color-divider) px-2 py-2 text-control text-(--color-text) data-[disabled]:text-(--color-text-muted) data-[focus-visible]:outline-2 data-[focus-visible]:outline-(--color-accent)">
+        className="rounded-[var(--radius-md)] border border-(--color-divider) px-2 py-2 text-control text-(--color-text) data-[disabled]:text-(--color-text-muted) data-[focus-visible]:outline-2 data-[focus-visible]:outline-(--color-accent)">
         ›
       </Button>
       {pending && <span className="text-label text-(--color-text-muted)">Adding…</span>}

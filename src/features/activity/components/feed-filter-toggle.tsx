@@ -41,8 +41,16 @@ export function FeedFilterToggle({
       value={value}
       onChange={handleChange}
       className="flex gap-4">
-      <Radio value="comments">Comments only</Radio>
-      <Radio value="all">All activity</Radio>
+      <Radio
+        value="comments"
+        className="cursor-pointer rounded-[var(--radius-sm)] px-2 py-1 text-label data-[selected]:bg-(--color-accent) data-[selected]:text-(--color-bg) data-[hovered]:bg-(--color-surface-hover) data-[focus-visible]:outline-2 data-[focus-visible]:outline-(--color-accent)">
+        Comments only
+      </Radio>
+      <Radio
+        value="all"
+        className="cursor-pointer rounded-[var(--radius-sm)] px-2 py-1 text-label data-[selected]:bg-(--color-accent) data-[selected]:text-(--color-bg) data-[hovered]:bg-(--color-surface-hover) data-[focus-visible]:outline-2 data-[focus-visible]:outline-(--color-accent)">
+        All activity
+      </Radio>
     </RadioGroup>
   );
 }

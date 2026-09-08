@@ -51,14 +51,14 @@ function DefaultEditor({
           autoFocus
           onKeyDown={onKeyDown}
           onBlur={onBlur}
-          className="min-h-[4.5rem] w-full resize-none border border-(--color-divider) bg-(--color-surface) px-3 py-2 text-control text-(--color-text)"
+          className="min-h-[4.5rem] w-full resize-none rounded-[var(--radius-md)] border border-(--color-divider) bg-(--color-surface) px-3 py-2 text-control text-(--color-text)"
         />
       ) : (
         <Input
           autoFocus
           onKeyDown={onKeyDown}
           onBlur={onBlur}
-          className="w-full border border-(--color-divider) bg-(--color-surface) px-3 py-2 text-control text-(--color-text)"
+          className="w-full rounded-[var(--radius-md)] border border-(--color-divider) bg-(--color-surface) px-3 py-2 text-control text-(--color-text)"
         />
       )}
     </TextField>

@@ -24,11 +24,23 @@ function issuePath(projectKey: string, issueKey: string): string {
   return `/projects/${projectKey}/issues/${issueNumber}/details`;
 }
 
+function initialsOf(name: string): string {
+  const words = name.trim().split(/\s+/);
+  const first = words.at(0)?.[0] ?? "";
+  const last = words.length > 1 ? (words.at(-1)?.[0] ?? "") : "";
+  return `${first}${last}`.toUpperCase();
+}
+
 function AssigneeAvatar({ person }: { person: BoardPerson }) {
   const name = displayName(person);
 
   if (person.avatarUrl === null) {
-    return <span className="text-label text-(--color-text-muted)">{name}</span>;
+    return (
+      <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-(--color-accent-200) font-mono text-label text-(--color-accent-900)">
+        <span aria-hidden="true">{initialsOf(name)}</span>
+        <span className="sr-only">{name}</span>
+      </span>
+    );
   }
 
   return (
@@ -36,7 +48,7 @@ function AssigneeAvatar({ person }: { person: BoardPerson }) {
     <img
       src={person.avatarUrl}
       alt={name}
-      className="h-6 w-6 flex-none object-cover"
+      className="h-6 w-6 flex-none rounded-full object-cover"
     />
   );
 }
@@ -46,12 +58,12 @@ export function IssueCard({ card, projectKey }: { card: BoardCard; projectKey: s
     card.priority !== "none" || card.dueDate !== null || card.commentCount > 0 || card.assignee !== null;
 
   return (
-    <div className="flex flex-col gap-2 border border-(--color-divider) bg-(--color-surface) p-3">
+    <div className="flex flex-col gap-2 rounded-[var(--radius-md)] border border-(--color-divider) bg-(--color-surface) p-3">
       <Link
         href={issuePath(projectKey, card.key)}
         aria-label={`${card.key} ${card.title}`}
         className="flex flex-col gap-1">
-        <span className="text-label text-(--color-text-muted)">{card.key}</span>
+        <span className="font-mono text-label text-(--color-text-muted)">{card.key}</span>
         <span className="text-control text-(--color-text)">{card.title}</span>
       </Link>
       {card.labels.length > 0 ? (
@@ -59,7 +71,7 @@ export function IssueCard({ card, projectKey }: { card: BoardCard; projectKey: s
           {card.labels.map((label) => (
             <li
               key={label.id}
-              className="border border-(--color-divider) px-1.5 text-label text-(--color-text-muted)">
+              className="rounded-[var(--radius-sm)] border border-(--color-divider) px-1.5 text-label text-(--color-text-muted)">
               {label.name}
             </li>
           ))}
@@ -76,7 +88,7 @@ export function IssueCard({ card, projectKey }: { card: BoardCard; projectKey: s
             </span>
           ) : null}
           {card.dueDate !== null ? (
-            <span className="text-label text-(--color-text-muted)">{card.dueDate}</span>
+            <span className="font-mono text-label text-(--color-text-muted)">{card.dueDate}</span>
           ) : null}
           {card.commentCount > 0 ? (
             <span className="text-label text-(--color-text-muted)">

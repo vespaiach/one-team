@@ -137,16 +137,30 @@ export function RosterTable({
         className="sr-only">
         {announcement}
       </div>
-      <table>
+      <table className="w-full text-left text-control">
         <thead>
           <tr>
-            <th>Avatar</th>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Role</th>
-            <th>Joined</th>
-            <th>Projects</th>
-            <th>Actions</th>
+            <th className="border-b border-(--color-divider) px-3 py-2 text-label text-(--color-text-muted)">
+              Avatar
+            </th>
+            <th className="border-b border-(--color-divider) px-3 py-2 text-label text-(--color-text-muted)">
+              Name
+            </th>
+            <th className="border-b border-(--color-divider) px-3 py-2 text-label text-(--color-text-muted)">
+              Email
+            </th>
+            <th className="border-b border-(--color-divider) px-3 py-2 text-label text-(--color-text-muted)">
+              Role
+            </th>
+            <th className="border-b border-(--color-divider) px-3 py-2 text-label text-(--color-text-muted)">
+              Joined
+            </th>
+            <th className="border-b border-(--color-divider) px-3 py-2 text-label text-(--color-text-muted)">
+              Projects
+            </th>
+            <th className="border-b border-(--color-divider) px-3 py-2 text-label text-(--color-text-muted)">
+              Actions
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -163,21 +177,33 @@ export function RosterTable({
                   }
                 }}
                 tabIndex={-1}
-                data-highlighted={row.id === highlightedAccountId ? "true" : undefined}>
-                <td>
+                data-highlighted={row.id === highlightedAccountId ? "true" : undefined}
+                className="data-[highlighted=true]:bg-(--color-accent-100)">
+                <td className="border-b border-(--color-divider) px-3 py-2">
                   <img
                     src={row.avatarUrl ?? undefined}
                     alt={row.displayName}
                     width={32}
                     height={32}
+                    className="rounded-full object-cover"
                   />
                 </td>
-                <td>{row.displayName}</td>
-                <td>{row.email}</td>
-                <td>{row.role}</td>
-                <td>{DATE_FORMAT.format(row.joinedAt)}</td>
-                <td>{row.projectCount}</td>
-                <td>
+                <td className="border-b border-(--color-divider) px-3 py-2 text-(--color-text)">
+                  {row.displayName}
+                </td>
+                <td className="border-b border-(--color-divider) px-3 py-2 text-(--color-text)">
+                  {row.email}
+                </td>
+                <td className="border-b border-(--color-divider) px-3 py-2">
+                  <span className="inline-flex items-center rounded-[var(--radius-sm)] border border-(--color-divider) px-1.5 py-0.5 text-label text-(--color-text-muted)">
+                    {row.role}
+                  </span>
+                </td>
+                <td className="border-b border-(--color-divider) px-3 py-2 font-mono">
+                  {DATE_FORMAT.format(row.joinedAt)}
+                </td>
+                <td className="border-b border-(--color-divider) px-3 py-2 font-mono">{row.projectCount}</td>
+                <td className="border-b border-(--color-divider) px-3 py-2">
                   {row.isActive ? (
                     <DeactivateControl
                       row={row}
