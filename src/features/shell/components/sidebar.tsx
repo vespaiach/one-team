@@ -6,6 +6,15 @@ import { UserChip } from "./user-chip";
 
 const NAV_LINK_CLASSES = "px-4.5 py-1.5 text-control text-(--color-text) hover:bg-(--color-surface)";
 
+function NavGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col">
+      <span className="px-4.5 py-1.5 text-label text-(--color-text-muted)">{label}</span>
+      {children}
+    </div>
+  );
+}
+
 export function Sidebar({
   displayName,
   avatarUrl,
@@ -26,43 +35,45 @@ export function Sidebar({
       <div className="px-4.5 pb-4">
         <Logo />
       </div>
-      <Link
-        href="/home"
-        className={NAV_LINK_CLASSES}>
-        Home
-      </Link>
+      <NavGroup label="Work">
+        <Link
+          href="/home"
+          className={NAV_LINK_CLASSES}>
+          Home
+        </Link>
+        <Link
+          href="/notifications"
+          aria-label={
+            unreadNotificationCount > 0 ? `Notifications, ${unreadNotificationCount} unread` : undefined
+          }
+          className={NAV_LINK_CLASSES}>
+          Notifications
+          {unreadNotificationCount > 0 ? (
+            <span
+              aria-hidden="true"
+              className="ms-2">
+              {unreadNotificationCount}
+            </span>
+          ) : null}
+        </Link>
+      </NavGroup>
       <ProjectListRegion
         isAdmin={isAdmin}
         entries={projects}
       />
-      <Link
-        href="/notifications"
-        aria-label={
-          unreadNotificationCount > 0 ? `Notifications, ${unreadNotificationCount} unread` : undefined
-        }
-        className={NAV_LINK_CLASSES}>
-        Notifications
-        {unreadNotificationCount > 0 ? (
-          <span
-            aria-hidden="true"
-            className="ms-2">
-            {unreadNotificationCount}
-          </span>
-        ) : null}
-      </Link>
       {isAdmin ? (
-        <Link
-          href="/settings/accounts"
-          className={NAV_LINK_CLASSES}>
-          Accounts
-        </Link>
-      ) : null}
-      {isAdmin ? (
-        <Link
-          href="/settings/labels"
-          className={NAV_LINK_CLASSES}>
-          Labels
-        </Link>
+        <NavGroup label="Admin">
+          <Link
+            href="/settings/accounts"
+            className={NAV_LINK_CLASSES}>
+            Accounts
+          </Link>
+          <Link
+            href="/settings/labels"
+            className={NAV_LINK_CLASSES}>
+            Labels
+          </Link>
+        </NavGroup>
       ) : null}
       <UserChip
         displayName={displayName}

@@ -2,6 +2,13 @@ import type { CSSProperties } from "react";
 import Logo from "@/app/components/common/logo";
 import { AuthShowcase } from "./auth-showcase";
 
+/* Scoped inline so the (auth) screens render on the Broadsheet palette
+   as an independent, self-contained theme rather than by inheriting
+   whatever globals.css happens to declare — see layout.test.tsx. The
+   values now match globals.css's own tokens (the rest of the app has
+   adopted this same palette); --font-body stays the one deliberate
+   divergence, serif here for the editorial voice of sign-in/reset/
+   invite, Archivo everywhere else pending that screen's own reskin. */
 const THEME_VARS = {
   "--color-bg": "#f8f2ed",
   "--color-surface": "#efe3d9",

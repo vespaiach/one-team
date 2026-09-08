@@ -60,7 +60,7 @@ export function PasswordField({
         <Input
           ref={inputRef}
           placeholder={placeholder}
-          className="h-[36px] w-full border border-[var(--color-divider)] bg-[var(--color-surface)] py-[6px] pr-[64px] pl-[36px] text-[14px] text-[var(--color-text)] caret-[var(--color-accent)] data-[invalid]:border-[var(--color-accent)] data-[disabled]:opacity-45"
+          className="h-[36px] w-full rounded-[var(--radius-md)] border border-[var(--color-divider)] bg-[var(--color-surface)] py-[6px] pr-[64px] pl-[36px] text-[14px] text-[var(--color-text)] caret-[var(--color-accent)] data-[invalid]:border-[var(--color-accent)] data-[disabled]:opacity-45"
         />
         {!isDisabled && (
           <Button

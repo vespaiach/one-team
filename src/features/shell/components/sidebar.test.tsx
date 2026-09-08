@@ -121,7 +121,7 @@ describe("Sidebar entries (FR-005, FR-006, FR-011, FR-012, FR-016, FR-031, SC-00
     }
   });
 
-  it("renders the seven items in FR-005's order under an admin, and the four that remain under a member (s10)", () => {
+  it("groups entries into Work / Projects / Admin sections, in that order, under an admin, and the two sections that remain under a member (s10)", () => {
     const adminRender = render(
       <Sidebar
         {...baseProps}
@@ -132,11 +132,9 @@ describe("Sidebar entries (FR-005, FR-006, FR-011, FR-012, FR-016, FR-031, SC-00
     const adminOrder = Array.from(adminNav.children).map((child) => child.textContent);
     expect(adminOrder).toEqual([
       "One Team",
-      "Home",
-      expect.stringContaining("No projects yet."),
-      "Notifications",
-      "Accounts",
-      "Labels",
+      "WorkHomeNotifications",
+      expect.stringContaining("Projects"),
+      "AdminAccountsLabels",
       expect.stringContaining("Ada Lovelace"),
     ]);
     adminRender.unmount();
@@ -151,9 +149,8 @@ describe("Sidebar entries (FR-005, FR-006, FR-011, FR-012, FR-016, FR-031, SC-00
     const memberOrder = Array.from(memberNav.children).map((child) => child.textContent);
     expect(memberOrder).toEqual([
       "One Team",
-      "Home",
-      expect.stringContaining("No projects yet."),
-      "Notifications",
+      "WorkHomeNotifications",
+      expect.stringContaining("Projects"),
       expect.stringContaining("Ada Lovelace"),
     ]);
   });

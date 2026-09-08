@@ -1,51 +1,59 @@
 @import "tailwindcss";
 
 @theme inline {
-  /* --- roles · the Modernist system's own names --------------- */
-  --color-bg: #f3f2f2;
+  /* --- roles · the Broadsheet system's own names ---------------
+     Replaces the Modernist red-orange/square-corner system. Warm
+     clay and terracotta on a paper ground. */
+  --color-bg: #f8f2ed;
   --color-page: #ffffff;
-  --color-surface: #eae9e9;
-  --color-text: #201e1d;
-  --color-accent: #ec3013;
-  --color-accent-2: #e15b47;
-  --color-divider: color-mix(in srgb, #201e1d 40%, transparent);
+  --color-surface: #efe3d9;
+  --color-text: #2b1c15;
+  --color-accent: #8d4936;
+  --color-accent-2: #dd7450;
+  --color-divider: color-mix(in srgb, #2b1c15 16%, transparent);
 
-  /* --- neutral · nine steps ------------------------------------ */
-  --color-neutral-100: #f8f4f4;
-  --color-neutral-200: #eae7e7;
-  --color-neutral-300: #d7d3d3;
-  --color-neutral-400: #bab6b6;
-  --color-neutral-500: #9b9797;
-  --color-neutral-600: #7d7979;
-  --color-neutral-700: #605d5d;
-  --color-neutral-800: #444141;
-  --color-neutral-900: #2d2b2b;
+  /* --- neutral · nine steps ------------------------------------
+     Darker than Broadsheet's own ramp from step 500 down: the
+     mockup's neutrals were tuned against a lighter, cooler paper
+     than this product's warm #f8f2ed ground, and 600/700 at their
+     original lightness fall short of the WCAG pairs below (globals.
+     test.ts) against this warmer background. Steps 100-400 and 900
+     are unchanged; 500-800 are the same hue/saturation, relit. */
+  --color-neutral-100: #f4f6f8;
+  --color-neutral-200: #e7ebef;
+  --color-neutral-300: #d5dbe2;
+  --color-neutral-400: #c0cad2;
+  --color-neutral-500: #949fa8;
+  --color-neutral-600: #6e7c87;
+  --color-neutral-700: #535d65;
+  --color-neutral-800: #3b4248;
+  --color-neutral-900: #333a40;
 
   /* --- accent · nine steps --------------------------------------
      §7 no longer names a per-item palette (grey/blue/amber/green/
      red/violet): board columns and labels are told apart by name,
-     not colour. The two red-orange families below are the whole
-     hue set the product uses. */
-  --color-accent-100: #fff2ef;
-  --color-accent-200: #ffe0d9;
-  --color-accent-300: #ffc4b8;
-  --color-accent-400: #ff9783;
-  --color-accent-500: #ff563c;
-  --color-accent-600: #dd2b0f;
-  --color-accent-700: #ae1800;
-  --color-accent-800: #7c1405;
-  --color-accent-900: #4d170e;
+     not colour. The two warm families below are the whole hue set
+     the product uses. */
+  --color-accent-100: #faf0ec;
+  --color-accent-200: #f2ded4;
+  --color-accent-300: #d9b09d;
+  --color-accent-400: #ce9377;
+  --color-accent-500: #b06a4e;
+  --color-accent-600: #8d4936;
+  --color-accent-700: #73382a;
+  --color-accent-800: #56281d;
+  --color-accent-900: #3a1a13;
 
-  /* --- accent-2 · nine steps, a muted second red-orange -------- */
-  --color-accent-2-100: #fff2ef;
-  --color-accent-2-200: #ffe0da;
-  --color-accent-2-300: #ffc4b9;
-  --color-accent-2-400: #ff9784;
-  --color-accent-2-500: #ef6853;
-  --color-accent-2-600: #c94b39;
-  --color-accent-2-700: #9e3526;
-  --color-accent-2-800: #71261b;
-  --color-accent-2-900: #471d16;
+  /* --- accent-2 · nine steps, a muted second warm tone --------- */
+  --color-accent-2-100: #fef2ec;
+  --color-accent-2-200: #fbdfd1;
+  --color-accent-2-300: #f7c2a9;
+  --color-accent-2-400: #ec9b76;
+  --color-accent-2-500: #dd7450;
+  --color-accent-2-600: #c1573a;
+  --color-accent-2-700: #9d412a;
+  --color-accent-2-800: #75301f;
+  --color-accent-2-900: #4c1f14;
 
   /* --- semantic · the only names a component uses ---------------
      Every one points at a role or a ramp step, never a hex. */
@@ -58,12 +66,11 @@
   --color-text-placeholder: var(--color-neutral-700);
   --color-text-disabled: var(--color-neutral-400);
 
-  /* White text on the raw --color-accent measures 4.20:1 against
-     WCAG's 4.5:1 text floor. A filled control (a button, the "Team"
-     wordmark block) uses --color-accent-fill, one ramp step darker,
-     instead — --color-accent itself stays reserved for the focus
-     ring and other non-text uses, where 4.20–3.76:1 clears the 3:1
-     floor that applies there. */
+  /* --color-accent-fill aliases --color-accent-600, which is also
+     --color-accent itself in this palette — kept as its own name so
+     a filled control (a button, the "Team" wordmark block) reads
+     independently of the raw accent's use for the focus ring, links
+     and other non-text roles. */
   --color-accent-fill: var(--color-accent-600);
   --color-accent-hover: var(--color-accent-700);
   --color-accent-pressed: var(--color-accent-800);
@@ -86,11 +93,16 @@
   --color-advisory-fill: var(--color-accent-2-100);
   --color-advisory-text: var(--color-accent-2-800);
 
-  /* --- type · Archivo ------------------------------------------- */
-  --font-heading: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  /* --- type · serif headlines, Archivo chrome, mono machine values --
+     Headings take the Broadsheet serif everywhere; --font-sans (the
+     inherited default for body/control text) stays Archivo, since
+     that is the working "chrome" face and most of the app's controls
+     are not yet reskinned to the serif system's editorial voice. */
+  --font-heading: var(--font-source-serif), Georgia, serif;
   --font-body: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
-  --font-weight-heading: 800;
+  --font-mono: var(--font-mono-ui), ui-monospace, "SF Mono", Menlo, monospace;
+  --font-weight-heading: 600;
 
   --text-h1: 42px;
   --text-h1--line-height: 1.12;
@@ -118,7 +130,9 @@
      Unit 4px, unchanged from R1/R2. Field and card sizes are
      component geometry, not part of the palette swap, and stay put. */
   --spacing: 4px;
-  --radius-none: 0px;
+  --radius-sm: 1px;
+  --radius-md: 2px;
+  --radius-lg: 4px;
   --radius-full: 9999px;
   --size-field: 44px;
   --size-card: 420px;
@@ -141,11 +155,6 @@
     font-size: var(--text-body);
     line-height: 1.55;
     -webkit-font-smoothing: antialiased;
-  }
-
-  /* Nothing in this product has a rounded corner. */
-  * {
-    border-radius: 0;
   }
 
   h1,
