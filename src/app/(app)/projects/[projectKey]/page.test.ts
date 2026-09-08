@@ -25,7 +25,6 @@ import { requireActor } from "@/features/auth/server/actor";
 import { BoardScreen } from "@/features/board/components/board-screen";
 import { BoardSkeleton } from "@/features/board/components/board-skeleton";
 import { type BoardView, loadBoard } from "@/features/board/server/board-queries";
-import { ProjectHeader } from "@/features/projects/components/project-header";
 import ProjectBoardPage from "./page";
 
 const ACTOR = {
@@ -169,27 +168,26 @@ describe("/projects/:projectKey board page — who gets in (FR-002, FR-003)", ()
 });
 
 describe("/projects/:projectKey board page — what it renders (FR-004, FR-007)", () => {
-  it("renders ProjectHeader on the board tab, naming the project", async () => {
+  it("hands BoardScreen the project the header is named for", async () => {
     vi.mocked(requireActor).mockResolvedValue(ACTOR);
-    vi.mocked(loadBoard).mockResolvedValue(boardView());
+    const view = boardView();
+    vi.mocked(loadBoard).mockResolvedValue(view);
 
-    const header = findByType(await insideBoundary(await ProjectBoardPage(params("WEB"))), ProjectHeader);
+    const board = findByType(await insideBoundary(await ProjectBoardPage(params("WEB"))), BoardScreen);
 
-    expect(header?.props.current).toBe("board");
-    expect(header?.props.projectKey).toBe("WEB");
-    expect(header?.props.name).toBe("Website Redesign");
+    expect(board?.props.board).toBe(view);
   });
 
-  it("gives the header the project's comment count", async () => {
+  it("gives BoardScreen the project's comment count", async () => {
     vi.mocked(requireActor).mockResolvedValue(ACTOR);
     const view = boardView();
     vi.mocked(loadBoard).mockResolvedValue(view);
     vi.mocked(countProjectComments).mockResolvedValue(7);
 
-    const header = findByType(await insideBoundary(await ProjectBoardPage(params("WEB"))), ProjectHeader);
+    const board = findByType(await insideBoundary(await ProjectBoardPage(params("WEB"))), BoardScreen);
 
     expect(countProjectComments).toHaveBeenCalledWith(view.project.id);
-    expect(header?.props.commentCount).toBe(7);
+    expect(board?.props.commentCount).toBe(7);
   });
 
   it("reads the board inside the Suspense boundary rather than before it", async () => {

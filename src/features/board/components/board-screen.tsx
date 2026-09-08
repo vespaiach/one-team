@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { cloneElement, type ReactElement, type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { createBoardCard, type MoveIssueState, moveIssue } from "@/features/issues/actions";
+import { ProjectHeader } from "@/features/projects/components/project-header";
 import { showToast } from "@/features/shell/components/toast-region";
 import { type Drop, type Grouping, lanesFor, replayPendingMoves, UNASSIGNED_LANE_ID } from "../lane-model";
 import type { BoardView } from "../server/board-queries";
@@ -43,10 +44,12 @@ function stillInFlight(
 
 export function BoardScreen({
   board,
-  children,
+  commentCount,
+  newIssue,
 }: {
   board: BoardView;
-  children?: ReactElement<{ control?: ReactNode }>;
+  commentCount?: number;
+  newIssue?: ReactNode;
 }) {
   const router = useRouter();
   const [grouping, setGrouping] = useState<Grouping>("column");
@@ -127,16 +130,19 @@ export function BoardScreen({
 
   return (
     <>
-      {children === undefined
-        ? null
-        : cloneElement(children, {
-            control: (
-              <GroupingControl
-                grouping={grouping}
-                onChange={setGrouping}
-              />
-            ),
-          })}
+      <ProjectHeader
+        projectKey={board.project.key}
+        name={board.project.name}
+        current="board"
+        commentCount={commentCount}
+        newIssue={newIssue}
+        control={
+          <GroupingControl
+            grouping={grouping}
+            onChange={setGrouping}
+          />
+        }
+      />
       <div
         data-region="board"
         className="flex gap-4 overflow-x-auto p-4">

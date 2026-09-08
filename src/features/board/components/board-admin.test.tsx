@@ -91,17 +91,9 @@ function boardFor(access: { canWrite: boolean; writeReason: string }): BoardView
   };
 }
 
-function Header({ control }: { control?: React.ReactNode }) {
-  return <div data-region="header">{control}</div>;
-}
-
 async function renderBoardAs(actor: Actor) {
   const access = await resolveIssueWriteAccess(actor, PROJECT);
-  render(
-    <BoardScreen board={boardFor(access)}>
-      <Header />
-    </BoardScreen>,
-  );
+  render(<BoardScreen board={boardFor(access)} />);
   return access;
 }
 

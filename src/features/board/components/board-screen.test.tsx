@@ -1,5 +1,4 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import type { BoardCard, BoardPerson, BoardView } from "../server/board-queries";
 import { BoardScreen } from "./board-screen";
@@ -181,16 +180,8 @@ const MIXED_REORDERED = [MIXED[2], MIXED[0], MIXED[1]].filter(
   (entry): entry is BoardCard => entry !== undefined,
 );
 
-function Header({ control }: { control?: ReactNode }) {
-  return <div data-region="header">{control}</div>;
-}
-
 function renderBoard(view: BoardView) {
-  return render(
-    <BoardScreen board={view}>
-      <Header />
-    </BoardScreen>,
-  );
+  return render(<BoardScreen board={view} />);
 }
 
 function groupBy(): HTMLElement {
@@ -232,12 +223,22 @@ function dragHandles(): string[] {
     .sort();
 }
 
+describe("BoardScreen — the header names the project, on the board tab (FR-004, FR-007)", () => {
+  it("shows the project's name and selects the Board tab", () => {
+    renderBoard(board(SPREAD));
+
+    const header = screen.getByRole("banner");
+    expect(within(header).getByText("Website Redesign")).not.toBeNull();
+    expect(screen.getByRole("tab", { name: "Board" }).getAttribute("aria-selected")).toBe("true");
+  });
+});
+
 describe("BoardScreen — the grouping control belongs to the header (FR-005)", () => {
   it("hands the Group by control to the header it is given, adding no second one", () => {
     const { container } = renderBoard(board(MIXED, POOL));
 
-    const header = container.querySelector('[data-region="header"]');
-    expect(header?.contains(groupBy())).toBe(true);
+    const header = screen.getByRole("banner");
+    expect(header.contains(groupBy())).toBe(true);
     expect(screen.getAllByRole("button", { name: /Group by/ })).toHaveLength(1);
     expect(container.querySelector('[data-region="board"]')?.contains(groupBy())).toBe(false);
   });
@@ -324,11 +325,7 @@ describe("BoardScreen — a reorder made under one grouping shows under the othe
     await chooseGrouping("Assignee");
     expect(keysIn("Ada Lovelace")).toEqual(["WEB-21 Issue number 21"]);
 
-    rerender(
-      <BoardScreen board={board(MIXED_REORDERED, POOL)}>
-        <Header />
-      </BoardScreen>,
-    );
+    rerender(<BoardScreen board={board(MIXED_REORDERED, POOL)} />);
     await chooseGrouping("Column");
 
     expect(keysIn("In Progress")).toEqual(["WEB-23 Issue number 23", "WEB-21 Issue number 21"]);
