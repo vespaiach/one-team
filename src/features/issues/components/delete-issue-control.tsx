@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Button } from "react-aria-components/Button";
 import { Dialog, DialogTrigger } from "react-aria-components/Dialog";
 import { Modal } from "react-aria-components/Modal";
+import { dialogPanelClassName } from "@/components/shared/dialog-panel";
 import { showToast } from "@/features/shell/components/toast-region";
 import type { DeleteIssuePayload, DeleteIssueResult } from "../actions";
 
@@ -45,12 +46,12 @@ function DeleteConfirmDialog({
   return (
     <Dialog
       role="alertdialog"
-      className="flex w-full max-w-[420px] flex-col gap-[14px] bg-(--color-bg) p-4 shadow-lg">
+      className={dialogPanelClassName}>
       <h2 className="text-h5">
         Delete {issueKey} · {issueTitle}?
       </h2>
       <p>{sentence}</p>
-      <div className="flex justify-end gap-[8px]">
+      <div className="flex justify-end gap-2">
         <Button
           type="button"
           onPress={close}>

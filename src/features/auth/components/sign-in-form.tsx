@@ -97,7 +97,7 @@ export function SignInForm() {
     <Form
       validationBehavior="aria"
       onSubmit={handleSubmit}
-      className="flex flex-col gap-[14px]">
+      className="flex flex-col gap-3">
       {outcome?.kind === "rejected" && (
         <Banner icon={XCircleIcon}>That email and password don&apos;t match.</Banner>
       )}
@@ -159,7 +159,7 @@ export function SignInForm() {
       <Button
         type="submit"
         isDisabled={locked}
-        className={`mt-[6px] ${primaryButtonClasses({ pending: submitting })}`}>
+        className={`mt-1 ${primaryButtonClasses({ pending: submitting })}`}>
         {locked ? (
           `Locked for ${outcome.minutes} minute${outcome.minutes === 1 ? "" : "s"}`
         ) : submitting ? (

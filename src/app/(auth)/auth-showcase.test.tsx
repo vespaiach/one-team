@@ -23,4 +23,13 @@ describe("AuthShowcase", () => {
     expect(source).not.toContain('"use client"');
     expect(source).not.toMatch(/useState|useReducer/);
   });
+
+  it("derives the grid-line backgroundImage colours from --color-text via color-mix", () => {
+    const source = readFileSync(join(process.cwd(), "src/app/(auth)/auth-showcase.tsx"), "utf8");
+
+    expect(source).not.toContain("rgba(43,28,21,0.05)");
+    expect(source).not.toContain("rgba(43,28,21,0.09)");
+    expect(source).toContain("color-mix(in srgb, var(--color-text) 5%, transparent)");
+    expect(source).toContain("color-mix(in srgb, var(--color-text) 9%, transparent)");
+  });
 });

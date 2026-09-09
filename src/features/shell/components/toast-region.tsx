@@ -26,8 +26,8 @@ export function showToast(toast: ToastRecord): void {
 const KIND_CLASSES: Record<ToastKind, string> = {
   success: "border-(--color-accent) bg-(--color-accent-100)",
   info: "border-(--color-border) bg-(--color-surface)",
-  warning: "border-amber-500 bg-amber-50",
-  error: "border-red-600 bg-red-50",
+  warning: "border-(--color-advisory) bg-(--color-advisory-fill)",
+  error: "border-(--color-danger) bg-(--color-danger-fill)",
 };
 
 export function ToastRegion() {
@@ -39,7 +39,7 @@ export function ToastRegion() {
       {({ toast }) => (
         <Toast
           toast={toast}
-          className={`flex items-center gap-3 border-l-[3px] px-3 py-[11px] text-[13px] ${KIND_CLASSES[toast.content.kind]}`}>
+          className={`flex items-center gap-3 border-l-[3px] px-3 py-2 text-[13px] ${KIND_CLASSES[toast.content.kind]}`}>
           <ToastContent>{toast.content.message}</ToastContent>
           <Button
             slot="close"

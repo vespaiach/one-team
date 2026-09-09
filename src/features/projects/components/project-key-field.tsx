@@ -66,7 +66,7 @@ export function ProjectKeyField({
       onChange={handleChange}
       isRequired
       isInvalid={requiredError || clashError}
-      className="flex flex-col gap-[5px]">
+      className="flex flex-col gap-1">
       <Label>Key</Label>
       <Input />
       {requiredError && <FieldError>A key is required.</FieldError>}

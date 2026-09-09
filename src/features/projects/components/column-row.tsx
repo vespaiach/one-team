@@ -133,7 +133,7 @@ export function ColumnRow({
         )}
       </div>
       <span className="text-control text-(--color-text-muted)">{column.kind}</span>
-      <span className="text-control text-(--color-text-muted)">{column.issueCount}</span>
+      <span className="text-control font-mono text-(--color-text-muted)">{column.issueCount}</span>
       {deleteColumn ? (
         <ColumnDeleteControl
           column={column}

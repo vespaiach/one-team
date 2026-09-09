@@ -3,6 +3,9 @@ import type { InvitationRow } from "../server/roster";
 
 const DATE_FORMAT = new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "UTC" });
 
+const TABLE_HEADER_CLASSES = "px-3 py-2 text-start font-sans text-label text-(--color-text-muted)";
+const TABLE_CELL_CLASSES = "px-3 py-2";
+
 export function InvitationsTable({
   rows,
   onResend,
@@ -17,27 +20,29 @@ export function InvitationsTable({
   }
 
   return (
-    <table>
+    <table className="w-full border-collapse text-control">
       <thead>
-        <tr>
-          <th>Address</th>
-          <th>Invited by</th>
-          <th>Sent</th>
-          <th>Expires</th>
-          <th>Actions</th>
+        <tr className="border-(--color-border) border-b">
+          <th className={TABLE_HEADER_CLASSES}>Address</th>
+          <th className={TABLE_HEADER_CLASSES}>Invited by</th>
+          <th className={TABLE_HEADER_CLASSES}>Sent</th>
+          <th className={TABLE_HEADER_CLASSES}>Expires</th>
+          <th className={TABLE_HEADER_CLASSES}>Actions</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody className="divide-y divide-(--color-divider)">
         {rows.map((row) => (
           <tr key={row.id}>
-            <td>{row.email}</td>
-            <td>{row.invitedByName}</td>
-            <td>{DATE_FORMAT.format(row.sentAt)}</td>
-            <td>
-              {DATE_FORMAT.format(row.expiresAt)}
+            <td className={TABLE_CELL_CLASSES}>{row.email}</td>
+            <td className={TABLE_CELL_CLASSES}>{row.invitedByName}</td>
+            <td className={TABLE_CELL_CLASSES}>
+              <span className="font-mono">{DATE_FORMAT.format(row.sentAt)}</span>
+            </td>
+            <td className={TABLE_CELL_CLASSES}>
+              <span className="font-mono">{DATE_FORMAT.format(row.expiresAt)}</span>
               {row.isExpired && <span> (expired)</span>}
             </td>
-            <td>
+            <td className={`${TABLE_CELL_CLASSES} flex gap-2`}>
               <Button onPress={() => onResend(row.id)}>Resend</Button>
               <Button onPress={() => onRevoke(row.id)}>Revoke</Button>
             </td>

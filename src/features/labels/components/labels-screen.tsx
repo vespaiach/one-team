@@ -29,15 +29,15 @@ export function LabelsScreen({
         />
       </div>
       {labels.length === 0 ? (
-        <p>No labels yet</p>
+        <p className="text-label text-(--color-text-muted)">No labels yet</p>
       ) : (
         <table>
           <thead>
-            <tr>
-              <th>Name</th>
-              <th>Issues</th>
-              <th>Edit</th>
-              <th>Delete</th>
+            <tr className="border-b border-(--color-divider)">
+              <th className="px-2 py-1 text-label text-(--color-text-muted)">Name</th>
+              <th className="px-2 py-1 text-label text-(--color-text-muted)">Issues</th>
+              <th className="px-2 py-1 text-label text-(--color-text-muted)">Edit</th>
+              <th className="px-2 py-1 text-label text-(--color-text-muted)">Delete</th>
             </tr>
           </thead>
           <tbody>

@@ -189,7 +189,7 @@ export function IssueRail({
         selectedKey={optimisticColumnId}
         onSelectionChange={(key) => handleColumnChange(String(key))}
         isDisabled={!canWrite}
-        className="flex flex-col gap-[5px]">
+        className="flex flex-col gap-1">
         <Label>Column</Label>
         <Button>
           <SelectValue />
@@ -213,7 +213,7 @@ export function IssueRail({
         selectedKey={optimisticPriority}
         onSelectionChange={(key) => handlePriorityChange(key as IssuePriority)}
         isDisabled={!canWrite}
-        className="flex flex-col gap-[5px]">
+        className="flex flex-col gap-1">
         <Label>Priority</Label>
         <Button>
           <SelectValue />
@@ -237,7 +237,7 @@ export function IssueRail({
         selectedKey={optimisticAssigneeId}
         onSelectionChange={(key) => handleAssigneeChange(String(key))}
         isDisabled={!canWrite}
-        className="flex flex-col gap-[5px]">
+        className="flex flex-col gap-1">
         <Label>Assignee</Label>
         <Button>
           <SelectValue />
@@ -262,7 +262,7 @@ export function IssueRail({
         </Popover>
       </Select>
 
-      <div className="flex flex-col gap-[5px]">
+      <div className="flex flex-col gap-1">
         <label
           htmlFor="issue-rail-due-date"
           className="text-label text-(--color-text-muted)">

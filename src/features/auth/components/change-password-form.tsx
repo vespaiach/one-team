@@ -48,12 +48,12 @@ export function ChangePasswordForm({
   if (state.status === "expired" || state.status === "used" || state.status === "unknown") {
     const copy = TOKEN_STATE_COPY[state.status];
     return (
-      <div className="flex flex-col gap-[14px]">
+      <div className="flex flex-col gap-3">
         <h1 className="text-h1">{copy.heading}</h1>
         <Banner icon={LockIcon}>{copy.message}</Banner>
         <Link
           href="/reset"
-          className={`mt-[6px] no-underline ${primaryButtonClasses()}`}>
+          className={`mt-1 no-underline ${primaryButtonClasses()}`}>
           <RefreshCwIcon size={16} />
           Request a new link
         </Link>
@@ -66,9 +66,9 @@ export function ChangePasswordForm({
     <Form
       action={formAction}
       validationBehavior="aria"
-      className="flex flex-col gap-[14px]">
-      <h1 className="text-h1 mb-[6px]">Set a new password</h1>
-      <p className="mb-[10px] text-[13px] text-[color-mix(in_srgb,var(--color-text)_62%,transparent)]">
+      className="flex flex-col gap-3">
+      <h1 className="text-h1 mb-1">Set a new password</h1>
+      <p className="mb-2 text-[13px] text-[color-mix(in_srgb,var(--color-text)_62%,transparent)]">
         {email ? (
           <>
             For <b className="text-[var(--color-text)]">{email}</b>. This link is single-use.

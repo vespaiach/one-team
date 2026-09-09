@@ -46,7 +46,7 @@ export function PasswordField({
       isInvalid={isInvalid}
       isRequired={isRequired}
       isDisabled={isDisabled}
-      className="flex flex-col gap-[5px]">
+      className="flex flex-col gap-1">
       <div className="flex items-baseline justify-between">
         <Label className="text-[12px] text-[color-mix(in_srgb,var(--color-text)_70%,transparent)]">
           {label}
@@ -54,20 +54,20 @@ export function PasswordField({
         {labelExtra}
       </div>
       <div className="relative">
-        <span className="pointer-events-none absolute top-1/2 left-[11px] -translate-y-1/2 text-[color-mix(in_srgb,var(--color-text)_45%,transparent)]">
+        <span className="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 text-[color-mix(in_srgb,var(--color-text)_45%,transparent)]">
           <LockIcon size={16} />
         </span>
         <Input
           ref={inputRef}
           placeholder={placeholder}
-          className="h-[36px] w-full border border-[var(--color-divider)] bg-[var(--color-surface)] py-[6px] pr-[64px] pl-[36px] text-[14px] text-[var(--color-text)] caret-[var(--color-accent)] data-[invalid]:border-[var(--color-accent)] data-[disabled]:opacity-45"
+          className="h-[36px] w-full border border-[var(--color-divider)] bg-[var(--color-surface)] py-1 pr-13 pl-7 text-[14px] text-[var(--color-text)] caret-[var(--color-accent)] data-[invalid]:border-[var(--color-accent)] data-[disabled]:opacity-45"
         />
         {!isDisabled && (
           <Button
             type="button"
             onPress={() => setRevealed((current) => !current)}
             aria-label={revealed ? "Hide password" : "Show password"}
-            className="absolute top-1/2 right-[10px] flex -translate-y-1/2 items-center justify-center p-[6px] text-[color-mix(in_srgb,var(--color-text)_45%,transparent)] data-[hovered]:text-[var(--color-text)]">
+            className="absolute top-1/2 right-2 flex -translate-y-1/2 items-center justify-center p-1 text-[color-mix(in_srgb,var(--color-text)_45%,transparent)] data-[hovered]:text-[var(--color-text)]">
             {revealed ? <EyeOffIcon size={16} /> : <EyeIcon size={16} />}
           </Button>
         )}
@@ -77,7 +77,7 @@ export function PasswordField({
       ) : (
         !isInvalid &&
         hint && (
-          <div className="flex items-start gap-[7px] text-[12px] text-[color-mix(in_srgb,var(--color-text)_58%,transparent)]">
+          <div className="flex items-start gap-1 text-[12px] text-[color-mix(in_srgb,var(--color-text)_58%,transparent)]">
             <span className="mt-px flex-none text-[color-mix(in_srgb,var(--color-text)_62%,transparent)]">
               <ShieldCheckIcon size={16} />
             </span>

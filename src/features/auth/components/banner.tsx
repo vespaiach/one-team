@@ -10,7 +10,7 @@ export function Banner({
   return (
     <div
       role="alert"
-      className="flex gap-[10px] border-l-[3px] border-[var(--color-accent-2)] bg-[var(--color-accent-2-100)] px-3 py-[11px] text-[13px] leading-[1.45] break-words text-[var(--color-text)]">
+      className="flex gap-2 border-l-[3px] border-[var(--color-accent-2)] bg-[var(--color-accent-2-100)] px-3 py-2 text-[13px] leading-[1.45] break-words text-[var(--color-text)]">
       <span className="flex-none text-[var(--color-accent-2)]">
         <Icon size={20} />
       </span>

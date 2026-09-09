@@ -130,8 +130,12 @@ export function IssueDetail({
         <RailField label="Created by">
           {issue.createdBy.firstName} {issue.createdBy.lastName}
         </RailField>
-        <RailField label="Created">{TIMESTAMP_FORMAT.format(issue.createdAt)}</RailField>
-        <RailField label="Updated">{TIMESTAMP_FORMAT.format(issue.updatedAt)}</RailField>
+        <RailField label="Created">
+          <span className="font-mono">{TIMESTAMP_FORMAT.format(issue.createdAt)}</span>
+        </RailField>
+        <RailField label="Updated">
+          <span className="font-mono">{TIMESTAMP_FORMAT.format(issue.updatedAt)}</span>
+        </RailField>
       </aside>
     </div>
   );

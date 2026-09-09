@@ -38,7 +38,7 @@ export function MemberPickerField({
   }
 
   return (
-    <div className="flex flex-col gap-[8px]">
+    <div className="flex flex-col gap-2">
       <ComboBox
         items={available}
         inputValue={inputValue}
@@ -46,7 +46,7 @@ export function MemberPickerField({
         selectedKey={null}
         onSelectionChange={handleSelectionChange}
         menuTrigger="focus"
-        className="flex flex-col gap-[5px]">
+        className="flex flex-col gap-1">
         <Label>Members</Label>
         <Input placeholder="Add a member" />
         <Popover>

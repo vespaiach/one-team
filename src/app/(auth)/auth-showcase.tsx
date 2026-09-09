@@ -7,7 +7,7 @@ export function AuthShowcase() {
         className="pointer-events-none absolute inset-0"
         style={{
           backgroundImage:
-            "linear-gradient(to right, rgba(43,28,21,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(43,28,21,0.05) 1px, transparent 1px)",
+            "linear-gradient(to right, color-mix(in srgb, var(--color-text) 5%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in srgb, var(--color-text) 5%, transparent) 1px, transparent 1px)",
           backgroundSize: "12px 12px",
         }}
       />
@@ -15,7 +15,7 @@ export function AuthShowcase() {
         className="pointer-events-none absolute inset-0"
         style={{
           backgroundImage:
-            "linear-gradient(to right, rgba(43,28,21,0.09) 1px, transparent 1px), linear-gradient(to bottom, rgba(43,28,21,0.09) 1px, transparent 1px)",
+            "linear-gradient(to right, color-mix(in srgb, var(--color-text) 9%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in srgb, var(--color-text) 9%, transparent) 1px, transparent 1px)",
           backgroundSize: "96px 96px",
         }}
       />

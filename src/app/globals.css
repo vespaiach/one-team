@@ -1,55 +1,56 @@
 @import "tailwindcss";
 
 @theme inline {
-  /* --- roles · the Modernist system's own names --------------- */
-  --color-bg: #f3f2f2;
+  /* --- roles ------------------------------------------------------ */
+  --color-bg: #f2ebde;
   --color-page: #ffffff;
-  --color-surface: #eae9e9;
-  --color-text: #201e1d;
-  --color-accent: #ec3013;
-  --color-accent-2: #e15b47;
-  --color-divider: color-mix(in srgb, #201e1d 40%, transparent);
+  --color-surface: #e7dcca;
+  --color-text: #2b1c15;
+  --color-accent: #c15425;
+  --color-accent-2: #ba8e36;
+  --color-divider: color-mix(in srgb, var(--color-text) 40%, transparent);
 
   /* --- neutral · nine steps ------------------------------------ */
-  --color-neutral-100: #f8f4f4;
-  --color-neutral-200: #eae7e7;
-  --color-neutral-300: #d7d3d3;
-  --color-neutral-400: #bab6b6;
-  --color-neutral-500: #9b9797;
-  --color-neutral-600: #7d7979;
-  --color-neutral-700: #605d5d;
-  --color-neutral-800: #444141;
-  --color-neutral-900: #2d2b2b;
+  --color-neutral-100: #f7f5f3;
+  --color-neutral-200: #ece8e4;
+  --color-neutral-300: #d9d2c9;
+  --color-neutral-400: #bcae9f;
+  --color-neutral-500: #a18e78;
+  --color-neutral-600: #816f5a;
+  --color-neutral-700: #635545;
+  --color-neutral-800: #483e32;
+  --color-neutral-900: #302921;
 
   /* --- accent · nine steps --------------------------------------
      §7 no longer names a per-item palette (grey/blue/amber/green/
      red/violet): board columns and labels are told apart by name,
-     not colour. The two red-orange families below are the whole
-     hue set the product uses. */
-  --color-accent-100: #fff2ef;
-  --color-accent-200: #ffe0d9;
-  --color-accent-300: #ffc4b8;
-  --color-accent-400: #ff9783;
-  --color-accent-500: #ff563c;
-  --color-accent-600: #dd2b0f;
-  --color-accent-700: #ae1800;
-  --color-accent-800: #7c1405;
-  --color-accent-900: #4d170e;
+     not colour. Clay/terracotta and a muted ochre below are the
+     whole hue set the product uses. */
+  --color-accent-100: #fbefea;
+  --color-accent-200: #f4d5c7;
+  --color-accent-300: #ebb198;
+  --color-accent-400: #e0845c;
+  --color-accent-500: #c95726;
+  --color-accent-600: #a3471f;
+  --color-accent-700: #783417;
+  --color-accent-800: #562510;
+  --color-accent-900: #3c1a0b;
 
-  /* --- accent-2 · nine steps, a muted second red-orange -------- */
-  --color-accent-2-100: #fff2ef;
-  --color-accent-2-200: #ffe0da;
-  --color-accent-2-300: #ffc4b9;
-  --color-accent-2-400: #ff9784;
-  --color-accent-2-500: #ef6853;
-  --color-accent-2-600: #c94b39;
-  --color-accent-2-700: #9e3526;
-  --color-accent-2-800: #71261b;
-  --color-accent-2-900: #471d16;
+  /* --- accent-2 · nine steps, a muted ochre second hue ---------- */
+  --color-accent-2-100: #f9f5eb;
+  --color-accent-2-200: #f0e4cc;
+  --color-accent-2-300: #e3cda0;
+  --color-accent-2-400: #d3b069;
+  --color-accent-2-500: #ba8e36;
+  --color-accent-2-600: #8e6d29;
+  --color-accent-2-700: #6b511f;
+  --color-accent-2-800: #4b3916;
+  --color-accent-2-900: #33270f;
 
   /* --- semantic · the only names a component uses ---------------
      Every one points at a role or a ramp step, never a hex. */
   --color-surface-sunken: var(--color-neutral-100);
+  --color-surface-hover: color-mix(in srgb, var(--color-surface) 50%, var(--color-bg));
   --color-border: var(--color-divider);
   --color-border-control: var(--color-neutral-600);
   --color-border-strong: var(--color-neutral-900);
@@ -58,15 +59,9 @@
   --color-text-placeholder: var(--color-neutral-700);
   --color-text-disabled: var(--color-neutral-400);
 
-  /* White text on the raw --color-accent measures 4.20:1 against
-     WCAG's 4.5:1 text floor. A filled control (a button, the "Team"
-     wordmark block) uses --color-accent-fill, one ramp step darker,
-     instead — --color-accent itself stays reserved for the focus
-     ring and other non-text uses, where 4.20–3.76:1 clears the 3:1
-     floor that applies there. */
-  --color-accent-fill: var(--color-accent-600);
-  --color-accent-hover: var(--color-accent-700);
-  --color-accent-pressed: var(--color-accent-800);
+  --color-accent-fill: var(--color-accent-900);
+  --color-accent-hover: var(--color-accent-800);
+  --color-accent-pressed: var(--color-accent-700);
   --color-accent-text: var(--color-accent-800);
   --color-on-accent: #ffffff;
 
@@ -86,48 +81,48 @@
   --color-advisory-fill: var(--color-accent-2-100);
   --color-advisory-text: var(--color-accent-2-800);
 
-  /* --- type · Archivo ------------------------------------------- */
-  --font-heading: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
-  --font-body: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  /* --- type · a serif for headings and prose, Archivo for chrome */
+  --font-heading: var(--font-source-serif), ui-serif, Georgia, serif;
+  --font-body: var(--font-source-serif), ui-serif, Georgia, serif;
   --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
-  --font-weight-heading: 800;
+  --font-mono: var(--font-mono-ui), ui-monospace, SFMono-Regular, monospace;
+  --font-weight-heading: 700;
 
-  --text-h1: 42px;
-  --text-h1--line-height: 1.12;
-  --text-h1--letter-spacing: -0.015em;
-  --text-h2: 32px;
-  --text-h2--line-height: 1.12;
-  --text-h2--letter-spacing: -0.015em;
-  --text-h3: 25px;
-  --text-h3--line-height: 1.12;
-  --text-h3--letter-spacing: -0.015em;
-  --text-h4: 20px;
-  --text-h4--line-height: 1.12;
-  --text-h5: 16px;
-  --text-h5--line-height: 1.2;
-  --text-h6: 13px;
-  --text-h6--line-height: 1.2;
-  --text-h6--letter-spacing: 0.08em;
-  --text-body: 15px;
-  --text-body--line-height: 1.55;
+  --text-h1: 44px;
+  --text-h1--line-height: 1.15;
+  --text-h1--letter-spacing: -0.01em;
+  --text-h2: 34px;
+  --text-h2--line-height: 1.18;
+  --text-h2--letter-spacing: -0.005em;
+  --text-h3: 26px;
+  --text-h3--line-height: 1.2;
+  --text-h4: 21px;
+  --text-h4--line-height: 1.25;
+  --text-h5: 17px;
+  --text-h5--line-height: 1.35;
+  --text-h6: 14px;
+  --text-h6--line-height: 1.3;
+  --text-h6--letter-spacing: 0.06em;
+  --text-body: 16px;
+  --text-body--line-height: 1.6;
   --text-control: 14px;
   --text-label: 12px;
   --text-caption: 11px;
 
   /* --- space and geometry ----------------------------------------
-     Unit 4px, unchanged from R1/R2. Field and card sizes are
-     component geometry, not part of the palette swap, and stay put. */
-  --spacing: 4px;
-  --radius-none: 0px;
+     Unit 5px. Field and card sizes are component geometry, not
+     part of the palette swap, and stay put. */
+  --spacing: 5px;
+  --radius-sm: 3px;
   --radius-full: 9999px;
   --size-field: 44px;
   --size-card: 420px;
 
   /* --- elevation --------------------------------------------------
      Net new: nothing in the product used a shadow before this. */
-  --shadow-sm: 0 1px 2px color-mix(in srgb, #2d2b2b 14%, transparent);
-  --shadow-md: 0 3px 10px color-mix(in srgb, #2d2b2b 16%, transparent);
-  --shadow-lg: 0 12px 32px color-mix(in srgb, #2d2b2b 22%, transparent);
+  --shadow-sm: 0 1px 2px color-mix(in srgb, var(--color-neutral-900) 14%, transparent);
+  --shadow-md: 0 3px 10px color-mix(in srgb, var(--color-neutral-900) 16%, transparent);
+  --shadow-lg: 0 12px 32px color-mix(in srgb, var(--color-neutral-900) 22%, transparent);
 }
 
 @layer base {
@@ -143,9 +138,8 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* Nothing in this product has a rounded corner. */
   * {
-    border-radius: 0;
+    border-radius: var(--radius-sm);
   }
 
   h1,
@@ -156,8 +150,8 @@
   h6 {
     font-family: var(--font-heading);
     font-weight: var(--font-weight-heading);
-    line-height: 1.12;
-    letter-spacing: -0.015em;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
   }
   h1 {
     font-size: var(--text-h1);
@@ -176,7 +170,7 @@
   }
   h6 {
     font-size: var(--text-h6);
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
   }
 

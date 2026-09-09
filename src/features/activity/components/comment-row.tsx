@@ -228,7 +228,7 @@ export function CommentRow({
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div className="flex items-baseline gap-2">
           <span className="text-control font-medium text-(--color-text)">{displayName}</span>
-          <span className="text-label text-(--color-text-muted)">
+          <span className="font-mono text-label text-(--color-text-muted)">
             {formatRelativeTime(createdAt, new Date())}
           </span>
         </div>

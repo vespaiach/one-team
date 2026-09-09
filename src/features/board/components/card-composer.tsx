@@ -164,7 +164,7 @@ export function CardComposer(props: CardComposerProps) {
         onChange={setTitle}
         isDisabled={pending || disabledReason !== null}
         isInvalid={refusal !== null}
-        className="flex flex-1 flex-col gap-[5px]">
+        className="flex flex-1 flex-col gap-1">
         <Input
           placeholder={label}
           onKeyDown={handleKeyDown}

@@ -49,6 +49,7 @@ const controlBoundaryPairs = [
   ["--color-danger", "--color-surface"],
   ["--color-accent", "--color-surface"],
   ["--color-accent", "--color-bg"],
+  ["--color-accent", "--color-accent-fill"],
 ] as const;
 
 describe("globals.css meets WCAG 2.2 AA (FR-012)", () => {

@@ -47,7 +47,7 @@ function NameField({ name, label, isInvalid }: { name: string; label: string; is
       <Label className="text-[12px] text-[color-mix(in_srgb,var(--color-text)_70%,transparent)]">
         {label}
       </Label>
-      <Input className="h-[36px] w-full border border-[var(--color-divider)] bg-[var(--color-surface)] px-[10px] py-[6px] text-[14px] text-[var(--color-text)] caret-[var(--color-accent)] data-[invalid]:border-[var(--color-accent)]" />
+      <Input className="h-[36px] w-full border border-[var(--color-divider)] bg-[var(--color-surface)] px-[10px] py-1 text-[14px] text-[var(--color-text)] caret-[var(--color-accent)] data-[invalid]:border-[var(--color-accent)]" />
       {isInvalid && <FieldError className="text-[12px] text-[var(--color-accent-700)]">Required.</FieldError>}
     </TextField>
   );
@@ -74,12 +74,12 @@ export function AcceptInvitationForm({
   ) {
     const copy = DEAD_LINK_COPY[state.status];
     return (
-      <div className="flex flex-col gap-[14px]">
+      <div className="flex flex-col gap-3">
         <h1 className="text-h1">{copy.heading}</h1>
         <Banner icon={LockIcon}>{copy.message}</Banner>
         <Link
           href="/signin"
-          className={`mt-[6px] no-underline ${primaryButtonClasses()}`}>
+          className={`mt-1 no-underline ${primaryButtonClasses()}`}>
           Sign in
         </Link>
       </div>
@@ -90,8 +90,8 @@ export function AcceptInvitationForm({
     <Form
       action={formAction}
       validationBehavior="aria"
-      className="flex flex-col gap-[14px]">
-      <h1 className="text-h1 mb-[6px]">You've been invited</h1>
+      className="flex flex-col gap-3">
+      <h1 className="text-h1 mb-1">You've been invited</h1>
       <p className="mb-[10px] text-[13px] text-[color-mix(in_srgb,var(--color-text)_62%,transparent)]">
         This invitation was sent to <b className="text-[var(--color-text)]">{email}</b>.
       </p>
