@@ -84,7 +84,7 @@ export function ConnectionBanner() {
   return (
     <div
       role="alert"
-      className="border-l-[3px] border-(--color-accent) bg-(--color-accent-100) px-3 py-[11px] text-[13px]">
+      className="border-l-[3px] border-(--color-accent) bg-(--color-accent-100) px-3 py-2 text-[13px]">
       Can't reach the server. Reconnecting.
     </div>
   );

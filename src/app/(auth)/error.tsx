@@ -13,12 +13,12 @@ export default function AuthError({ error }: { error: Error & { digest?: string 
   }, [error]);
 
   return (
-    <div className="flex flex-col gap-[14px]">
+    <div className="flex flex-col gap-3">
       <h1 className="text-h1">Something went wrong</h1>
       <Banner icon={XCircleIcon}>Try the link again, or request a new one below.</Banner>
       <Link
         href="/reset"
-        className={`mt-[6px] no-underline ${primaryButtonClasses()}`}>
+        className={`mt-1 no-underline ${primaryButtonClasses()}`}>
         <RefreshCwIcon size={16} />
         Request a new link
       </Link>

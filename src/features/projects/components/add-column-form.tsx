@@ -76,7 +76,7 @@ export function AddColumnForm({
         }}
         onBlur={() => setTouched(true)}
         isInvalid={error !== null}
-        className="flex flex-col gap-[5px]">
+        className="flex flex-col gap-1">
         <Label>Column name</Label>
         <Input className="w-full border border-(--color-divider) bg-(--color-surface) px-3 py-2 text-control text-(--color-text)" />
         <FieldError>{error}</FieldError>

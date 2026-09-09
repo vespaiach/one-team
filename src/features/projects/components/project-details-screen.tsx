@@ -143,7 +143,9 @@ export function ProjectDetailsScreen({
         <section className="flex flex-col gap-3">
           <div>
             <span className="text-label text-(--color-text-muted)">Key</span>
-            <p>{record.key} — this can&apos;t be changed.</p>
+            <p>
+              <span className="font-mono">{record.key}</span> — this can&apos;t be changed.
+            </p>
           </div>
           <EditableField
             label="Name"

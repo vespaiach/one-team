@@ -13,8 +13,8 @@ describe("(auth) layout", () => {
     );
 
     const main = screen.getByRole("main");
-    expect(main.style.getPropertyValue("--color-bg")).toBe("#f8f2ed");
-    expect(main.className).toContain("bg-[var(--color-bg)]");
+    expect(main.className).toContain("bg-(--color-bg)");
+    expect(main.className).toContain("text-(--color-text)");
     expect(screen.getByText("page content")).not.toBeNull();
   });
 

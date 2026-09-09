@@ -6,6 +6,7 @@ import { Dialog, DialogTrigger } from "react-aria-components/Dialog";
 import { Form } from "react-aria-components/Form";
 import { Modal } from "react-aria-components/Modal";
 import { FieldError, Input, Label, TextField } from "react-aria-components/TextField";
+import { dialogPanelClassName } from "@/components/shared/dialog-panel";
 import type { AddressCheck, InviteState } from "../actions";
 
 export type InviteModalAction = (prevState: InviteState, formData: FormData) => Promise<InviteState>;
@@ -62,12 +63,12 @@ function InviteModalContent({
           : blurCheck;
 
   return (
-    <Dialog className="flex w-full max-w-[420px] flex-col gap-[14px] bg-(--color-bg) p-4 shadow-lg">
+    <Dialog className={dialogPanelClassName}>
       <h2 className="text-h5">Invite someone</h2>
       <Form
         action={formAction}
         validationBehavior="aria"
-        className="flex flex-col gap-[14px]">
+        className="flex flex-col gap-3">
         <TextField
           name="email"
           type="email"
@@ -85,7 +86,7 @@ function InviteModalContent({
         {refusal?.result === "has_account" && (
           <div
             role="alert"
-            className="flex flex-col gap-[6px]">
+            className="flex flex-col gap-1">
             <p>
               {refusal.isDeactivated
                 ? `${refusal.displayName}'s account is closed.`
@@ -110,7 +111,7 @@ function InviteModalContent({
         {refusal?.result === "has_invitation" && (
           <div
             role="alert"
-            className="flex flex-col gap-[6px]">
+            className="flex flex-col gap-1">
             <p>This address already has an outstanding invitation.</p>
             <Button
               type="button"
@@ -124,7 +125,7 @@ function InviteModalContent({
           </div>
         )}
 
-        <div className="flex justify-end gap-[8px]">
+        <div className="flex justify-end gap-2">
           <Button
             type="button"
             onPress={close}>

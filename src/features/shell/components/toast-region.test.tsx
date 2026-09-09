@@ -86,4 +86,25 @@ describe("ToastRegion (FR-054, R2 FR-034)", () => {
 
     expect(screen.queryByText("Dismiss me by hand")).toBeNull();
   });
+
+  it("styles the error and warning kinds with the semantic danger/advisory tokens, not Tailwind's default palette", () => {
+    render(<ToastRegion />);
+
+    act(() => {
+      showToast({ kind: "warning", message: "Mail did not go" });
+      showToast({ kind: "error", message: "Something failed" });
+    });
+
+    const toasts = screen.getAllByRole("alertdialog");
+    const warningToast = toasts.find((toast) => toast.textContent?.includes("Mail did not go"));
+    const errorToast = toasts.find((toast) => toast.textContent?.includes("Something failed"));
+
+    expect(warningToast?.className).toContain("--color-advisory");
+    expect(warningToast?.className).toContain("--color-advisory-fill");
+    expect(warningToast?.className).not.toMatch(/amber-/);
+
+    expect(errorToast?.className).toContain("--color-danger");
+    expect(errorToast?.className).toContain("--color-danger-fill");
+    expect(errorToast?.className).not.toMatch(/red-/);
+  });
 });

@@ -36,18 +36,18 @@ export function EmailField({
       isInvalid={isInvalid}
       isRequired={isRequired}
       isDisabled={isDisabled}
-      className="flex flex-col gap-[5px]">
+      className="flex flex-col gap-1">
       <Label className="text-[12px] text-[color-mix(in_srgb,var(--color-text)_70%,transparent)]">
         {label}
       </Label>
       <div className="relative">
-        <span className="pointer-events-none absolute top-1/2 left-[11px] -translate-y-1/2 text-[color-mix(in_srgb,var(--color-text)_45%,transparent)]">
+        <span className="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 text-[color-mix(in_srgb,var(--color-text)_45%,transparent)]">
           <MailIcon size={16} />
         </span>
         <Input
           ref={inputRef}
           placeholder={placeholder}
-          className="h-[36px] w-full border border-[var(--color-divider)] bg-[var(--color-surface)] py-[6px] pr-[10px] pl-[36px] text-[14px] text-[var(--color-text)] caret-[var(--color-accent)] data-[invalid]:border-[var(--color-accent)] data-[disabled]:opacity-45"
+          className="h-[36px] w-full border border-[var(--color-divider)] bg-[var(--color-surface)] py-1 pr-2 pl-7 text-[14px] text-[var(--color-text)] caret-[var(--color-accent)] data-[invalid]:border-[var(--color-accent)] data-[disabled]:opacity-45"
         />
       </div>
       {isInvalid && errorMessage && (

@@ -5,6 +5,7 @@ import { ProjectListRegion } from "./project-list-region";
 import { UserChip } from "./user-chip";
 
 const NAV_LINK_CLASSES = "px-4.5 py-1.5 text-control text-(--color-text) hover:bg-(--color-surface)";
+const NAV_GROUP_START_CLASSES = `${NAV_LINK_CLASSES} mt-2 border-t-2 border-(--color-border) pt-3`;
 
 export function Sidebar({
   displayName,
@@ -23,7 +24,7 @@ export function Sidebar({
     <nav
       aria-label="Primary navigation"
       className="sticky start-0 flex w-[262px] shrink-0 flex-col self-stretch border-e-2 border-(--color-border) bg-(--color-bg) py-4">
-      <div className="px-4.5 pb-4">
+      <div className="border-b-2 border-(--color-border) px-4.5 pb-4">
         <Logo />
       </div>
       <Link
@@ -45,7 +46,7 @@ export function Sidebar({
         {unreadNotificationCount > 0 ? (
           <span
             aria-hidden="true"
-            className="ms-2">
+            className="ms-2 font-mono">
             {unreadNotificationCount}
           </span>
         ) : null}
@@ -53,7 +54,7 @@ export function Sidebar({
       {isAdmin ? (
         <Link
           href="/settings/accounts"
-          className={NAV_LINK_CLASSES}>
+          className={NAV_GROUP_START_CLASSES}>
           Accounts
         </Link>
       ) : null}

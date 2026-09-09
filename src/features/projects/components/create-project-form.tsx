@@ -69,14 +69,14 @@ export function CreateProjectForm({
     <Form
       onSubmit={handleSubmit}
       validationBehavior="aria"
-      className="flex flex-col gap-[14px]">
+      className="flex flex-col gap-3">
       <TextField
         value={name}
         onChange={setName}
         onBlur={() => setNameTouched(true)}
         isRequired
         isInvalid={nameMissing || serverNameError !== null}
-        className="flex flex-col gap-[5px]">
+        className="flex flex-col gap-1">
         <Label>Name</Label>
         <Input
           ref={nameRef}
@@ -97,7 +97,7 @@ export function CreateProjectForm({
       <TextField
         value={description}
         onChange={setDescription}
-        className="flex flex-col gap-[5px]">
+        className="flex flex-col gap-1">
         <Label>Description</Label>
         <TextArea className="max-h-[280px] w-full resize-none overflow-y-auto border border-(--color-divider) bg-(--color-surface) px-3 py-2 text-control text-(--color-text)" />
       </TextField>
@@ -115,7 +115,7 @@ export function CreateProjectForm({
         onChange={setMembers}
       />
 
-      <div className="flex justify-end gap-[8px]">
+      <div className="flex justify-end gap-2">
         <Button
           type="button"
           onPress={handleCancel}>

@@ -10,7 +10,8 @@ export function CopyableKey({ issueKey }: { issueKey: string }) {
   return (
     <Button
       onPress={handlePress}
-      aria-label={`Copy link to ${issueKey}`}>
+      aria-label={`Copy link to ${issueKey}`}
+      className="font-mono">
       {issueKey}
     </Button>
   );

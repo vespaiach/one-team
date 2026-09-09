@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Button } from "react-aria-components/Button";
 import { Dialog, DialogTrigger } from "react-aria-components/Dialog";
 import { Modal } from "react-aria-components/Modal";
+import { dialogPanelClassName } from "@/components/shared/dialog-panel";
 import { showToast } from "@/features/shell/components/toast-region";
 
 export type DeleteProjectResult =
@@ -42,13 +43,13 @@ function DeleteConfirmDialog({
   }
 
   return (
-    <Dialog className="flex w-full max-w-[420px] flex-col gap-[14px] bg-(--color-bg) p-4 shadow-lg">
+    <Dialog className={dialogPanelClassName}>
       <h2 className="text-h5">Delete {projectName}?</h2>
       <p>
         This permanently deletes {cascadeCount} {cascadeCount === 1 ? "row" : "rows"} that reference it — its
         columns and its members — and cannot be undone.
       </p>
-      <div className="flex justify-end gap-[8px]">
+      <div className="flex justify-end gap-2">
         <Button
           type="button"
           onPress={close}>

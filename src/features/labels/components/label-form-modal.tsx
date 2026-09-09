@@ -7,6 +7,7 @@ import { Dialog, DialogTrigger } from "react-aria-components/Dialog";
 import { Form } from "react-aria-components/Form";
 import { Modal } from "react-aria-components/Modal";
 import { FieldError, Input, Label, TextField } from "react-aria-components/TextField";
+import { dialogPanelClassName } from "@/components/shared/dialog-panel";
 import type { LabelFormState } from "../actions";
 import type { LabelView } from "../server/queries";
 
@@ -79,12 +80,12 @@ function LabelFormDialogContent({
   const clash = state.status === "duplicate_name" ? state.holder : blurCheck;
 
   return (
-    <Dialog className="flex w-full max-w-[420px] flex-col gap-[14px] bg-(--color-bg) p-4 shadow-lg">
+    <Dialog className={dialogPanelClassName}>
       <h2 className="text-h5">{isEdit ? "Edit label" : "New label"}</h2>
       <Form
         onSubmit={handleSubmit}
         validationBehavior="aria"
-        className="flex flex-col gap-[14px]">
+        className="flex flex-col gap-3">
         <TextField
           value={name}
           onChange={setName}
@@ -97,7 +98,7 @@ function LabelFormDialogContent({
           {clash && <FieldError>"{clash.name}" already exists.</FieldError>}
         </TextField>
 
-        <div className="flex justify-end gap-[8px]">
+        <div className="flex justify-end gap-2">
           <Button
             type="button"
             onPress={close}>

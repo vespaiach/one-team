@@ -126,7 +126,7 @@ export function CreateIssueForm({
       action={formAction}
       onSubmit={handleSubmit}
       validationBehavior="aria"
-      className="flex flex-col gap-[14px]">
+      className="flex flex-col gap-3">
       <input
         type="hidden"
         name="projectId"
@@ -140,7 +140,7 @@ export function CreateIssueForm({
         onBlur={() => setTitleTouched(true)}
         isRequired
         isInvalid={titleError !== null}
-        className="flex flex-col gap-[5px]">
+        className="flex flex-col gap-1">
         <Label>Title</Label>
         <Input
           ref={titleRef}
@@ -155,7 +155,7 @@ export function CreateIssueForm({
         onChange={setDescription}
         onBlur={() => setDescriptionTouched(true)}
         isInvalid={descriptionError !== null}
-        className="flex flex-col gap-[5px]">
+        className="flex flex-col gap-1">
         <Label>Description</Label>
         <TextArea className="max-h-[280px] w-full resize-none overflow-y-auto border border-(--color-divider) bg-(--color-surface) px-3 py-2 text-control text-(--color-text)" />
         {descriptionError && <FieldError>{descriptionError}</FieldError>}
@@ -165,7 +165,7 @@ export function CreateIssueForm({
         name="columnId"
         selectedKey={columnId}
         onSelectionChange={(key) => setColumnId(String(key))}
-        className="flex flex-col gap-[5px]">
+        className="flex flex-col gap-1">
         <Label>Column</Label>
         <Button>
           <SelectValue />
@@ -188,7 +188,7 @@ export function CreateIssueForm({
         name="priority"
         selectedKey={priority}
         onSelectionChange={(key) => setPriority(key as typeof priority)}
-        className="flex flex-col gap-[5px]">
+        className="flex flex-col gap-1">
         <Label>Priority</Label>
         <Button>
           <SelectValue />
@@ -225,7 +225,7 @@ export function CreateIssueForm({
         name="assigneeId"
         selectedKey={assigneeId}
         onSelectionChange={(key) => setAssigneeId(String(key))}
-        className="flex flex-col gap-[5px]">
+        className="flex flex-col gap-1">
         <Label>Assignee</Label>
         <Button>
           <SelectValue />
@@ -249,7 +249,7 @@ export function CreateIssueForm({
         </Popover>
       </Select>
 
-      <div className="flex flex-col gap-[5px]">
+      <div className="flex flex-col gap-1">
         <label
           htmlFor="create-issue-due-date"
           className="text-label text-(--color-text-muted)">
@@ -265,7 +265,7 @@ export function CreateIssueForm({
         />
       </div>
 
-      <div className="flex justify-end gap-[8px]">
+      <div className="flex justify-end gap-2">
         <Button
           type="button"
           onPress={handleCancel}>

@@ -12,7 +12,7 @@ function SkeletonField({ field }: { field: string }) {
 
 export function CreateIssueFormSkeleton() {
   return (
-    <div className="flex flex-col gap-[14px] p-4.5">
+    <div className="flex flex-col gap-3 p-4.5">
       {CREATE_ISSUE_FIELDS.map((field) => (
         <SkeletonField
           key={field}

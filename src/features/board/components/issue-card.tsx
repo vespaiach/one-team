@@ -46,12 +46,12 @@ export function IssueCard({ card, projectKey }: { card: BoardCard; projectKey: s
     card.priority !== "none" || card.dueDate !== null || card.commentCount > 0 || card.assignee !== null;
 
   return (
-    <div className="flex flex-col gap-2 border border-(--color-divider) bg-(--color-surface) p-3">
+    <div className="flex flex-col gap-2 border border-(--color-divider) p-3">
       <Link
         href={issuePath(projectKey, card.key)}
         aria-label={`${card.key} ${card.title}`}
         className="flex flex-col gap-1">
-        <span className="text-label text-(--color-text-muted)">{card.key}</span>
+        <span className="text-label font-mono text-(--color-text-muted)">{card.key}</span>
         <span className="text-control text-(--color-text)">{card.title}</span>
       </Link>
       {card.labels.length > 0 ? (
@@ -76,7 +76,7 @@ export function IssueCard({ card, projectKey }: { card: BoardCard; projectKey: s
             </span>
           ) : null}
           {card.dueDate !== null ? (
-            <span className="text-label text-(--color-text-muted)">{card.dueDate}</span>
+            <span className="text-label font-mono text-(--color-text-muted)">{card.dueDate}</span>
           ) : null}
           {card.commentCount > 0 ? (
             <span className="text-label text-(--color-text-muted)">

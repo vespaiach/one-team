@@ -444,7 +444,7 @@ Next.js 16.x App Router (server components and server actions for reads and writ
 
 ### Palette
 
-Monochrome. Two red-orange families and a neutral ramp are the whole hue set the product uses — accent `#ec3013` for interface state (primary actions, links, the focus ring) and a muted second tone, accent-2 `#e15b47`, for advisory state. There is no per-project, per-column or per-label colour: those three identities are told apart by **name alone**, never by a swatch. A project, a board column and a label each carry one field for identity — `name` — and nothing else picks a colour for them (§5).
+Broadsheet: a paper-and-ink palette. Cream paper (`--color-bg`, `#f2ebde`) and near-black ink (`--color-text`, `#2b1c15`) anchor a neutral ramp, with a lighter `--color-page` (`#ffffff`) and a one-step-down `--color-surface` (`#e7dcca`) as the two surface levels. Two accent families carry interface state: clay/terracotta (`--color-accent`, `#c15425`) for primary actions, links and the focus ring, and a muted ochre (`--color-accent-2`, `#ba8e36`) for advisory state. There is no per-project, per-column or per-label colour: those three identities are told apart by **name alone**, never by a swatch. A project, a board column and a label each carry one field for identity — `name` — and nothing else picks a colour for them (§5).
 
 ### Frontend rules
 

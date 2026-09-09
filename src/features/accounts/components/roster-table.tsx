@@ -4,12 +4,16 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "react-aria-components/Button";
 import { Dialog, DialogTrigger } from "react-aria-components/Dialog";
 import { Modal } from "react-aria-components/Modal";
+import { dialogPanelCompactClassName } from "@/components/shared/dialog-panel";
 import type { AccountRow } from "../server/roster";
 
 const HIGHLIGHT_TIMEOUT_MS = 5000;
 const LAST_ADMIN_REASON = "The last active admin can't be deactivated.";
 
 const DATE_FORMAT = new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "UTC" });
+
+const TABLE_HEADER_CLASSES = "px-3 py-2 text-start font-sans text-label text-(--color-text-muted)";
+const TABLE_CELL_CLASSES = "px-3 py-2";
 
 function DeactivateControl({
   row,
@@ -35,7 +39,7 @@ function DeactivateControl({
           isDismissable={false}
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           {({ state }) => (
-            <Dialog className="flex w-full max-w-[420px] flex-col gap-[10px] bg-(--color-bg) p-4 shadow-lg">
+            <Dialog className={dialogPanelCompactClassName}>
               <p>
                 Deactivating {row.displayName} keeps their memberships, assignments, comments and activity.
               </p>
@@ -69,7 +73,7 @@ function ReactivateControl({
         isDismissable={false}
         className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
         {({ state }) => (
-          <Dialog className="flex w-full max-w-[420px] flex-col gap-[10px] bg-(--color-bg) p-4 shadow-lg">
+          <Dialog className={dialogPanelCompactClassName}>
             <p>
               Reactivating {row.displayName} restores sign-in and picker eligibility, with the memberships
               they already had. No new link and no invitation is issued.
@@ -137,19 +141,19 @@ export function RosterTable({
         className="sr-only">
         {announcement}
       </div>
-      <table>
+      <table className="w-full border-collapse text-control">
         <thead>
-          <tr>
-            <th>Avatar</th>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Role</th>
-            <th>Joined</th>
-            <th>Projects</th>
-            <th>Actions</th>
+          <tr className="border-(--color-border) border-b">
+            <th className={TABLE_HEADER_CLASSES}>Avatar</th>
+            <th className={TABLE_HEADER_CLASSES}>Name</th>
+            <th className={TABLE_HEADER_CLASSES}>Email</th>
+            <th className={TABLE_HEADER_CLASSES}>Role</th>
+            <th className={TABLE_HEADER_CLASSES}>Joined</th>
+            <th className={TABLE_HEADER_CLASSES}>Projects</th>
+            <th className={TABLE_HEADER_CLASSES}>Actions</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="divide-y divide-(--color-divider)">
           {rows.map((row) => {
             const isLastActiveAdmin = row.isActive && row.role === "admin" && activeAdminCount <= 1;
             return (
@@ -164,7 +168,8 @@ export function RosterTable({
                 }}
                 tabIndex={-1}
                 data-highlighted={row.id === highlightedAccountId ? "true" : undefined}>
-                <td>
+                <td className={TABLE_CELL_CLASSES}>
+                  {/* biome-ignore lint/performance/noImgElement: avatarUrl is an arbitrary external URL, not an allow-listable domain for next/image */}
                   <img
                     src={row.avatarUrl ?? undefined}
                     alt={row.displayName}
@@ -172,12 +177,16 @@ export function RosterTable({
                     height={32}
                   />
                 </td>
-                <td>{row.displayName}</td>
-                <td>{row.email}</td>
-                <td>{row.role}</td>
-                <td>{DATE_FORMAT.format(row.joinedAt)}</td>
-                <td>{row.projectCount}</td>
-                <td>
+                <td className={TABLE_CELL_CLASSES}>{row.displayName}</td>
+                <td className={TABLE_CELL_CLASSES}>{row.email}</td>
+                <td className={TABLE_CELL_CLASSES}>{row.role}</td>
+                <td className={TABLE_CELL_CLASSES}>
+                  <span className="font-mono">{DATE_FORMAT.format(row.joinedAt)}</span>
+                </td>
+                <td className={TABLE_CELL_CLASSES}>
+                  <span className="font-mono">{row.projectCount}</span>
+                </td>
+                <td className={TABLE_CELL_CLASSES}>
                   {row.isActive ? (
                     <DeactivateControl
                       row={row}

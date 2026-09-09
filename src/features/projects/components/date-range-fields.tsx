@@ -30,11 +30,11 @@ export function DateRangeFields({
   const targetBeforeStart = start !== null && target !== null && target.compare(start) < 0;
 
   return (
-    <div className="flex gap-[14px]">
+    <div className="flex gap-3">
       <DatePicker
         value={start}
         onChange={(value) => onStartDateChange(value ? value.toString() : null)}
-        className="flex flex-col gap-[5px]">
+        className="flex flex-col gap-1">
         <Label>Start date</Label>
         <Group>
           <DateInput>{(segment) => <DateSegment segment={segment} />}</DateInput>
@@ -44,7 +44,7 @@ export function DateRangeFields({
         value={target}
         onChange={(value) => onTargetDateChange(value ? value.toString() : null)}
         isInvalid={targetBeforeStart}
-        className="flex flex-col gap-[5px]">
+        className="flex flex-col gap-1">
         <Label>Target date</Label>
         <Group>
           <DateInput>{(segment) => <DateSegment segment={segment} />}</DateInput>
