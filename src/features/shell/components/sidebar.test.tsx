@@ -121,7 +121,7 @@ describe("Sidebar entries (FR-005, FR-006, FR-011, FR-012, FR-016, FR-031, SC-00
     }
   });
 
-  it("renders the seven items in FR-005's order under an admin, and the four that remain under a member (s10)", () => {
+  it("groups entries into Work, a project list and Admin sections in FR-005's order under an admin, and drops the Admin group for a member (s10)", () => {
     const adminRender = render(
       <Sidebar
         {...baseProps}
@@ -129,16 +129,16 @@ describe("Sidebar entries (FR-005, FR-006, FR-011, FR-012, FR-016, FR-031, SC-00
       />,
     );
     const adminNav = screen.getByRole("navigation");
-    const adminOrder = Array.from(adminNav.children).map((child) => child.textContent);
-    expect(adminOrder).toEqual([
+    const adminChildren = Array.from(adminNav.children);
+    expect(adminChildren.map((child) => child.textContent)).toEqual([
       "One Team",
-      "Home",
+      expect.stringContaining("HomeNotifications"),
       expect.stringContaining("No projects yet."),
-      "Notifications",
-      "Accounts",
-      "Labels",
+      expect.stringContaining("AccountsLabels"),
       expect.stringContaining("Ada Lovelace"),
     ]);
+    expect(screen.getByRole("group", { name: "Work" })).not.toBeNull();
+    expect(screen.getByRole("group", { name: "Admin" })).not.toBeNull();
     adminRender.unmount();
 
     render(
@@ -148,14 +148,15 @@ describe("Sidebar entries (FR-005, FR-006, FR-011, FR-012, FR-016, FR-031, SC-00
       />,
     );
     const memberNav = screen.getByRole("navigation");
-    const memberOrder = Array.from(memberNav.children).map((child) => child.textContent);
-    expect(memberOrder).toEqual([
+    const memberChildren = Array.from(memberNav.children);
+    expect(memberChildren.map((child) => child.textContent)).toEqual([
       "One Team",
-      "Home",
+      expect.stringContaining("HomeNotifications"),
       expect.stringContaining("No projects yet."),
-      "Notifications",
       expect.stringContaining("Ada Lovelace"),
     ]);
+    expect(screen.getByRole("group", { name: "Work" })).not.toBeNull();
+    expect(screen.queryByRole("group", { name: "Admin" })).toBeNull();
   });
 
   it("has no team switcher and no control that changes which team is in view (s10)", () => {
@@ -232,8 +233,8 @@ describe("Sidebar unread notification count (FR-033, FR-034, FR-035, SC-012, SC-
     );
 
     const entry = screen.getByRole("link", { name: "Notifications, 3 unread" });
-    const badge = entry.querySelector('[aria-hidden="true"]');
-    expect(badge?.textContent).toBe("3");
+    const badges = entry.querySelectorAll('[aria-hidden="true"]');
+    expect(badges[badges.length - 1]?.textContent).toBe("3");
   });
 
   it("carries a count that exceeds the 200-row list cap", () => {

@@ -101,6 +101,37 @@ describe("listAssignedIssues applies no filter but the assignee (FR-010, FR-012,
     expect(rows.map((row) => row.key).sort()).toEqual(["WEB-1", "WEB-2", "WEB-3"]);
   });
 
+  it("carries the issue's priority and due date", async () => {
+    const viewer = await insertUser();
+    const proj = await insertProject({ key: "WEB" });
+    const open = await insertColumn(proj.id, "open", "Backlog");
+
+    await insertIssue(proj.id, open.id, viewer.id, {
+      number: 1,
+      assigneeId: viewer.id,
+      priority: "urgent",
+      dueDate: "2026-09-09",
+    });
+
+    const [row] = await listAssignedIssues(viewer.id);
+
+    expect(row?.priority).toBe("urgent");
+    expect(row?.dueDate).toBe("2026-09-09");
+  });
+
+  it("carries a null due date and the 'none' default priority for an issue with neither set", async () => {
+    const viewer = await insertUser();
+    const proj = await insertProject({ key: "WEB" });
+    const open = await insertColumn(proj.id, "open", "Backlog");
+
+    await insertIssue(proj.id, open.id, viewer.id, { number: 1, assigneeId: viewer.id });
+
+    const [row] = await listAssignedIssues(viewer.id);
+
+    expect(row?.priority).toBe("none");
+    expect(row?.dueDate).toBeNull();
+  });
+
   it("lists an issue whose project is archived", async () => {
     const viewer = await insertUser();
     const archived = await insertProject({ key: "OLD", status: "archived" });

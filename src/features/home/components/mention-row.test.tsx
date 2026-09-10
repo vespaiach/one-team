@@ -17,6 +17,7 @@ function item(overrides: Partial<NotificationListItem> = {}): NotificationListIt
     id: "n1",
     type: "mention",
     actorName: "Alan Turing",
+    actorAvatarUrl: null,
     targetLabel: "WEB-142 · Fix the header",
     href: "/projects/WEB/issues/142/details#comment-c1",
     isUnread: true,
@@ -33,6 +34,16 @@ describe("MentionRow renders the Notifications screen's own row shape (FR-024)",
     expect(screen.getByText("mentioned you")).not.toBeNull();
     expect(screen.getByText("WEB-142 · Fix the header")).not.toBeNull();
     expect(screen.getByText("2 hours ago")).not.toBeNull();
+  });
+
+  it("shows the actor's avatar as decorative — the visible name carries the meaning", () => {
+    const { container } = render(
+      <MentionRow item={item({ actorAvatarUrl: "https://example.com/at.png" })} />,
+    );
+
+    const avatar = container.querySelector("img");
+    expect(avatar?.getAttribute("aria-hidden")).toBe("true");
+    expect(screen.getByText("Alan Turing")).not.toBeNull();
   });
 });
 

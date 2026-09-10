@@ -4,6 +4,7 @@ import { cache } from "react";
 import { db } from "@/db";
 import { issue, project } from "@/db/schema";
 import { formatIssueKey } from "@/features/issues/issue-key";
+import type { IssuePriority } from "@/features/issues/server/input";
 
 export type AssignedIssueRow = {
   id: string;
@@ -12,6 +13,8 @@ export type AssignedIssueRow = {
   projectName: string;
   href: string;
   dueThisWeek: boolean;
+  priority: IssuePriority;
+  dueDate: string | null;
 };
 
 async function listAssignedIssuesImpl(userId: string): Promise<AssignedIssueRow[]> {
@@ -22,6 +25,8 @@ async function listAssignedIssuesImpl(userId: string): Promise<AssignedIssueRow[
       title: issue.title,
       projectKey: project.key,
       projectName: project.name,
+      priority: issue.priority,
+      dueDate: issue.dueDate,
       dueThisWeek: sql<boolean>`coalesce(${issue.dueDate} between current_date and current_date + 6, false)`,
     })
     .from(issue)
@@ -36,6 +41,8 @@ async function listAssignedIssuesImpl(userId: string): Promise<AssignedIssueRow[
     projectName: row.projectName,
     href: `/projects/${row.projectKey}/issues/${row.number}/details`,
     dueThisWeek: row.dueThisWeek,
+    priority: row.priority as IssuePriority,
+    dueDate: row.dueDate,
   }));
 }
 

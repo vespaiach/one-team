@@ -20,6 +20,7 @@ function item(index: number): NotificationListItem {
     id: `n${index}`,
     type: "mention",
     actorName: "Alan Turing",
+    actorAvatarUrl: null,
     targetLabel: `WEB-${index} · Fix the header`,
     href: `/projects/WEB/issues/${index}/details#comment-c${index}`,
     isUnread: index % 2 === 0,

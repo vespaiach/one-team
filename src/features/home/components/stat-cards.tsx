@@ -12,13 +12,15 @@ export async function StatCards({ userId }: { userId: string }) {
   ];
 
   return (
-    <ul className="flex gap-3 px-4.5">
+    <ul className="flex gap-8 border-b-2 border-(--color-border) px-4.5 pb-4.5">
       {cards.map((card) => (
         <li
           key={card.label}
-          className="flex flex-1 flex-col gap-1 border border-(--color-divider) px-4 py-3">
-          <span className="text-h5 text-(--color-text)">{card.count}</span>
-          <span className="text-label text-(--color-text-muted)">{card.label}</span>
+          className="flex flex-col gap-1">
+          <span className="text-h3 text-(--color-accent)">{card.count}</span>
+          <span className="text-label text-(--color-text-muted) uppercase tracking-[0.08em]">
+            {card.label}
+          </span>
         </li>
       ))}
     </ul>

@@ -38,6 +38,8 @@ const assignedIssue: AssignedIssue = {
   projectName: "Website Redesign",
   href: "/projects/WEB/issues/142/details",
   dueThisWeek: true,
+  priority: "none",
+  dueDate: null,
 };
 
 const projectRow: ProjectProgressRowData = {
@@ -47,12 +49,14 @@ const projectRow: ProjectProgressRowData = {
   href: "/projects/WEB",
   done: 3,
   counted: 8,
+  targetDate: null,
 };
 
 const mentionItem: NotificationListItem = {
   id: "n1",
   type: "mention",
   actorName: "Alan Turing",
+  actorAvatarUrl: null,
   targetLabel: "WEB-142 · Fix the header",
   href: "/projects/WEB/issues/142/details#comment-c1",
   isUnread: true,
@@ -205,11 +209,13 @@ describe("no state on Home is conveyed by colour alone (FR-023, OT-UX-018, E-2)"
     expect(screen.getByText("38%")).not.toBeNull();
   });
 
-  it("renders no image or icon standing in for a word in any row", () => {
+  it("keeps every icon and avatar decorative — visible text alone carries each row's meaning", () => {
     for (const [, mount] of navigatingRows) {
       const { container } = render(mount());
 
-      expect(container.querySelectorAll("img, svg")).toHaveLength(0);
+      for (const el of Array.from(container.querySelectorAll("img, svg"))) {
+        expect(el.getAttribute("aria-hidden")).toBe("true");
+      }
       cleanup();
     }
   });

@@ -164,4 +164,27 @@ describe("CreateProjectForm (FR-024, FR-027, FR-031, FR-032, FR-033, FR-034)", (
     expect(action).not.toHaveBeenCalled();
     expect(pushMock).toHaveBeenCalledWith("/home");
   });
+
+  it("Cancel calls the given onCancel instead of navigating, when the form is embedded in a modal", () => {
+    Object.defineProperty(document, "referrer", {
+      value: `${window.location.origin}/home`,
+      configurable: true,
+    });
+    const action = vi.fn();
+    const onCancel = vi.fn();
+    render(
+      <CreateProjectForm
+        createProjectAction={action}
+        checkKeyAvailability={vi.fn().mockResolvedValue({ holder: null })}
+        candidates={candidates}
+        onCancel={onCancel}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(backMock).not.toHaveBeenCalled();
+    expect(pushMock).not.toHaveBeenCalled();
+  });
 });

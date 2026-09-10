@@ -21,6 +21,7 @@ function row(index: number): ProjectProgressRow {
     href: `/projects/P${index}`,
     done: index,
     counted: 10,
+    targetDate: null,
   };
 }
 

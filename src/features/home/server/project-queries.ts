@@ -10,6 +10,7 @@ export type ProjectProgressRow = {
   href: string;
   done: number;
   counted: number;
+  targetDate: string | null;
 };
 
 export async function listMemberProjectsWithProgress(userId: string): Promise<ProjectProgressRow[]> {
@@ -17,6 +18,7 @@ export async function listMemberProjectsWithProgress(userId: string): Promise<Pr
     .select({
       key: project.key,
       name: project.name,
+      targetDate: project.targetDate,
       done: sql<number>`count(*) filter (where ${boardColumn.kind} = 'done')`,
       counted: sql<number>`count(*) filter (where ${boardColumn.kind} <> 'canceled')`,
     })
@@ -35,5 +37,6 @@ export async function listMemberProjectsWithProgress(userId: string): Promise<Pr
     href: `/projects/${row.key}`,
     done: Number(row.done),
     counted: Number(row.counted),
+    targetDate: row.targetDate,
   }));
 }

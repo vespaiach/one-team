@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Avatar } from "@/components/ui/avatar";
 import type { NotificationListItem } from "@/features/notifications/server/notification-queries";
 import { formatRelativeTime } from "@/lib/relative-time";
 
@@ -18,6 +19,12 @@ export function MentionRow({ item }: { item: NotificationListItem }) {
       ) : (
         <span className="h-2 w-2 flex-none self-center" />
       )}
+      <Avatar
+        name={item.actorName}
+        avatarUrl={item.actorAvatarUrl}
+        size="sm"
+        decorative
+      />
       <span className="font-medium">{item.actorName}</span>
       <span className="text-(--color-text-muted)">mentioned you</span>
       <span className="min-w-0 truncate">{item.targetLabel}</span>

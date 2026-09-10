@@ -11,6 +11,7 @@ export type NotificationListItem = {
   id: string;
   type: NotificationType;
   actorName: string;
+  actorAvatarUrl: string | null;
   targetLabel: string;
   href: string;
   isUnread: boolean;
@@ -26,6 +27,7 @@ type NotificationRowShape = {
   type: string;
   actorFirstName: string;
   actorLastName: string;
+  actorAvatarUrl: string | null;
   issueNumber: number | null;
   issueTitle: string | null;
   projectKey: string;
@@ -61,6 +63,7 @@ export async function listNotifications(userId: string): Promise<NotificationLis
       type: notification.type,
       actorFirstName: actor.firstName,
       actorLastName: actor.lastName,
+      actorAvatarUrl: actor.avatarUrl,
       issueNumber: issue.number,
       issueTitle: issue.title,
       projectKey: sql<string>`${project.key}`,
@@ -81,6 +84,7 @@ export async function listNotifications(userId: string): Promise<NotificationLis
     id: row.id,
     type: row.type as NotificationType,
     actorName: displayName({ firstName: row.actorFirstName, lastName: row.actorLastName }),
+    actorAvatarUrl: row.actorAvatarUrl,
     targetLabel: composeTargetLabel(row),
     href: composeHref(row),
     isUnread: row.readAt === null,
@@ -104,6 +108,7 @@ export async function listRecentMentions(userId: string, limit: number): Promise
       type: notification.type,
       actorFirstName: actor.firstName,
       actorLastName: actor.lastName,
+      actorAvatarUrl: actor.avatarUrl,
       issueNumber: issue.number,
       issueTitle: issue.title,
       projectKey: sql<string>`${project.key}`,
@@ -124,6 +129,7 @@ export async function listRecentMentions(userId: string, limit: number): Promise
     id: row.id,
     type: row.type as NotificationType,
     actorName: displayName({ firstName: row.actorFirstName, lastName: row.actorLastName }),
+    actorAvatarUrl: row.actorAvatarUrl,
     targetLabel: composeTargetLabel(row),
     href: composeHref(row),
     isUnread: row.readAt === null,

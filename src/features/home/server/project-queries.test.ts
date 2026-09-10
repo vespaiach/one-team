@@ -106,8 +106,19 @@ describe("listMemberProjectsWithProgress (FR-014…FR-018, FR-036)", () => {
         href: `/projects/${target.key}`,
         done: 3,
         counted: 8,
+        targetDate: null,
       },
     ]);
+  });
+
+  it("carries the project's target date, or null when it has none", async () => {
+    const viewer = await insertUser();
+    const target = await insertProject({ name: "Alpha", targetDate: "2026-12-18" });
+    await addMember(target.id, viewer.id);
+
+    const [row] = await listMemberProjectsWithProgress(viewer.id);
+
+    expect(row?.targetDate).toBe("2026-12-18");
   });
 
   it("counts issues across every done-kind column and excludes every canceled-kind column", async () => {

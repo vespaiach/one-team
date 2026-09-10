@@ -19,6 +19,17 @@ vi.mock("@/features/notifications/server/notification-queries", () => ({
   listRecentMentions: listRecentMentionsMock,
 }));
 
+const { listProjectsForSidebarMock, listAddableUsersMock } = vi.hoisted(() => ({
+  listProjectsForSidebarMock: vi.fn(),
+  listAddableUsersMock: vi.fn(),
+}));
+vi.mock("@/features/projects/server/queries", () => ({
+  listProjectsForSidebar: listProjectsForSidebarMock,
+  listAddableUsers: listAddableUsersMock,
+}));
+listProjectsForSidebarMock.mockResolvedValue([]);
+listAddableUsersMock.mockResolvedValue([]);
+
 const actor = {
   id: "u1",
   role: "member",
@@ -27,6 +38,8 @@ const actor = {
   avatarUrl: null,
   mustChangePassword: false,
 };
+
+const admin = { ...actor, id: "u3", role: "admin" };
 
 const otherActor = { ...actor, id: "u2", firstName: "Grace", lastName: "Hopper" };
 
@@ -107,7 +120,7 @@ describe("/home (FR-003, s3)", () => {
     expect(requireActorMock).toHaveBeenCalledTimes(1);
   });
 
-  it("renders no header — no title block, no per-screen control, no New issue control", async () => {
+  it("renders no header and no title block — just the greeting beside its create controls", async () => {
     requireActorMock.mockResolvedValue(actor);
     const { default: HomePage } = await import("./page");
 
@@ -116,7 +129,6 @@ describe("/home (FR-003, s3)", () => {
     expect(typeNames(result)).not.toContain("header");
     expect(typeNames(result)).not.toContain("h1");
     expect(typeNames(result)).not.toContain("ScreenHeader");
-    expect(text(result)).not.toContain("New issue");
   });
 
   it("redirects to /signin rather than rendering, when there is no actor", async () => {
@@ -207,6 +219,8 @@ describe("/home US1 wiring (FR-001, FR-007, FR-038, SC-002)", () => {
       projectName: "Web",
       href: "/projects/WEB/issues/1/details",
       dueThisWeek: true,
+      priority: "none",
+      dueDate: null,
     },
     {
       id: "i2",
@@ -215,6 +229,8 @@ describe("/home US1 wiring (FR-001, FR-007, FR-038, SC-002)", () => {
       projectName: "Web",
       href: "/projects/WEB/issues/2/details",
       dueThisWeek: false,
+      priority: "none",
+      dueDate: null,
     },
     {
       id: "i3",
@@ -223,6 +239,8 @@ describe("/home US1 wiring (FR-001, FR-007, FR-038, SC-002)", () => {
       projectName: "Web",
       href: "/projects/WEB/issues/3/details",
       dueThisWeek: true,
+      priority: "none",
+      dueDate: null,
     },
   ];
 
@@ -325,5 +343,42 @@ describe("/home US4 wiring (FR-001, FR-038)", () => {
 
     expect(names.indexOf("ActivitySection")).toBeGreaterThan(names.indexOf("MentionsSection"));
     expect(names.at(-1)).toBe("ActivitySection");
+  });
+});
+
+describe("/home create controls (FR-001)", () => {
+  it("offers the command palette trigger to every viewer", async () => {
+    requireActorMock.mockResolvedValue(actor);
+    const { default: HomePage } = await import("./page");
+
+    const result = await HomePage();
+
+    expect(elements(result).some((element) => mountedName(element) === "CommandPaletteTrigger")).toBe(true);
+  });
+
+  it("offers a New issue project picker to every viewer, listing the projects the sidebar already shows", async () => {
+    requireActorMock.mockResolvedValue(actor);
+    listProjectsForSidebarMock.mockResolvedValueOnce([{ key: "APOLLO", name: "Apollo", status: "active" }]);
+    const { default: HomePage } = await import("./page");
+
+    const result = await HomePage();
+    const picker = elements(result).find((element) => mountedName(element) === "NewIssueProjectPicker");
+
+    expect(picker).toBeDefined();
+    expect(picker?.props).toMatchObject({ projects: [{ key: "APOLLO", name: "Apollo", status: "active" }] });
+  });
+
+  it("offers a New project control to an admin, and none to a member", async () => {
+    requireActorMock.mockResolvedValue(admin);
+    const { default: HomePage } = await import("./page");
+
+    const adminResult = await HomePage();
+    expect(elements(adminResult).some((element) => mountedName(element) === "CreateProjectModal")).toBe(true);
+
+    requireActorMock.mockResolvedValue(actor);
+    const memberResult = await HomePage();
+    expect(elements(memberResult).some((element) => mountedName(element) === "CreateProjectModal")).toBe(
+      false,
+    );
   });
 });

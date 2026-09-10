@@ -6,6 +6,17 @@ export type ProjectListRegionEntry = {
   status: "active" | "archived";
 };
 
+function StatusDot({ status }: { status: ProjectListRegionEntry["status"] }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`me-2 inline-block h-1.5 w-1.5 rounded-full align-middle ${
+        status === "active" ? "bg-(--color-accent)" : "border border-(--color-text-muted) bg-transparent"
+      }`}
+    />
+  );
+}
+
 export function ProjectListRegion({
   isAdmin,
   entries,
@@ -21,8 +32,15 @@ export function ProjectListRegion({
           <Link
             href="/projects/new"
             aria-label="New project"
-            className="text-control text-(--color-text-muted)">
-            +
+            className="flex items-center justify-center text-control text-(--color-text-muted) hover:text-(--color-text)">
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 256 256"
+              fill="currentColor"
+              aria-hidden="true">
+              <path d="M176 120h-40V80a8 8 0 0 0-16 0v40H80a8 8 0 0 0 0 16h40v40a8 8 0 0 0 16 0v-40h40a8 8 0 0 0 0-16Z" />
+            </svg>
           </Link>
         ) : null}
       </div>
@@ -34,9 +52,10 @@ export function ProjectListRegion({
             <li key={entry.key}>
               <Link
                 href={`/projects/${entry.key}`}
-                className={`block truncate text-control ${
+                className={`block truncate py-1 text-control ${
                   entry.status === "archived" ? "text-(--color-text-muted)" : "text-(--color-text)"
                 }`}>
+                <StatusDot status={entry.status} />
                 {entry.name}
               </Link>
             </li>
