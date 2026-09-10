@@ -1,51 +1,50 @@
 @import "tailwindcss";
 
 @theme inline {
-  /* --- roles ------------------------------------------------------ */
-  --color-bg: #f2ebde;
+  /* --- roles ------------------------------------------------------
+     Broadsheet: newsprint set for the web. Ground and ink, plus two
+     harvest accents — clay (interactive) and terracotta (the
+     exception: urgent, at risk, destructive). */
+  --color-bg: #f8f2ed;
   --color-page: #ffffff;
-  --color-surface: #e7dcca;
+  --color-surface: #efe3d9;
   --color-text: #2b1c15;
-  --color-accent: #c15425;
-  --color-accent-2: #ba8e36;
-  --color-divider: color-mix(in srgb, var(--color-text) 40%, transparent);
+  --color-accent: #8d4936;
+  --color-accent-2: #dd7450;
+  --color-divider: color-mix(in srgb, var(--color-text) 16%, transparent);
 
-  /* --- neutral · nine steps ------------------------------------ */
-  --color-neutral-100: #f7f5f3;
-  --color-neutral-200: #ece8e4;
-  --color-neutral-300: #d9d2c9;
-  --color-neutral-400: #bcae9f;
-  --color-neutral-500: #a18e78;
-  --color-neutral-600: #816f5a;
-  --color-neutral-700: #635545;
-  --color-neutral-800: #483e32;
-  --color-neutral-900: #302921;
+  /* --- neutral · nine steps, the palette's cool #c0cad2 at step 400 */
+  --color-neutral-100: #f4f6f8;
+  --color-neutral-200: #e7ebef;
+  --color-neutral-300: #d5dbe2;
+  --color-neutral-400: #c0cad2;
+  --color-neutral-500: #a3aeb8;
+  --color-neutral-600: #86929c;
+  --color-neutral-700: #6a757f;
+  --color-neutral-800: #4c555d;
+  --color-neutral-900: #333a40;
 
-  /* --- accent · nine steps --------------------------------------
-     §7 no longer names a per-item palette (grey/blue/amber/green/
-     red/violet): board columns and labels are told apart by name,
-     not colour. Clay/terracotta and a muted ochre below are the
-     whole hue set the product uses. */
-  --color-accent-100: #fbefea;
-  --color-accent-200: #f4d5c7;
-  --color-accent-300: #ebb198;
-  --color-accent-400: #e0845c;
-  --color-accent-500: #c95726;
-  --color-accent-600: #a3471f;
-  --color-accent-700: #783417;
-  --color-accent-800: #562510;
-  --color-accent-900: #3c1a0b;
+  /* --- accent · nine steps, clay ---------------------------------- */
+  --color-accent-100: #faf0ec;
+  --color-accent-200: #f2ded4;
+  --color-accent-300: #d9b09d;
+  --color-accent-400: #ce9377;
+  --color-accent-500: #b06a4e;
+  --color-accent-600: #8d4936;
+  --color-accent-700: #73382a;
+  --color-accent-800: #56281d;
+  --color-accent-900: #3a1a13;
 
-  /* --- accent-2 · nine steps, a muted ochre second hue ---------- */
-  --color-accent-2-100: #f9f5eb;
-  --color-accent-2-200: #f0e4cc;
-  --color-accent-2-300: #e3cda0;
-  --color-accent-2-400: #d3b069;
-  --color-accent-2-500: #ba8e36;
-  --color-accent-2-600: #8e6d29;
-  --color-accent-2-700: #6b511f;
-  --color-accent-2-800: #4b3916;
-  --color-accent-2-900: #33270f;
+  /* --- accent-2 · nine steps, terracotta --------------------------- */
+  --color-accent-2-100: #fef2ec;
+  --color-accent-2-200: #fbdfd1;
+  --color-accent-2-300: #f7c2a9;
+  --color-accent-2-400: #ec9b76;
+  --color-accent-2-500: #dd7450;
+  --color-accent-2-600: #c1573a;
+  --color-accent-2-700: #9d412a;
+  --color-accent-2-800: #75301f;
+  --color-accent-2-900: #4c1f14;
 
   /* --- semantic · the only names a component uses ---------------
      Every one points at a role or a ramp step, never a hex. */
@@ -55,74 +54,95 @@
   --color-border-control: var(--color-neutral-600);
   --color-border-strong: var(--color-neutral-900);
 
-  --color-text-muted: var(--color-neutral-700);
-  --color-text-placeholder: var(--color-neutral-700);
+  /* Secondary text takes an ink tint (5.8:1 on paper at 70%), never
+     the neutral ramp — that ramp is a cool hue reserved for chrome
+     fills and rules, not prose. */
+  --color-text-muted: color-mix(in srgb, var(--color-text) 70%, transparent);
+  --color-text-placeholder: color-mix(in srgb, var(--color-text) 65%, transparent);
   --color-text-disabled: var(--color-neutral-400);
 
-  --color-accent-fill: var(--color-accent-900);
-  --color-accent-hover: var(--color-accent-800);
-  --color-accent-pressed: var(--color-accent-700);
-  --color-accent-text: var(--color-accent-800);
+  --color-accent-fill: var(--color-accent-600);
+  --color-accent-hover: var(--color-accent-700);
+  --color-accent-pressed: var(--color-accent-800);
+  --color-accent-text: var(--color-accent-700);
   --color-on-accent: #ffffff;
 
-  /* Monochrome status: danger keeps the primary accent family,
-     advisory takes the muted accent-2 family so the two read as
-     distinct tones, and success carries no hue at all — the copy
-     already says what happened, so ink alone is enough. */
-  --color-danger: var(--color-accent-700);
-  --color-danger-fill: var(--color-accent-100);
-  --color-danger-text: var(--color-accent-700);
+  /* Two inks carry meaning: clay for interactive, terracotta for the
+     exception. Danger and advisory both read as terracotta, told
+     apart by ramp depth rather than a third hue; success stays
+     achromatic since the copy already says what happened. */
+  --color-danger: var(--color-accent-2-700);
+  --color-danger-fill: var(--color-accent-2-100);
+  --color-danger-text: var(--color-accent-2-800);
 
   --color-success: var(--color-neutral-900);
   --color-success-fill: var(--color-neutral-100);
   --color-success-text: var(--color-neutral-900);
 
-  --color-advisory: var(--color-accent-2-600);
+  --color-advisory: var(--color-accent-2-500);
   --color-advisory-fill: var(--color-accent-2-100);
-  --color-advisory-text: var(--color-accent-2-800);
+  --color-advisory-text: var(--color-accent-2-700);
+
+  /* Chrome tint — a whisper of ink for rows, sticky heads and hovers
+     in dense app chrome. Distinct from --color-surface, which is a
+     filled panel meant to sit on the page (cards, popovers). */
+  --color-chrome-tint: color-mix(in srgb, var(--color-text) 4%, transparent);
+  --color-chrome-tint-strong: color-mix(in srgb, var(--color-text) 8%, transparent);
 
   /* --- type · a serif for headings and prose, Archivo for chrome */
   --font-heading: var(--font-source-serif), ui-serif, Georgia, serif;
   --font-body: var(--font-source-serif), ui-serif, Georgia, serif;
   --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-mono-ui), ui-monospace, SFMono-Regular, monospace;
-  --font-weight-heading: 700;
+  --font-weight-heading: 600;
 
-  --text-h1: 44px;
-  --text-h1--line-height: 1.15;
-  --text-h1--letter-spacing: -0.01em;
-  --text-h2: 34px;
-  --text-h2--line-height: 1.18;
-  --text-h2--letter-spacing: -0.005em;
-  --text-h3: 26px;
-  --text-h3--line-height: 1.2;
-  --text-h4: 21px;
-  --text-h4--line-height: 1.25;
-  --text-h5: 17px;
-  --text-h5--line-height: 1.35;
-  --text-h6: 14px;
-  --text-h6--line-height: 1.3;
-  --text-h6--letter-spacing: 0.06em;
-  --text-body: 16px;
-  --text-body--line-height: 1.6;
+  --text-h1: 42px;
+  --text-h1--line-height: 1.12;
+  --text-h1--letter-spacing: -0.015em;
+  --text-h2: 32px;
+  --text-h2--line-height: 1.12;
+  --text-h2--letter-spacing: -0.015em;
+  --text-h3: 25px;
+  --text-h3--line-height: 1.12;
+  --text-h3--letter-spacing: -0.015em;
+  --text-h4: 20px;
+  --text-h4--line-height: 1.12;
+  --text-h4--letter-spacing: -0.015em;
+  --text-h5: 16px;
+  --text-h5--line-height: 1.12;
+  --text-h5--letter-spacing: -0.015em;
+  --text-h6: 13px;
+  --text-h6--line-height: 1.12;
+  --text-h6--letter-spacing: 0.08em;
+  --text-body: 15px;
+  --text-body--line-height: 1.55;
   --text-control: 14px;
   --text-label: 12px;
   --text-caption: 11px;
 
   /* --- space and geometry ----------------------------------------
-     Unit 5px. Field and card sizes are component geometry, not
-     part of the palette swap, and stay put. */
+     Unit 5px, so the default Tailwind spacing scale already is the
+     system's --space-1..8. Field and card sizes are component
+     geometry, not part of the palette swap, and stay put; the rail,
+     row and bar sizes are the same kind of fixed geometry for the
+     app-chrome layer. */
   --spacing: 5px;
-  --radius-sm: 3px;
+  --radius-sm: 2px;
+  --radius-md: 2px;
+  --radius-lg: 4px;
   --radius-full: 9999px;
   --size-field: 44px;
   --size-card: 420px;
+  --size-rail: 232px;
+  --size-row: 32px;
+  --size-row-lg: 36px;
+  --size-bar: 44px;
 
-  /* --- elevation --------------------------------------------------
-     Net new: nothing in the product used a shadow before this. */
-  --shadow-sm: 0 1px 2px color-mix(in srgb, var(--color-neutral-900) 14%, transparent);
-  --shadow-md: 0 3px 10px color-mix(in srgb, var(--color-neutral-900) 16%, transparent);
-  --shadow-lg: 0 12px 32px color-mix(in srgb, var(--color-neutral-900) 22%, transparent);
+  /* --- elevation ---------------------------------------------------
+     Soft ink-tinted shadows, already tuned to the paper ground. */
+  --shadow-sm: 0 1px 2px color-mix(in srgb, var(--color-text) 14%, transparent);
+  --shadow-md: 0 3px 10px color-mix(in srgb, var(--color-text) 16%, transparent);
+  --shadow-lg: 0 12px 32px color-mix(in srgb, var(--color-text) 22%, transparent);
 }
 
 @layer base {
@@ -150,8 +170,8 @@
   h6 {
     font-family: var(--font-heading);
     font-weight: var(--font-weight-heading);
-    line-height: 1.15;
-    letter-spacing: -0.01em;
+    line-height: 1.12;
+    letter-spacing: -0.015em;
   }
   h1 {
     font-size: var(--text-h1);
@@ -170,7 +190,7 @@
   }
   h6 {
     font-size: var(--text-h6);
-    letter-spacing: 0.06em;
+    letter-spacing: var(--text-h6--letter-spacing);
     text-transform: uppercase;
   }
 

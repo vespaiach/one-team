@@ -1,5 +1,5 @@
 import { listInstallationActivity } from "../server/activity-queries";
-import { ActivityRow } from "./activity-row";
+import { ActivityFeedItem } from "./activity-feed-item";
 
 const HEADING_ID = "home-activity-heading";
 
@@ -9,22 +9,27 @@ export async function ActivitySection() {
   return (
     <section
       aria-labelledby={HEADING_ID}
-      className="flex flex-col">
-      <h2
+      className="grid gap-1 border-t border-(--color-divider) p-3">
+      <div
         id={HEADING_ID}
-        className="px-4.5 py-2 text-label text-(--color-text-muted)">
-        Recent activity
-      </h2>
+        className="mb-1 flex h-[22px] items-center text-[10px] font-medium text-(--color-text-muted) uppercase tracking-[0.11em]">
+        Team activity
+      </div>
       {rows.length === 0 ? (
-        <p className="px-4.5 py-2 text-label text-(--color-text-muted)">Nothing has happened yet.</p>
+        <p className="text-[12px] text-(--color-text-muted)">Nothing has happened yet.</p>
       ) : (
-        <ul className="flex flex-col divide-y divide-(--color-divider)">
+        <div className="relative grid pl-[26px]">
+          <span
+            aria-hidden="true"
+            className="absolute top-2 bottom-2 left-[10px] w-px bg-(--color-divider)"
+          />
           {rows.map((row) => (
-            <li key={row.id}>
-              <ActivityRow row={row} />
-            </li>
+            <ActivityFeedItem
+              key={row.id}
+              row={row}
+            />
           ))}
-        </ul>
+        </div>
       )}
     </section>
   );

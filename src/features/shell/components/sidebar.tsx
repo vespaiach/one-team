@@ -1,14 +1,18 @@
+"use client";
+
 import Link from "next/link";
-import Logo from "@/app/components/common/logo";
+import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
+import type { RailAdminCounts, RailWorkCounts } from "../rail-types";
 import type { ProjectListRegionEntry } from "./project-list-region";
 import { ProjectListRegion } from "./project-list-region";
 import { UserChip } from "./user-chip";
 
-const NAV_LINK_CLASSES =
-  "flex items-center gap-2.5 px-2 py-1.5 text-control text-(--color-text) hover:bg-(--color-surface)";
 const GROUP_LABEL_CLASSES =
-  "px-2 pt-1 pb-0.5 text-caption tracking-[0.08em] text-(--color-text-muted) uppercase";
-const GROUP_CLASSES = "flex flex-col gap-0.5 px-2.5 py-2";
+  "flex h-[22px] items-center gap-1.5 px-[7px] text-[10px] font-medium text-(--color-text-muted) uppercase tracking-[0.11em]";
+const RAIL_ITEM_CLASSES =
+  "flex h-(--size-row) items-center gap-2 rounded-sm px-[7px] text-[13px] whitespace-nowrap no-underline hover:bg-(--color-chrome-tint-strong)";
+const RAIL_ITEM_CURRENT_CLASSES = "bg-(--color-accent-100) font-medium text-(--color-accent-800)";
 
 function HomeIcon() {
   return (
@@ -31,6 +35,74 @@ function HomeIcon() {
         d="M9.6 20.4v-5.3h4.8v5.3"
         stroke="currentColor"
         strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function AllWorkIcon() {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      className="flex-none">
+      <rect
+        x="3.4"
+        y="3.6"
+        width="6.2"
+        height="12.4"
+        rx="1.2"
+        fill="currentColor"
+        fillOpacity="0.2"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <rect
+        x="14.4"
+        y="3.6"
+        width="6.2"
+        height="16.8"
+        rx="1.2"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+    </svg>
+  );
+}
+
+function AssignedToMeIcon() {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      className="flex-none">
+      <circle
+        cx="9.6"
+        cy="8.2"
+        r="3.4"
+        fill="currentColor"
+        fillOpacity="0.2"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <path
+        d="M3.4 19.6c0-3.2 2.8-5.4 6.2-5.4 1 0 2 .2 2.8.6"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+      <path
+        d="m14.6 17.4 2.3 2.3 4.1-4.5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
         strokeLinejoin="round"
       />
     </svg>
@@ -131,92 +203,150 @@ function LabelsIcon() {
   );
 }
 
+function RailLink({
+  href,
+  current,
+  icon,
+  label,
+  count,
+}: {
+  href: string;
+  current: boolean;
+  icon: ReactNode;
+  label: string;
+  count?: number;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-current={current ? "page" : undefined}
+      className={`${RAIL_ITEM_CLASSES} ${current ? RAIL_ITEM_CURRENT_CLASSES : ""}`}>
+      {icon}
+      <span className="min-w-0 flex-1 truncate">{label}</span>
+      {count === undefined ? null : (
+        <span className="font-mono text-[10.5px] text-(--color-text-muted)">{count}</span>
+      )}
+    </Link>
+  );
+}
+
 export function Sidebar({
   displayName,
   avatarUrl,
   isAdmin,
   projects = [],
-  unreadNotificationCount = 0,
+  activeMemberCount,
+  workCounts,
+  adminCounts,
 }: {
   displayName: string;
   avatarUrl: string | null;
   isAdmin: boolean;
   projects?: ProjectListRegionEntry[];
-  unreadNotificationCount?: number;
+  activeMemberCount: number;
+  workCounts: RailWorkCounts;
+  adminCounts: RailAdminCounts | null;
 }) {
+  const pathname = usePathname();
+  const memberLabel = activeMemberCount === 1 ? "1 member" : `${activeMemberCount} members`;
+
   return (
     <nav
       aria-label="Primary navigation"
-      className="sticky start-0 flex w-[262px] shrink-0 flex-col self-stretch border-e-2 border-(--color-border) bg-(--color-bg) py-4">
-      <div className="border-b-2 border-(--color-border) px-4.5 pb-4">
-        <Logo />
+      className="flex h-full w-(--size-rail) shrink-0 flex-col overflow-hidden border-e border-(--color-divider) bg-(--color-chrome-tint)">
+      <div className="shrink-0 border-b border-(--color-divider) p-2">
+        <div className="flex h-[34px] items-center gap-2 px-1.5">
+          <span className="grid h-[22px] w-[22px] flex-none place-items-center rounded-sm bg-(--color-accent) font-mono text-[11px] text-(--color-on-accent)">
+            O
+          </span>
+          <span className="grid min-w-0">
+            <b className="truncate text-[13px] font-semibold">One Team</b>
+            <small className="text-[10.5px] text-(--color-text-muted)">{memberLabel}</small>
+          </span>
+        </div>
       </div>
-      {/* biome-ignore lint/a11y/useSemanticElements: fieldset carries form semantics that don't apply to a nav grouping */}
-      <div
-        role="group"
-        aria-labelledby="sidebar-work-label"
-        className={GROUP_CLASSES}>
-        <span
-          id="sidebar-work-label"
-          className={GROUP_LABEL_CLASSES}>
-          Work
-        </span>
-        <Link
-          href="/home"
-          className={NAV_LINK_CLASSES}>
-          <HomeIcon />
-          Home
-        </Link>
-        <Link
-          href="/notifications"
-          aria-label={
-            unreadNotificationCount > 0 ? `Notifications, ${unreadNotificationCount} unread` : undefined
-          }
-          className={NAV_LINK_CLASSES}>
-          <BellIcon />
-          Notifications
-          {unreadNotificationCount > 0 ? (
-            <span
-              aria-hidden="true"
-              className="ms-auto font-mono">
-              {unreadNotificationCount}
-            </span>
-          ) : null}
-        </Link>
-      </div>
-      <ProjectListRegion
-        isAdmin={isAdmin}
-        entries={projects}
-      />
-      {isAdmin ? (
-        // biome-ignore lint/a11y/useSemanticElements: fieldset carries form semantics that don't apply to a nav grouping
+
+      <div className="grid min-h-0 flex-1 content-start gap-3 overflow-y-auto p-2">
+        {/* biome-ignore lint/a11y/useSemanticElements: fieldset carries form semantics that don't apply to a nav grouping */}
         <div
           role="group"
-          aria-labelledby="sidebar-admin-label"
-          className={`${GROUP_CLASSES} mt-2 border-t-2 border-(--color-border) pt-3`}>
+          aria-labelledby="rail-work-label"
+          className="grid gap-px">
           <span
-            id="sidebar-admin-label"
+            id="rail-work-label"
             className={GROUP_LABEL_CLASSES}>
-            Admin
+            Work
           </span>
-          <Link
-            href="/settings/accounts"
-            className={NAV_LINK_CLASSES}>
-            <AccountsIcon />
-            Accounts
-          </Link>
-          <Link
-            href="/settings/labels"
-            className={NAV_LINK_CLASSES}>
-            <LabelsIcon />
-            Labels
-          </Link>
+          <RailLink
+            href="/home"
+            current={pathname === "/home"}
+            icon={<HomeIcon />}
+            label="Home"
+          />
+          <RailLink
+            href="/work"
+            current={pathname === "/work"}
+            icon={<AllWorkIcon />}
+            label="All work"
+            count={workCounts.openIssues}
+          />
+          <RailLink
+            href="/work?assignee=me"
+            current={false}
+            icon={<AssignedToMeIcon />}
+            label="Assigned to me"
+            count={workCounts.assignedToMe}
+          />
+          <RailLink
+            href="/notifications"
+            current={pathname === "/notifications"}
+            icon={<BellIcon />}
+            label="Notifications"
+            count={workCounts.unreadNotifications}
+          />
         </div>
-      ) : null}
-      <UserChip
-        displayName={displayName}
-        avatarUrl={avatarUrl}
-      />
+
+        <ProjectListRegion
+          isAdmin={isAdmin}
+          entries={projects}
+        />
+
+        {isAdmin && adminCounts ? (
+          // biome-ignore lint/a11y/useSemanticElements: fieldset carries form semantics that don't apply to a nav grouping
+          <div
+            role="group"
+            aria-labelledby="rail-admin-label"
+            className="grid gap-px">
+            <span
+              id="rail-admin-label"
+              className={GROUP_LABEL_CLASSES}>
+              Admin
+            </span>
+            <RailLink
+              href="/settings/accounts"
+              current={pathname === "/settings/accounts"}
+              icon={<AccountsIcon />}
+              label="Accounts"
+              count={adminCounts.accounts}
+            />
+            <RailLink
+              href="/settings/labels"
+              current={pathname === "/settings/labels"}
+              icon={<LabelsIcon />}
+              label="Labels"
+              count={adminCounts.labels}
+            />
+          </div>
+        ) : null}
+      </div>
+
+      <div className="shrink-0 border-t border-(--color-divider) p-2">
+        <UserChip
+          displayName={displayName}
+          avatarUrl={avatarUrl}
+          current={pathname === "/profile"}
+        />
+      </div>
     </nav>
   );
 }

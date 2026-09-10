@@ -27,6 +27,7 @@ export type InstallationActivityRow = {
   field: string | null;
   fromValue: string | null;
   toValue: string | null;
+  body: string | null;
 };
 
 type ResolvedTarget = { targetLabel: string; projectName: string; href: string };
@@ -90,6 +91,7 @@ export async function listInstallationActivity(): Promise<InstallationActivityRo
       field: sql<string | null>`null`.as("field"),
       fromValue: sql<string | null>`null`.as("from_value"),
       toValue: sql<string | null>`null`.as("to_value"),
+      body: sql<string | null>`${comment.body}`.as("body"),
     })
     .from(comment);
 
@@ -104,6 +106,7 @@ export async function listInstallationActivity(): Promise<InstallationActivityRo
       field: activity.field,
       fromValue: activity.fromValue,
       toValue: activity.toValue,
+      body: sql<string | null>`null`.as("body"),
     })
     .from(activity)
     .where(ne(activity.type, "comment"));
@@ -147,6 +150,7 @@ export async function listInstallationActivity(): Promise<InstallationActivityRo
       field: row.field,
       fromValue: row.fromValue,
       toValue: row.toValue,
+      body: row.body,
     };
   });
 }

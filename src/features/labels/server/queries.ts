@@ -9,6 +9,11 @@ export type LabelView = {
   issueCount: number;
 };
 
+export async function countLabels(): Promise<number> {
+  const [row] = await db.select({ total: count() }).from(label);
+  return row?.total ?? 0;
+}
+
 export async function listLabelsWithUsage(): Promise<LabelView[]> {
   return db
     .select({

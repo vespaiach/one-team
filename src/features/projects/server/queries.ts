@@ -1,7 +1,8 @@
 import "server-only";
 import { and, asc, eq, isNull, ne, notExists, sql } from "drizzle-orm";
+import { cache } from "react";
 import { db } from "@/db";
-import { boardColumn, project, projectMember, user } from "@/db/schema";
+import { boardColumn, issue, project, projectMember, user } from "@/db/schema";
 import { publicUser } from "@/features/auth/server/projections";
 import { type ColumnDeleteRefusal, selectColumnDeleteRefusal } from "./column-delete-refusal";
 import { countIssuesByColumn } from "./column-queries";
@@ -23,16 +24,38 @@ export type ProjectListEntry = {
   key: string;
   name: string;
   status: "active" | "archived";
+  openCount: number;
+  done: number;
+  counted: number;
 };
 
-export async function listProjectsForSidebar(): Promise<ProjectListEntry[]> {
+async function listProjectsForSidebarImpl(): Promise<ProjectListEntry[]> {
   const rows = await db
-    .select({ key: project.key, name: project.name, status: project.status })
+    .select({
+      key: project.key,
+      name: project.name,
+      status: project.status,
+      done: sql<number>`count(*) filter (where ${boardColumn.kind} = 'done')`,
+      counted: sql<number>`count(*) filter (where ${boardColumn.kind} <> 'canceled')`,
+      openCount: sql<number>`count(*) filter (where ${boardColumn.kind} = 'open')`,
+    })
     .from(project)
+    .leftJoin(issue, eq(issue.projectId, project.id))
+    .leftJoin(boardColumn, eq(boardColumn.id, issue.columnId))
+    .groupBy(project.id)
     .orderBy(sql`${project.status} = 'archived'`, sql`lower(${project.name})`, asc(project.key));
 
-  return rows.map((row) => ({ key: row.key, name: row.name, status: row.status as "active" | "archived" }));
+  return rows.map((row) => ({
+    key: row.key,
+    name: row.name,
+    status: row.status as "active" | "archived",
+    openCount: Number(row.openCount),
+    done: Number(row.done),
+    counted: Number(row.counted),
+  }));
 }
+
+export const listProjectsForSidebar = cache(listProjectsForSidebarImpl);
 
 export async function findProjectKeyHolder(key: string): Promise<{ key: string; name: string } | null> {
   const [row] = await db
