@@ -6,8 +6,9 @@ import { requireActor } from "@/features/auth/server/actor";
 import { BoardScreen } from "@/features/board/components/board-screen";
 import { BoardSkeleton } from "@/features/board/components/board-skeleton";
 import { loadBoard } from "@/features/board/server/board-queries";
-import { NewIssueControl } from "@/features/issues/components/new-issue-control";
-import { buildIssueWriteReason } from "@/features/issues/server/issue-queries";
+import { NewIssueModal } from "@/features/issues/components/new-issue-modal";
+import { listAssigneePool, listProjectColumns } from "@/features/issues/server/issue-queries";
+import { listLabelOptionsForIssue } from "@/features/labels/server/queries";
 
 async function BoardData({ projectKey, actor }: { projectKey: string; actor: Actor }) {
   const board = await loadBoard(projectKey, actor);
@@ -15,17 +16,27 @@ async function BoardData({ projectKey, actor }: { projectKey: string; actor: Act
     notFound();
   }
 
-  const commentCount = await countProjectComments(board.project.id);
+  const [commentCount, columns, assigneePool, labelOptions] = await Promise.all([
+    countProjectComments(board.project.id),
+    listProjectColumns(board.project.id),
+    listAssigneePool(board.project.id),
+    listLabelOptionsForIssue(),
+  ]);
 
   return (
     <BoardScreen
       board={board}
       commentCount={commentCount}
       newIssue={
-        <NewIssueControl
+        <NewIssueModal
+          projectId={board.project.id}
           projectKey={board.project.key}
+          columns={columns}
+          assigneePool={assigneePool}
+          labelOptions={labelOptions}
+          canManageLabels={board.isAdmin}
           canWrite={board.canWrite}
-          writeReason={board.canWrite ? "" : buildIssueWriteReason("create", board.project.name)}
+          writeReason={board.writeReason}
         />
       }
     />

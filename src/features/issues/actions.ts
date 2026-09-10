@@ -7,6 +7,7 @@ import { requireActor } from "@/features/auth/server/actor";
 import { assertSameOrigin } from "@/features/auth/server/origin";
 import { type CreateIssueResult, createIssue as runCreateIssue } from "./server/create-issue";
 import { type DeleteIssueResult, deleteIssue as runDeleteIssue } from "./server/delete-issue";
+import { type IssueDetailData, loadIssueDetailData } from "./server/issue-queries";
 import { type MoveIssueState, moveIssue as runMoveIssue } from "./server/move-issue";
 import { updateIssue as runUpdateIssue, type UpdateIssueResult } from "./server/update-issue";
 
@@ -151,4 +152,19 @@ export async function moveIssue(input: MoveIssuePayload): Promise<MoveIssueState
   const actor = await requireActor();
 
   return runMoveIssue({ actor, ...input });
+}
+
+export type IssueDrawerPayload = { projectKey: unknown; issueNumber: unknown };
+export type IssueDrawerResult = { status: "ok"; data: IssueDetailData } | { status: "not-found" };
+
+export async function loadIssueForDrawer(input: IssueDrawerPayload): Promise<IssueDrawerResult> {
+  assertSameOrigin({ headers: await headers() });
+  const actor = await requireActor();
+
+  if (typeof input.projectKey !== "string" || typeof input.issueNumber !== "number") {
+    return { status: "not-found" };
+  }
+
+  const data = await loadIssueDetailData(input.projectKey, input.issueNumber, actor);
+  return data ? { status: "ok", data } : { status: "not-found" };
 }

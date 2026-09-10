@@ -20,13 +20,17 @@ export function BoardSkeleton() {
         </div>
       </header>
       <div
+        data-shape="filter-bar"
+        className="h-[41px] border-(--color-divider) border-b"
+      />
+      <div
         data-region="board"
-        className="flex gap-4 overflow-x-auto p-4">
+        className="flex items-stretch overflow-x-auto">
         {Object.entries(LANE_SHAPES).map(([lane, cards]) => (
           <div
             key={lane}
             data-region="lane"
-            className="flex w-[288px] shrink-0 flex-col gap-3">
+            className="flex w-[268px] shrink-0 flex-col gap-1.5 border-(--color-divider) border-r bg-(--color-chrome-tint) p-1.5">
             <div
               data-shape="lane-header"
               className="h-6 w-2/3 animate-pulse bg-(--color-divider)"

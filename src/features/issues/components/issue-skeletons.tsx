@@ -34,6 +34,23 @@ const ISSUE_DETAIL_RAIL_FIELDS = [
   "updatedAt",
 ];
 
+export function IssueDrawerSkeleton() {
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="h-6 w-24 animate-pulse bg-(--color-divider)" />
+      <div className="h-6 w-2/3 animate-pulse bg-(--color-divider)" />
+      <div className="min-h-[6rem] animate-pulse bg-(--color-divider)" />
+      {ISSUE_DETAIL_RAIL_FIELDS.slice(0, 4).map((field) => (
+        <div
+          key={field}
+          data-field={field}
+          className="h-9 animate-pulse bg-(--color-divider)"
+        />
+      ))}
+    </div>
+  );
+}
+
 export function IssueDetailSkeleton() {
   return (
     <div className="flex gap-6 p-4">
