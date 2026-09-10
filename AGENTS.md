@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # Authority
 
-This file is the primary source for how code is written here: where anything conflicts with a principle below, this file wins. [`.specify/memory/constitution.md`](.specify/memory/constitution.md) holds governance, the amendment procedure, and the version record. [`docs/product/specifications.md`](docs/product/specifications.md) owns **what** is built and [`docs/ROADMAP.md`](docs/ROADMAP.md) owns the `R1`…`R12` decomposition; both are silent on how, with the single exception recorded below — the specification pins sign-in's transport.
+This file is the primary source for how code is written here: where anything conflicts with a principle below, this file wins. [`.specify/memory/constitution.md`](.specify/memory/constitution.md) holds governance, the amendment procedure, and the version record.
 
 When instructions conflict, follow the user's current request first, then this file, then the most specific remaining repository guidance. Do not silently reinterpret product or architecture decisions.
 
@@ -54,6 +54,7 @@ The stack is Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, and
 | --- | --- | --- |
 | `drizzle-orm`, `drizzle-kit`, `postgres` | PostgreSQL access, schema and migrations | runtime, tooling |
 | `react-aria-components` | Interaction behaviour, focus management, keyboard support and ARIA semantics | runtime |
+| `clsx` | Conditional className composition | runtime |
 | `@internationalized/date` | Calendar date values for React Aria DatePicker | runtime |
 | `@node-rs/argon2` | Argon2id password hashing | runtime |
 | `nodemailer` | Notification mail over operator-supplied SMTP | runtime |
@@ -72,8 +73,7 @@ These are not discoverable from a single file, and each one causes wrong code if
 - **`server-only` enforces the server boundary.** `src/db/index.ts` imports it, so a Client Component that reaches the database fails the build instead of leaking at runtime. Keep that import on new server modules.
 - **The schema is a single file**, `src/db/schema.ts`, referenced directly by `drizzle.config.ts`. Splitting it means updating that config in the same change.
 - **Locale is resolved on the server and handed to the client.** `src/app/layout.tsx` reads `accept-language` via `await headers()` and sets `lang` and `dir`; `src/app/provider.tsx` passes the same locale to React Aria's `I18nProvider`. Change both together or the server and client will disagree.
-- **Markdown is rendered by hand, into React elements.** The specification fixes a closed subset — bold, italic, inline code, links, bullet and numbered lists, headings, and nothing else — and escapes HTML rather than rendering it (§3.4, `OT-DATA-015`). No markdown dependency is approved above and none is needed (IV): build React nodes, never an HTML string, so escaping is React's own and `dangerouslySetInnerHTML` never appears. Reach for `marked` or `react-markdown` and you have added an unapproved dependency to render a grammar smaller than its own options object. Link hrefs carry an `http` / `https` / `mailto` scheme allowlist; anything else renders as text (II).
-- **Only `src/app` and `src/db` exist today.** The structure rules below describe the intended shape, not current fact.
+- **Markdown is rendered by hand, into React elements.** The specification fixes a closed subset — bold, italic, inline code, links, bullet and numbered lists, headings, and nothing else — and escapes HTML rather than rendering it. No markdown dependency is approved above and none is needed (IV): build React nodes, never an HTML string, so escaping is React's own and `dangerouslySetInnerHTML` never appears. Reach for `marked` or `react-markdown` and you have added an unapproved dependency to render a grammar smaller than its own options object. Link hrefs carry an `http` / `https` / `mailto` scheme allowlist; anything else renders as text (II).
 
 # Structure
 
@@ -90,7 +90,7 @@ Read the relevant route, feature, tests, schema, and configuration before editin
 
 - Pages and layouts are Server Components. Add `"use client"` only at the narrowest interactive boundary; everything imported below it joins the client module graph.
 - `params`, `searchParams`, `cookies()`, and `headers()` are asynchronous APIs.
-- Use Server Actions for this application's mutations; use Route Handlers for public APIs, webhooks, callbacks, feeds, and sign-in, which [`docs/product/specifications.md`](docs/product/specifications.md) §6 pins to `POST /api/auth/signin` so the throttle and the origin check sit in one place. Sign-in is the only mutation that is not a Server Action. Every Server Action is a public server entry point: validate input, authenticate, authorize the exact resource, return a safe result (II).
+- Use Server Actions for this application's mutations; use Route Handlers for public APIs, webhooks, callbacks, feeds, and sign-in, which is pinned to `POST /api/auth/signin` so the throttle and the origin check sit in one place. Sign-in is the only mutation that is not a Server Action. Every Server Action is a public server entry point: validate input, authenticate, authorize the exact resource, return a safe result (II).
 - `proxy.ts` is not authorization. Use it for fast routing or redirects and repeat authorization at the protected server boundary.
 - Do not assume a query or `fetch` is cached. Revalidate or invalidate affected data after mutations on cached routes.
 - Only `NEXT_PUBLIC_` values reach the browser. Return generic messages to clients and keep SQL, stack traces, and configuration in server logs.
@@ -162,5 +162,8 @@ A reviewer who cannot determine from the diff that a test was written first MUST
 | Generate a migration after editing `src/db/schema.ts` | `npm run db:generate` |
 | Apply migrations | `npm run db:migrate` |
 | Browse the database | `npm run db:studio` |
+| Grant the admin role to a user by email | `npm run admin:grant -- --email <email> --first-name <first> --last-name <last>` |
+| Deactivate a user by email | `npm run admin:deactivate -- --email <email>` |
+| Seed the database with sample data | `npm run seed` |
 
 Do not report a check as passing unless you ran it and saw it pass.
