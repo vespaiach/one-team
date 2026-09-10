@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # Authority
 
-This file is the primary source for how code is written here: where anything conflicts with a principle below, this file wins. [`.specify/memory/constitution.md`](.specify/memory/constitution.md) holds governance, the amendment procedure, and the version record.
+This file is the primary source for how code is written here: where anything conflicts with a principle below, this file wins.
 
 When instructions conflict, follow the user's current request first, then this file, then the most specific remaining repository guidance. Do not silently reinterpret product or architecture decisions.
 
