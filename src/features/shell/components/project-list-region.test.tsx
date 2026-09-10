@@ -1,11 +1,24 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import type { CreateProjectState } from "@/features/projects/actions";
 import { ProjectListRegion, type ProjectListRegionEntry } from "./project-list-region";
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), back: vi.fn(), refresh: vi.fn() }),
+}));
 
 function project(
   overrides: Partial<ProjectListRegionEntry> & { key: string; name: string },
 ): ProjectListRegionEntry {
   return { status: "active", openCount: 0, done: 0, counted: 0, ...overrides };
+}
+
+function noopCreateProjectAction(): Promise<CreateProjectState> {
+  return Promise.resolve({ status: "idle" });
+}
+
+function noopCheckKeyAvailability() {
+  return Promise.resolve({ holder: null });
 }
 
 describe("ProjectListRegion", () => {
@@ -14,6 +27,9 @@ describe("ProjectListRegion", () => {
       <ProjectListRegion
         isAdmin={false}
         entries={[]}
+        createProjectAction={noopCreateProjectAction}
+        checkKeyAvailability={noopCheckKeyAvailability}
+        candidates={[]}
       />,
     );
 
@@ -29,6 +45,9 @@ describe("ProjectListRegion", () => {
       <ProjectListRegion
         isAdmin={false}
         entries={entries}
+        createProjectAction={noopCreateProjectAction}
+        checkKeyAvailability={noopCheckKeyAvailability}
+        candidates={[]}
       />,
     );
 
@@ -46,6 +65,9 @@ describe("ProjectListRegion", () => {
           project({ key: "A", name: "Active One" }),
           project({ key: "B", name: "Archived One", status: "archived" }),
         ]}
+        createProjectAction={noopCreateProjectAction}
+        checkKeyAvailability={noopCheckKeyAvailability}
+        candidates={[]}
       />,
     );
 
@@ -61,6 +83,9 @@ describe("ProjectListRegion", () => {
       <ProjectListRegion
         isAdmin={false}
         entries={entries}
+        createProjectAction={noopCreateProjectAction}
+        checkKeyAvailability={noopCheckKeyAvailability}
+        candidates={[]}
       />,
     );
     expect(screen.queryByLabelText("New project")).toBeNull();
@@ -69,8 +94,30 @@ describe("ProjectListRegion", () => {
       <ProjectListRegion
         isAdmin={true}
         entries={entries}
+        createProjectAction={noopCreateProjectAction}
+        checkKeyAvailability={noopCheckKeyAvailability}
+        candidates={[]}
       />,
     );
     expect(screen.getByLabelText("New project")).toBeTruthy();
+  });
+
+  it("opens the create-project dialog instead of navigating when the new-project control is activated", () => {
+    render(
+      <ProjectListRegion
+        isAdmin={true}
+        entries={[]}
+        createProjectAction={noopCreateProjectAction}
+        checkKeyAvailability={noopCheckKeyAvailability}
+        candidates={[]}
+      />,
+    );
+
+    const trigger = screen.getByLabelText("New project");
+    expect(trigger.tagName).toBe("BUTTON");
+
+    fireEvent.click(trigger);
+
+    expect(screen.getByRole("heading", { name: "New project" })).toBeTruthy();
   });
 });

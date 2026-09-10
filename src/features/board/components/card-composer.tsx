@@ -1,14 +1,11 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Button } from "react-aria-components/Button";
 import { FieldError, Input, TextField } from "react-aria-components/TextField";
 import type { CreateIssueResult } from "@/features/issues/server/create-issue";
 import type { Grouping } from "../lane-model";
 
 const ADD_A_CARD = "Add a card";
-const OPEN_THE_FULL_FORM = "Open the full form";
 const TITLE_REQUIRED = "Title is required.";
 const TITLE_TOO_LONG = "Title must be 200 characters or fewer.";
 const CREATE_REFUSED = "That card wasn't created.";
@@ -24,7 +21,6 @@ export type CardComposerPayload = {
 
 export type CardComposerProps = {
   projectId: string;
-  projectKey: string;
   grouping: Grouping;
   laneId: string | null;
   firstColumnId: string;
@@ -69,26 +65,6 @@ function payloadFor(
   return { projectId, title, columnId: laneId ?? firstColumnId };
 }
 
-function fullFormHref(props: CardComposerProps, title: string): string {
-  const { columnId, assigneeId, priority } = payloadFor(props, title);
-  const preselection = new URLSearchParams();
-  if (title !== "") {
-    preselection.set("title", title);
-  }
-  if (columnId !== "") {
-    preselection.set("columnId", columnId);
-  }
-  if (assigneeId !== undefined) {
-    preselection.set("assigneeId", assigneeId);
-  }
-  if (priority !== undefined) {
-    preselection.set("priority", priority);
-  }
-  const query = preselection.toString();
-  const path = `/projects/${props.projectKey}/issues/new`;
-  return query === "" ? path : `${path}?${query}`;
-}
-
 function refusalReason({
   canWrite,
   writeReason,
@@ -103,10 +79,8 @@ function refusalReason({
 
 export function CardComposer(props: CardComposerProps) {
   const { onCreate } = props;
-  const router = useRouter();
   const disabledReason = refusalReason(props);
   const label = disabledReason ?? ADD_A_CARD;
-  const chevronLabel = disabledReason ?? OPEN_THE_FULL_FORM;
   const [title, setTitle] = useState("");
   const [refusal, setRefusal] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -135,22 +109,11 @@ export function CardComposer(props: CardComposerProps) {
     }
   }
 
-  function openFullForm() {
-    if (disabledReason !== null) {
-      return;
-    }
-    router.push(fullFormHref(props, title.trim()));
-  }
-
   function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
     if (event.key !== "Enter") {
       return;
     }
     event.preventDefault();
-    if (event.shiftKey) {
-      openFullForm();
-      return;
-    }
     void submit();
   }
 
@@ -172,13 +135,6 @@ export function CardComposer(props: CardComposerProps) {
         />
         {refusal !== null && <FieldError>{refusal}</FieldError>}
       </TextField>
-      <Button
-        aria-label={chevronLabel}
-        isDisabled={pending || disabledReason !== null}
-        onPress={openFullForm}
-        className="border border-(--color-divider) px-2 py-2 text-control text-(--color-text) data-[disabled]:text-(--color-text-muted) data-[focus-visible]:outline-2 data-[focus-visible]:outline-(--color-accent)">
-        ›
-      </Button>
       {pending && <span className="text-label text-(--color-text-muted)">Adding…</span>}
     </div>
   );

@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { MustChangePasswordBanner } from "@/features/auth/components/must-change-password-banner";
+import type { CreateProjectPayload, CreateProjectState } from "@/features/projects/actions";
+import type { RosterEntry } from "@/features/projects/server/queries";
 import type { RailAdminCounts, RailWorkCounts } from "../rail-types";
 import { ConnectionBanner } from "./connection-banner";
 import type { ProjectListRegionEntry } from "./project-list-region";
@@ -14,6 +16,9 @@ export function AppShell({
   activeMemberCount,
   workCounts,
   adminCounts,
+  createProjectAction,
+  checkKeyAvailability,
+  projectCandidates,
   children,
 }: {
   displayName: string;
@@ -24,6 +29,12 @@ export function AppShell({
   activeMemberCount: number;
   workCounts: RailWorkCounts;
   adminCounts: RailAdminCounts | null;
+  createProjectAction: (
+    prevState: CreateProjectState,
+    input: CreateProjectPayload,
+  ) => Promise<CreateProjectState>;
+  checkKeyAvailability: (key: string) => Promise<{ holder: { key: string; name: string } | null }>;
+  projectCandidates: RosterEntry[];
   children: ReactNode;
 }) {
   return (
@@ -41,6 +52,9 @@ export function AppShell({
         activeMemberCount={activeMemberCount}
         workCounts={workCounts}
         adminCounts={adminCounts}
+        createProjectAction={createProjectAction}
+        checkKeyAvailability={checkKeyAvailability}
+        projectCandidates={projectCandidates}
       />
       <main
         id="main-content"

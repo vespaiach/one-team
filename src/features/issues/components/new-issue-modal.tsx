@@ -18,6 +18,7 @@ export function NewIssueModal({
   canManageLabels,
   canWrite,
   writeReason,
+  defaultOpen,
 }: {
   projectId: string;
   projectKey: string;
@@ -27,12 +28,13 @@ export function NewIssueModal({
   canManageLabels: boolean;
   canWrite: boolean;
   writeReason: string;
+  defaultOpen?: boolean;
 }) {
   const reasonId = canWrite ? undefined : "new-issue-modal-reason";
 
   return (
     <div className="flex flex-col items-end gap-1">
-      <DialogTrigger>
+      <DialogTrigger defaultOpen={defaultOpen}>
         <Button
           isDisabled={!canWrite}
           aria-describedby={reasonId}

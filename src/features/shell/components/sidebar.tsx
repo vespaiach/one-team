@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import type { CreateProjectPayload, CreateProjectState } from "@/features/projects/actions";
+import type { RosterEntry } from "@/features/projects/server/queries";
 import type { RailAdminCounts, RailWorkCounts } from "../rail-types";
 import type { ProjectListRegionEntry } from "./project-list-region";
 import { ProjectListRegion } from "./project-list-region";
@@ -238,6 +240,9 @@ export function Sidebar({
   activeMemberCount,
   workCounts,
   adminCounts,
+  createProjectAction,
+  checkKeyAvailability,
+  projectCandidates,
 }: {
   displayName: string;
   avatarUrl: string | null;
@@ -246,6 +251,12 @@ export function Sidebar({
   activeMemberCount: number;
   workCounts: RailWorkCounts;
   adminCounts: RailAdminCounts | null;
+  createProjectAction: (
+    prevState: CreateProjectState,
+    input: CreateProjectPayload,
+  ) => Promise<CreateProjectState>;
+  checkKeyAvailability: (key: string) => Promise<{ holder: { key: string; name: string } | null }>;
+  projectCandidates: RosterEntry[];
 }) {
   const pathname = usePathname();
   const memberLabel = activeMemberCount === 1 ? "1 member" : `${activeMemberCount} members`;
@@ -309,6 +320,9 @@ export function Sidebar({
         <ProjectListRegion
           isAdmin={isAdmin}
           entries={projects}
+          createProjectAction={createProjectAction}
+          checkKeyAvailability={checkKeyAvailability}
+          candidates={projectCandidates}
         />
 
         {isAdmin && adminCounts ? (

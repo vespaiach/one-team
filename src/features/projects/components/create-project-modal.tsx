@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Button } from "react-aria-components/Button";
 import { Dialog, DialogTrigger } from "react-aria-components/Dialog";
 import { Modal } from "react-aria-components/Modal";
@@ -12,6 +13,7 @@ export function CreateProjectModal({
   createProjectAction,
   checkKeyAvailability,
   candidates,
+  trigger,
 }: {
   createProjectAction: (
     prevState: CreateProjectState,
@@ -19,10 +21,11 @@ export function CreateProjectModal({
   ) => Promise<CreateProjectState>;
   checkKeyAvailability: (key: string) => Promise<{ holder: { key: string; name: string } | null }>;
   candidates: RosterEntry[];
+  trigger?: ReactNode;
 }) {
   return (
     <DialogTrigger>
-      <Button className="text-control text-(--color-accent) hover:underline">New project</Button>
+      {trigger ?? <Button className="text-control text-(--color-accent) hover:underline">New project</Button>}
       <Modal
         isDismissable={false}
         className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">

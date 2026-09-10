@@ -2,8 +2,13 @@ import { notFound } from "next/navigation";
 import { getFeedFilter } from "@/features/activity/server/feed-filter";
 import { countProjectComments, listFeed } from "@/features/activity/server/feed-queries";
 import { requireActor } from "@/features/auth/server/actor";
-import { NewIssueControl } from "@/features/issues/components/new-issue-control";
-import { buildIssueWriteReason } from "@/features/issues/server/issue-queries";
+import { NewIssueModal } from "@/features/issues/components/new-issue-modal";
+import {
+  buildIssueWriteReason,
+  listAssigneePool,
+  listProjectColumns,
+} from "@/features/issues/server/issue-queries";
+import { listLabelOptionsForIssue } from "@/features/labels/server/queries";
 import {
   addProjectMember,
   deleteProject,
@@ -55,14 +60,25 @@ export default async function ProjectDetailsPage({ params }: { params: Promise<{
     ? null
     : `Only project members can comment in ${details.record.name}.`;
 
+  const [columns, assigneePool, labelOptions] = await Promise.all([
+    listProjectColumns(projectRow.id),
+    listAssigneePool(projectRow.id),
+    listLabelOptionsForIssue(),
+  ]);
+
   return (
     <ProjectDetailsScreen
       details={details}
       updateProjectAction={updateProject}
       admin={admin}
       newIssue={
-        <NewIssueControl
+        <NewIssueModal
+          projectId={projectRow.id}
           projectKey={details.record.key}
+          columns={columns}
+          assigneePool={assigneePool}
+          labelOptions={labelOptions}
+          canManageLabels={actor.role === "admin"}
           canWrite={details.canEditRecord}
           writeReason={details.canEditRecord ? "" : buildIssueWriteReason("create", details.record.name)}
         />
