@@ -1,4 +1,8 @@
+import { countActiveUsers, countUsers } from "@/features/accounts/server/roster";
 import { loadActor } from "@/features/auth/server/actor";
+import { listAssignedIssues } from "@/features/home/server/assigned-queries";
+import { countOpenIssuesForTeam } from "@/features/home/server/metrics-queries";
+import { countLabels } from "@/features/labels/server/queries";
 import { countUnreadNotifications } from "@/features/notifications/server/notification-queries";
 import { listProjectsForSidebar } from "@/features/projects/server/queries";
 import { AppShell } from "@/features/shell/components/app-shell";
@@ -10,17 +14,34 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!actor) {
     return children;
   }
-  const projects = await listProjectsForSidebar();
-  const unreadNotificationCount = await countUnreadNotifications(actor.id);
+
+  const isAdmin = actor.role === "admin";
+  const [projects, openIssues, assignedIssues, unreadNotifications, activeMemberCount, accounts, labels] =
+    await Promise.all([
+      listProjectsForSidebar(),
+      countOpenIssuesForTeam(),
+      listAssignedIssues(actor.id),
+      countUnreadNotifications(actor.id),
+      countActiveUsers(),
+      isAdmin ? countUsers() : Promise.resolve(0),
+      isAdmin ? countLabels() : Promise.resolve(0),
+    ]);
+
   return (
     <>
       <AppShell
         displayName={displayName(actor)}
         avatarUrl={actor.avatarUrl}
-        isAdmin={actor.role === "admin"}
+        isAdmin={isAdmin}
         showPasswordBanner={actor.mustChangePassword}
         projects={projects}
-        unreadNotificationCount={unreadNotificationCount}>
+        activeMemberCount={activeMemberCount}
+        workCounts={{
+          openIssues,
+          assignedToMe: assignedIssues.length,
+          unreadNotifications,
+        }}
+        adminCounts={isAdmin ? { accounts, labels } : null}>
         {children}
       </AppShell>
       <ToastRegion />

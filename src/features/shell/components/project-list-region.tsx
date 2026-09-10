@@ -1,21 +1,21 @@
 import Link from "next/link";
+import { StatusRing } from "@/components/ui/status-ring";
+import { projectStatusRing } from "@/features/home/project-status-ring";
+import { splitOverflow } from "@/lib/overflow";
 
 export type ProjectListRegionEntry = {
   key: string;
   name: string;
   status: "active" | "archived";
+  openCount: number;
+  done: number;
+  counted: number;
 };
 
-function StatusDot({ status }: { status: ProjectListRegionEntry["status"] }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={`me-2 inline-block h-1.5 w-1.5 rounded-full align-middle ${
-        status === "active" ? "bg-(--color-accent)" : "border border-(--color-text-muted) bg-transparent"
-      }`}
-    />
-  );
-}
+const VISIBLE_PROJECT_LIMIT = 4;
+
+const RAIL_ITEM_CLASSES =
+  "flex h-(--size-row) items-center gap-2 overflow-hidden truncate rounded-sm px-[7px] text-[13px] no-underline hover:bg-(--color-chrome-tint-strong)";
 
 export function ProjectListRegion({
   isAdmin,
@@ -24,15 +24,21 @@ export function ProjectListRegion({
   isAdmin: boolean;
   entries: ProjectListRegionEntry[];
 }) {
+  const active = entries.filter((entry) => entry.status === "active");
+  const { shown, overflowCount } = splitOverflow(active, VISIBLE_PROJECT_LIMIT);
+
   return (
-    <section className="min-h-0 flex-1 overflow-y-auto px-4.5 py-2">
-      <div className="flex items-center justify-between">
-        <span className="text-label text-(--color-text-muted)">Projects</span>
+    <div className="grid gap-px">
+      <div className="flex h-[22px] items-center gap-1.5 px-[7px] text-[10px] font-medium text-(--color-text-muted) uppercase tracking-[0.11em]">
+        <span>
+          Projects <span className="font-mono tracking-normal">{active.length}</span>
+        </span>
         {isAdmin ? (
           <Link
             href="/projects/new"
             aria-label="New project"
-            className="flex items-center justify-center text-control text-(--color-text-muted) hover:text-(--color-text)">
+            title="New project"
+            className="ms-auto flex h-5 w-5 items-center justify-center rounded-sm text-(--color-text-muted) hover:bg-(--color-chrome-tint-strong) hover:text-(--color-text)">
             <svg
               width="13"
               height="13"
@@ -44,24 +50,25 @@ export function ProjectListRegion({
           </Link>
         ) : null}
       </div>
-      {entries.length === 0 ? (
-        <p className="mt-1 text-label text-(--color-text-muted)">No projects yet.</p>
+      {active.length === 0 ? (
+        <div className={`${RAIL_ITEM_CLASSES} text-(--color-text-muted)`}>No projects yet</div>
       ) : (
-        <ul className="mt-1 flex flex-col">
-          {entries.map((entry) => (
-            <li key={entry.key}>
-              <Link
-                href={`/projects/${entry.key}`}
-                className={`block truncate py-1 text-control ${
-                  entry.status === "archived" ? "text-(--color-text-muted)" : "text-(--color-text)"
-                }`}>
-                <StatusDot status={entry.status} />
-                {entry.name}
-              </Link>
-            </li>
+        <>
+          {shown.map((entry) => (
+            <Link
+              key={entry.key}
+              href={`/projects/${entry.key}`}
+              className={RAIL_ITEM_CLASSES}>
+              <StatusRing status={projectStatusRing(entry)} />
+              <span className="min-w-0 flex-1 truncate">{entry.name}</span>
+              <span className="font-mono text-(--color-text-muted) text-[10.5px]">{entry.openCount}</span>
+            </Link>
           ))}
-        </ul>
+          {overflowCount > 0 ? (
+            <div className={`${RAIL_ITEM_CLASSES} text-(--color-text-muted)`}>{overflowCount} more…</div>
+          ) : null}
+        </>
       )}
-    </section>
+    </div>
   );
 }

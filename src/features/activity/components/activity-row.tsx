@@ -6,8 +6,7 @@ function displayOrNone(value: string | null): string {
   return value ?? NONE_LABEL;
 }
 
-function buildSentence(
-  actorName: string,
+export function activityActionPhrase(
   type: Exclude<ActivityType, "comment">,
   field: string | null,
   fromValue: string | null,
@@ -15,27 +14,25 @@ function buildSentence(
 ): string {
   switch (type) {
     case "created":
-      return `${actorName} created this`;
+      return "created this";
     case "field_changed":
-      return `${actorName} changed ${field} from ${displayOrNone(fromValue)} to ${displayOrNone(toValue)}`;
+      return `changed ${field} from ${displayOrNone(fromValue)} to ${displayOrNone(toValue)}`;
     case "member_added":
-      return `${actorName} added ${displayOrNone(toValue)}`;
+      return `added ${displayOrNone(toValue)}`;
     case "member_removed":
-      return `${actorName} removed ${displayOrNone(fromValue)}`;
+      return `removed ${displayOrNone(fromValue)}`;
     case "archived":
-      return `${actorName} archived this`;
+      return "archived this";
     case "reopened":
-      return `${actorName} reopened this`;
+      return "reopened this";
     case "column_added":
-      return `${actorName} added column ${field}`;
+      return `added column ${field}`;
     case "column_renamed":
-      return `${actorName} renamed column ${displayOrNone(fromValue)} to ${displayOrNone(toValue)}`;
+      return `renamed column ${displayOrNone(fromValue)} to ${displayOrNone(toValue)}`;
     case "column_reordered":
-      return toValue === null
-        ? `${actorName} moved column ${field} to first`
-        : `${actorName} moved column ${field} after ${toValue}`;
+      return toValue === null ? `moved column ${field} to first` : `moved column ${field} after ${toValue}`;
     case "column_deleted":
-      return `${actorName} deleted column ${field}`;
+      return `deleted column ${field}`;
   }
 }
 
@@ -52,7 +49,11 @@ export function ActivityRow({
   fromValue: string | null;
   toValue: string | null;
 }) {
-  const sentence = buildSentence(`${actor.firstName} ${actor.lastName}`, type, field, fromValue, toValue);
+  const phrase = activityActionPhrase(type, field, fromValue, toValue);
 
-  return <p className="text-control text-(--color-text)">{sentence}</p>;
+  return (
+    <p className="text-control text-(--color-text)">
+      {actor.firstName} {actor.lastName} {phrase}
+    </p>
+  );
 }

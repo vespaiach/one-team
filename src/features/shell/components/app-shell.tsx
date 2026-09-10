@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { MustChangePasswordBanner } from "@/features/auth/components/must-change-password-banner";
+import type { RailAdminCounts, RailWorkCounts } from "../rail-types";
 import { ConnectionBanner } from "./connection-banner";
 import type { ProjectListRegionEntry } from "./project-list-region";
 import { Sidebar } from "./sidebar";
@@ -10,7 +11,9 @@ export function AppShell({
   isAdmin,
   showPasswordBanner,
   projects = [],
-  unreadNotificationCount = 0,
+  activeMemberCount,
+  workCounts,
+  adminCounts,
   children,
 }: {
   displayName: string;
@@ -18,11 +21,13 @@ export function AppShell({
   isAdmin: boolean;
   showPasswordBanner: boolean;
   projects?: ProjectListRegionEntry[];
-  unreadNotificationCount?: number;
+  activeMemberCount: number;
+  workCounts: RailWorkCounts;
+  adminCounts: RailAdminCounts | null;
   children: ReactNode;
 }) {
   return (
-    <div className="flex min-w-[1280px] flex-1">
+    <div className="flex h-screen min-w-[1280px] overflow-hidden font-sans text-[13px] text-(--color-text) leading-[1.35]">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-10 focus:bg-(--color-bg) focus:px-3 focus:py-2 focus:text-(--color-text)">
@@ -33,11 +38,13 @@ export function AppShell({
         avatarUrl={avatarUrl}
         isAdmin={isAdmin}
         projects={projects}
-        unreadNotificationCount={unreadNotificationCount}
+        activeMemberCount={activeMemberCount}
+        workCounts={workCounts}
+        adminCounts={adminCounts}
       />
       <main
         id="main-content"
-        className="flex flex-1 flex-col bg-(--color-surface)">
+        className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto bg-(--color-bg)">
         {showPasswordBanner ? <MustChangePasswordBanner /> : null}
         <ConnectionBanner />
         {children}

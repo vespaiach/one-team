@@ -100,39 +100,3 @@ export async function countUnreadNotifications(userId: string): Promise<number> 
 
   return row?.unread ?? 0;
 }
-
-export async function listRecentMentions(userId: string, limit: number): Promise<NotificationListItem[]> {
-  const rows = await db
-    .select({
-      id: notification.id,
-      type: notification.type,
-      actorFirstName: actor.firstName,
-      actorLastName: actor.lastName,
-      actorAvatarUrl: actor.avatarUrl,
-      issueNumber: issue.number,
-      issueTitle: issue.title,
-      projectKey: sql<string>`${project.key}`,
-      projectName: sql<string>`${project.name}`,
-      commentId: notification.commentId,
-      readAt: notification.readAt,
-      createdAt: notification.createdAt,
-    })
-    .from(notification)
-    .innerJoin(actor, eq(actor.id, notification.actorId))
-    .leftJoin(issue, eq(issue.id, notification.issueId))
-    .leftJoin(project, sql`${project.id} = coalesce(${notification.projectId}, ${issue.projectId})`)
-    .where(and(eq(notification.userId, userId), eq(notification.type, "mention")))
-    .orderBy(desc(notification.createdAt), desc(notification.id))
-    .limit(limit);
-
-  return rows.map((row) => ({
-    id: row.id,
-    type: row.type as NotificationType,
-    actorName: displayName({ firstName: row.actorFirstName, lastName: row.actorLastName }),
-    actorAvatarUrl: row.actorAvatarUrl,
-    targetLabel: composeTargetLabel(row),
-    href: composeHref(row),
-    isUnread: row.readAt === null,
-    createdAt: row.createdAt,
-  }));
-}

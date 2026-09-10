@@ -1,8 +1,18 @@
 import "server-only";
-import { desc, eq, isNull, sql } from "drizzle-orm";
+import { count, desc, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { invite, user } from "@/db/schema";
 import { accountUser } from "@/features/auth/server/projections";
+
+export async function countUsers(): Promise<number> {
+  const [row] = await db.select({ total: count() }).from(user);
+  return row?.total ?? 0;
+}
+
+export async function countActiveUsers(): Promise<number> {
+  const [row] = await db.select({ total: count() }).from(user).where(isNull(user.deactivatedAt));
+  return row?.total ?? 0;
+}
 
 export type InvitationRow = {
   id: string;
