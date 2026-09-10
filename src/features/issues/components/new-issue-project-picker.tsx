@@ -29,7 +29,7 @@ export function NewIssueProjectPicker({ projects }: { projects: NewIssueProjectP
               {projects.map((project) => (
                 <li key={project.key}>
                   <Link
-                    href={`/projects/${project.key}/issues/new`}
+                    href={`/projects/${project.key}?newIssue=1`}
                     className={`block py-2 text-control ${
                       project.status === "archived"
                         ? "text-(--color-text-muted)"

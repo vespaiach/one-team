@@ -1,6 +1,10 @@
 import Link from "next/link";
+import { Button } from "react-aria-components/Button";
 import { StatusRing } from "@/components/ui/status-ring";
 import { projectStatusRing } from "@/features/home/project-status-ring";
+import type { CreateProjectPayload, CreateProjectState } from "@/features/projects/actions";
+import { CreateProjectModal } from "@/features/projects/components/create-project-modal";
+import type { RosterEntry } from "@/features/projects/server/queries";
 import { splitOverflow } from "@/lib/overflow";
 
 export type ProjectListRegionEntry = {
@@ -20,9 +24,18 @@ const RAIL_ITEM_CLASSES =
 export function ProjectListRegion({
   isAdmin,
   entries,
+  createProjectAction,
+  checkKeyAvailability,
+  candidates,
 }: {
   isAdmin: boolean;
   entries: ProjectListRegionEntry[];
+  createProjectAction: (
+    prevState: CreateProjectState,
+    input: CreateProjectPayload,
+  ) => Promise<CreateProjectState>;
+  checkKeyAvailability: (key: string) => Promise<{ holder: { key: string; name: string } | null }>;
+  candidates: RosterEntry[];
 }) {
   const active = entries.filter((entry) => entry.status === "active");
   const { shown, overflowCount } = splitOverflow(active, VISIBLE_PROJECT_LIMIT);
@@ -34,20 +47,25 @@ export function ProjectListRegion({
           Projects <span className="font-mono tracking-normal">{active.length}</span>
         </span>
         {isAdmin ? (
-          <Link
-            href="/projects/new"
-            aria-label="New project"
-            title="New project"
-            className="ms-auto flex h-5 w-5 items-center justify-center rounded-sm text-(--color-text-muted) hover:bg-(--color-chrome-tint-strong) hover:text-(--color-text)">
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 256 256"
-              fill="currentColor"
-              aria-hidden="true">
-              <path d="M176 120h-40V80a8 8 0 0 0-16 0v40H80a8 8 0 0 0 0 16h40v40a8 8 0 0 0 16 0v-40h40a8 8 0 0 0 0-16Z" />
-            </svg>
-          </Link>
+          <CreateProjectModal
+            createProjectAction={createProjectAction}
+            checkKeyAvailability={checkKeyAvailability}
+            candidates={candidates}
+            trigger={
+              <Button
+                aria-label="New project"
+                className="ms-auto flex h-5 w-5 items-center justify-center rounded-sm text-(--color-text-muted) hover:bg-(--color-chrome-tint-strong) hover:text-(--color-text)">
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 256 256"
+                  fill="currentColor"
+                  aria-hidden="true">
+                  <path d="M176 120h-40V80a8 8 0 0 0-16 0v40H80a8 8 0 0 0 0 16h40v40a8 8 0 0 0 16 0v-40h40a8 8 0 0 0 0-16Z" />
+                </svg>
+              </Button>
+            }
+          />
         ) : null}
       </div>
       {active.length === 0 ? (

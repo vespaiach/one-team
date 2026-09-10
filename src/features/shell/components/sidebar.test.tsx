@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import type { CreateProjectState } from "@/features/projects/actions";
 import { Sidebar } from "./sidebar";
 
 let mockedPathname = "/home";
@@ -8,6 +9,20 @@ vi.mock("next/navigation", () => ({
 }));
 
 const WORK_COUNTS = { openIssues: 12, assignedToMe: 3, unreadNotifications: 2 };
+
+function noopCreateProjectAction(): Promise<CreateProjectState> {
+  return Promise.resolve({ status: "idle" });
+}
+
+function noopCheckKeyAvailability() {
+  return Promise.resolve({ holder: null });
+}
+
+const PROJECT_MODAL_PROPS = {
+  createProjectAction: noopCreateProjectAction,
+  checkKeyAvailability: noopCheckKeyAvailability,
+  projectCandidates: [],
+};
 
 describe("Sidebar", () => {
   it("marks the current page with aria-current, not a class", () => {
@@ -21,6 +36,7 @@ describe("Sidebar", () => {
         activeMemberCount={10}
         workCounts={WORK_COUNTS}
         adminCounts={null}
+        {...PROJECT_MODAL_PROPS}
       />,
     );
 
@@ -38,6 +54,7 @@ describe("Sidebar", () => {
         activeMemberCount={10}
         workCounts={WORK_COUNTS}
         adminCounts={null}
+        {...PROJECT_MODAL_PROPS}
       />,
     );
 
@@ -57,6 +74,7 @@ describe("Sidebar", () => {
         activeMemberCount={1}
         workCounts={WORK_COUNTS}
         adminCounts={null}
+        {...PROJECT_MODAL_PROPS}
       />,
     );
 
@@ -73,6 +91,7 @@ describe("Sidebar", () => {
         activeMemberCount={10}
         workCounts={WORK_COUNTS}
         adminCounts={null}
+        {...PROJECT_MODAL_PROPS}
       />,
     );
 
@@ -90,6 +109,7 @@ describe("Sidebar", () => {
         activeMemberCount={10}
         workCounts={WORK_COUNTS}
         adminCounts={{ accounts: 10, labels: 6 }}
+        {...PROJECT_MODAL_PROPS}
       />,
     );
 
@@ -107,6 +127,7 @@ describe("Sidebar", () => {
         activeMemberCount={10}
         workCounts={WORK_COUNTS}
         adminCounts={null}
+        {...PROJECT_MODAL_PROPS}
       />,
     );
 

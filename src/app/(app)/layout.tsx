@@ -4,7 +4,8 @@ import { listAssignedIssues } from "@/features/home/server/assigned-queries";
 import { countOpenIssuesForTeam } from "@/features/home/server/metrics-queries";
 import { countLabels } from "@/features/labels/server/queries";
 import { countUnreadNotifications } from "@/features/notifications/server/notification-queries";
-import { listProjectsForSidebar } from "@/features/projects/server/queries";
+import { checkProjectKeyAvailable, createProject } from "@/features/projects/actions";
+import { listAddableUsers, listProjectsForSidebar } from "@/features/projects/server/queries";
 import { AppShell } from "@/features/shell/components/app-shell";
 import { ToastRegion } from "@/features/shell/components/toast-region";
 import { displayName } from "@/lib/display-name";
@@ -16,16 +17,25 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   const isAdmin = actor.role === "admin";
-  const [projects, openIssues, assignedIssues, unreadNotifications, activeMemberCount, accounts, labels] =
-    await Promise.all([
-      listProjectsForSidebar(),
-      countOpenIssuesForTeam(),
-      listAssignedIssues(actor.id),
-      countUnreadNotifications(actor.id),
-      countActiveUsers(),
-      isAdmin ? countUsers() : Promise.resolve(0),
-      isAdmin ? countLabels() : Promise.resolve(0),
-    ]);
+  const [
+    projects,
+    openIssues,
+    assignedIssues,
+    unreadNotifications,
+    activeMemberCount,
+    accounts,
+    labels,
+    projectCandidates,
+  ] = await Promise.all([
+    listProjectsForSidebar(),
+    countOpenIssuesForTeam(),
+    listAssignedIssues(actor.id),
+    countUnreadNotifications(actor.id),
+    countActiveUsers(),
+    isAdmin ? countUsers() : Promise.resolve(0),
+    isAdmin ? countLabels() : Promise.resolve(0),
+    isAdmin ? listAddableUsers({ excludeUserId: actor.id }) : Promise.resolve([]),
+  ]);
 
   return (
     <>
@@ -41,7 +51,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           assignedToMe: assignedIssues.length,
           unreadNotifications,
         }}
-        adminCounts={isAdmin ? { accounts, labels } : null}>
+        adminCounts={isAdmin ? { accounts, labels } : null}
+        createProjectAction={createProject}
+        checkKeyAvailability={checkProjectKeyAvailable}
+        projectCandidates={projectCandidates}>
         {children}
       </AppShell>
       <ToastRegion />

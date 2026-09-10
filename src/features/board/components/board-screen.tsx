@@ -183,7 +183,6 @@ export function BoardScreen({
                   canAddIssue
                     ? {
                         projectId: board.project.id,
-                        projectKey: board.project.key,
                         grouping,
                         laneId: lane.id,
                         laneName: lane.name,
