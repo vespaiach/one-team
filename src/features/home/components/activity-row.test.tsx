@@ -86,6 +86,15 @@ describe("ActivityRow composes R7's sentence for the ten non-comment types (FR-0
     expect(screen.getByText("2 hours ago")).not.toBeNull();
   });
 
+  it("shows the actor's avatar as decorative — the visible sentence carries the meaning", () => {
+    const { container } = render(
+      <ActivityRow row={row({ actor: { ...row().actor, avatarUrl: "https://example.com/at.png" } })} />,
+    );
+
+    const avatar = container.querySelector("img");
+    expect(avatar?.getAttribute("aria-hidden")).toBe("true");
+  });
+
   it("names a project-scoped event by its project once, not twice", () => {
     render(
       <ActivityRow

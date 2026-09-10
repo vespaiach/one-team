@@ -250,9 +250,11 @@ describe("Home re-queries on revisit rather than serving what the first visit re
     const firstVisit = await renderHome();
 
     expect(firstVisit).toContain(
-      '>1</span><span class="text-label text-(--color-text-muted)">Assigned to you',
+      '>1</span><span class="text-label text-(--color-text-muted) uppercase tracking-[0.08em]">Assigned to you',
     );
-    expect(firstVisit).toContain('>1</span><span class="text-label text-(--color-text-muted)">Unread');
+    expect(firstVisit).toContain(
+      '>1</span><span class="text-label text-(--color-text-muted) uppercase tracking-[0.08em]">Unread',
+    );
 
     const later = new Date();
 
@@ -301,8 +303,10 @@ describe("Home re-queries on revisit rather than serving what the first visit re
     const secondVisit = await renderHome();
 
     expect(secondVisit).toContain(
-      '>2</span><span class="text-label text-(--color-text-muted)">Assigned to you',
+      '>2</span><span class="text-label text-(--color-text-muted) uppercase tracking-[0.08em]">Assigned to you',
     );
-    expect(secondVisit).toContain('>2</span><span class="text-label text-(--color-text-muted)">Unread');
+    expect(secondVisit).toContain(
+      '>2</span><span class="text-label text-(--color-text-muted) uppercase tracking-[0.08em]">Unread',
+    );
   });
 });

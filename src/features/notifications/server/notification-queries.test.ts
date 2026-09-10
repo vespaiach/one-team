@@ -346,6 +346,24 @@ describe("listNotifications maps the row to the screen's DTO (FR-012, FR-073, E-
     expect(row?.actorName).toBe("Alan Turing");
   });
 
+  it("carries the actor's avatar URL, or null when they have none", async () => {
+    const recipient = await insertUser();
+    const actor = await insertUser({ avatarUrl: "https://example.com/gh.png" });
+    const projectRow = await insertProject();
+    const issueRow = await insertIssue(projectRow.id, actor.id);
+
+    await insertNotification({
+      userId: recipient.id,
+      actorId: actor.id,
+      type: "assignment",
+      issueId: issueRow.id,
+    });
+
+    const [row] = await listNotifications(recipient.id);
+
+    expect(row?.actorAvatarUrl).toBe("https://example.com/gh.png");
+  });
+
   it("carries exactly the seven DTO keys, with no send_attempts, emailed_at, read_at or email", async () => {
     const recipient = await insertUser();
     const actor = await insertUser({ firstName: "Alan", lastName: "Turing" });
@@ -363,6 +381,7 @@ describe("listNotifications maps the row to the screen's DTO (FR-012, FR-073, E-
 
     expect(row).toBeDefined();
     expect(Object.keys(row ?? {}).sort()).toEqual([
+      "actorAvatarUrl",
       "actorName",
       "createdAt",
       "href",

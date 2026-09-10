@@ -25,6 +25,8 @@ function assignedRow(index: number, dueThisWeek: boolean): AssignedIssueRow {
     projectName: "Website Redesign",
     href: `/projects/WEB/issues/${index}/details`,
     dueThisWeek,
+    priority: "none",
+    dueDate: null,
   };
 }
 

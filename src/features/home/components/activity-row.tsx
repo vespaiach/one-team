@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Avatar } from "@/components/ui/avatar";
 import { ActivityRow as ActivitySentence } from "@/features/activity/components/activity-row";
 import { displayName } from "@/lib/display-name";
 import { formatRelativeTime } from "@/lib/relative-time";
@@ -11,6 +12,12 @@ export function ActivityRow({ row }: { row: InstallationActivityRow }) {
     <Link
       href={row.href}
       className="flex items-baseline gap-2 px-4.5 py-2 text-control text-(--color-text) hover:bg-(--color-surface)">
+      <Avatar
+        name={displayName(row.actor)}
+        avatarUrl={row.actor.avatarUrl}
+        size="sm"
+        decorative
+      />
       {row.kind === "comment" ? (
         <>
           <span className="font-medium">{displayName(row.actor)}</span>

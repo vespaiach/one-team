@@ -10,14 +10,35 @@ import { ProjectsSection } from "@/features/home/components/projects-section";
 import { ProjectsSkeleton } from "@/features/home/components/projects-skeleton";
 import { StatCards } from "@/features/home/components/stat-cards";
 import { StatCardsSkeleton } from "@/features/home/components/stat-cards-skeleton";
+import { NewIssueProjectPicker } from "@/features/issues/components/new-issue-project-picker";
+import { checkProjectKeyAvailable, createProject } from "@/features/projects/actions";
+import { CreateProjectModal } from "@/features/projects/components/create-project-modal";
+import { listAddableUsers, listProjectsForSidebar } from "@/features/projects/server/queries";
+import { CommandPaletteTrigger } from "@/features/shell/components/command-palette-trigger";
 import { displayName } from "@/lib/display-name";
 
 export default async function HomePage() {
   const actor = await requireActor();
+  const isAdmin = actor.role === "admin";
+  const projects = await listProjectsForSidebar();
+  const candidates = isAdmin ? await listAddableUsers({ excludeUserId: actor.id }) : [];
 
   return (
     <div className="flex flex-col gap-6 py-4.5">
-      <p className="px-4.5 text-h5">{displayName(actor)}</p>
+      <div className="flex items-center justify-between gap-3 px-4.5">
+        <p className="text-h5">{displayName(actor)}</p>
+        <div className="flex items-center gap-4">
+          <CommandPaletteTrigger />
+          <NewIssueProjectPicker projects={projects} />
+          {isAdmin ? (
+            <CreateProjectModal
+              createProjectAction={createProject}
+              checkKeyAvailability={checkProjectKeyAvailable}
+              candidates={candidates}
+            />
+          ) : null}
+        </div>
+      </div>
       <Suspense fallback={<StatCardsSkeleton />}>
         <StatCards userId={actor.id} />
       </Suspense>

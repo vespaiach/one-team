@@ -11,6 +11,7 @@ function row(overrides: Partial<ProjectProgressRowData> = {}): ProjectProgressRo
     href: "/projects/WEB",
     done: 3,
     counted: 8,
+    targetDate: null,
     ...overrides,
   };
 }
@@ -22,6 +23,36 @@ describe("ProjectProgressRow (FR-016, FR-019, FR-042)", () => {
     expect(screen.getByText("Website Redesign")).not.toBeNull();
     expect(screen.getByText("active")).not.toBeNull();
     expect(screen.getByText("38%")).not.toBeNull();
+  });
+
+  it("reads the open count as text (counted minus done)", () => {
+    render(<ProjectProgressRow row={row({ done: 3, counted: 8 })} />);
+
+    expect(screen.getByText("5 open")).not.toBeNull();
+  });
+
+  it("reads a singular '1 open' for exactly one open issue", () => {
+    render(<ProjectProgressRow row={row({ done: 7, counted: 8 })} />);
+
+    expect(screen.getByText("1 open")).not.toBeNull();
+  });
+
+  it("reads the target date as text when the project has one, and omits it otherwise", () => {
+    const { rerender } = render(<ProjectProgressRow row={row({ targetDate: "2026-12-18" })} />);
+    expect(screen.getByText("Dec 18, 2026")).not.toBeNull();
+
+    rerender(<ProjectProgressRow row={row({ targetDate: null })} />);
+    expect(screen.queryByText(/Dec 18, 2026/)).toBeNull();
+  });
+
+  it("keeps its status dot and progress bar decorative — the text alone carries the meaning", () => {
+    const { container } = render(<ProjectProgressRow row={row()} />);
+
+    const decorativeEls = container.querySelectorAll('[aria-hidden="true"]');
+    expect(decorativeEls.length).toBeGreaterThan(0);
+    for (const el of Array.from(decorativeEls)) {
+      expect(el.textContent).toBe("");
+    }
   });
 
   it("links to the project it names", () => {

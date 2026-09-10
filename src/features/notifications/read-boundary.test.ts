@@ -12,7 +12,16 @@ const REPO_ROOT = join(__dirname, "..", "..", "..");
 const FEATURE_DIR = join(REPO_ROOT, "src", "features", "notifications");
 const CLIENT_REACHABLE = [join(FEATURE_DIR, "actions.ts"), join(FEATURE_DIR, "components")] as const;
 
-const LIST_ITEM_KEYS = ["actorName", "createdAt", "href", "id", "isUnread", "targetLabel", "type"];
+const LIST_ITEM_KEYS = [
+  "actorAvatarUrl",
+  "actorName",
+  "createdAt",
+  "href",
+  "id",
+  "isUnread",
+  "targetLabel",
+  "type",
+];
 
 const RECIPIENT_EMAIL_PATTERN = /user\.email/;
 const DELIVERY_STATE_PATTERN = /sendAttempts|emailedAt/;

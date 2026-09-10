@@ -18,6 +18,7 @@ function item(overrides: Partial<NotificationListItem> = {}): NotificationListIt
     id: "n1",
     type: "mention",
     actorName: "Alan Turing",
+    actorAvatarUrl: null,
     targetLabel: "WEB-142 · Fix the header",
     href: "/projects/WEB/issues/142/details",
     isUnread: true,

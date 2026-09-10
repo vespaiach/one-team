@@ -13,6 +13,8 @@ function issue(overrides: Partial<AssignedIssue> = {}): AssignedIssue {
     projectName: "Website Redesign",
     href: "/projects/WEB/issues/142/details",
     dueThisWeek: false,
+    priority: "none",
+    dueDate: null,
     ...overrides,
   };
 }
@@ -24,6 +26,36 @@ describe("AssignedIssueRow names its issue across projects (FR-011)", () => {
     expect(screen.getByText("WEB-142")).not.toBeNull();
     expect(screen.getByText("Fix the header")).not.toBeNull();
     expect(screen.getByText("Website Redesign")).not.toBeNull();
+  });
+});
+
+describe("AssignedIssueRow states priority and due date in text, decorated but never colour-only", () => {
+  it("reads the priority as a word", () => {
+    render(<AssignedIssueRow issue={issue({ priority: "urgent" })} />);
+
+    expect(screen.getByText("Urgent")).not.toBeNull();
+  });
+
+  it("reads no priority word for a 'none' priority issue", () => {
+    render(<AssignedIssueRow issue={issue({ priority: "none" })} />);
+
+    expect(screen.queryByText(/urgent|high|medium|low/i)).toBeNull();
+  });
+
+  it("reads the due date as text when set, and omits it otherwise", () => {
+    const { rerender } = render(<AssignedIssueRow issue={issue({ dueDate: "2026-09-09" })} />);
+    expect(screen.getByText("Sep 9")).not.toBeNull();
+
+    rerender(<AssignedIssueRow issue={issue({ dueDate: null })} />);
+    expect(screen.queryByText("Sep 9")).toBeNull();
+  });
+
+  it("keeps its priority glyph decorative", () => {
+    const { container } = render(<AssignedIssueRow issue={issue({ priority: "urgent" })} />);
+
+    const glyph = container.querySelector('[aria-hidden="true"]');
+    expect(glyph).not.toBeNull();
+    expect(glyph?.textContent).toBe("");
   });
 });
 

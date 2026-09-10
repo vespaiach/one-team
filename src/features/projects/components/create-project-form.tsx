@@ -17,6 +17,7 @@ export function CreateProjectForm({
   createProjectAction,
   checkKeyAvailability,
   candidates,
+  onCancel,
 }: {
   createProjectAction: (
     prevState: CreateProjectState,
@@ -24,6 +25,7 @@ export function CreateProjectForm({
   ) => Promise<CreateProjectState>;
   checkKeyAvailability: (key: string) => Promise<{ holder: { key: string; name: string } | null }>;
   candidates: RosterEntry[];
+  onCancel?: () => void;
 }) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(createProjectAction, INITIAL_STATE);
@@ -57,6 +59,10 @@ export function CreateProjectForm({
   }
 
   function handleCancel() {
+    if (onCancel) {
+      onCancel();
+      return;
+    }
     const referrer = document.referrer;
     if (referrer && new URL(referrer).origin === window.location.origin) {
       router.back();
