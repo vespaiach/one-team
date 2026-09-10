@@ -2,9 +2,16 @@ import "server-only";
 import { and, asc, eq, exists, inArray, isNull, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { boardColumn, issue, project, projectMember, user } from "@/db/schema";
+import type { FeedFilterValue } from "@/features/activity/components/feed-filter-toggle";
+import { getFeedFilter } from "@/features/activity/server/feed-filter";
+import type { FeedPage } from "@/features/activity/server/feed-queries";
+import { listFeed } from "@/features/activity/server/feed-queries";
 import type { Actor } from "@/features/auth/server/actor";
 import { publicUser } from "@/features/auth/server/projections";
+import type { LabelOption } from "@/features/labels/server/queries";
+import { listLabelOptionsForIssue } from "@/features/labels/server/queries";
 import { isAdmin, isMember } from "@/features/projects/server/authorization";
+import { loadProjectByKey } from "@/features/projects/server/queries";
 import { formatIssueKey } from "../issue-key";
 import type { IssuePriority } from "./input";
 
@@ -68,13 +75,15 @@ export type PublicUser = {
   deactivatedAt: Date | null;
 };
 
+export type IssueColumnKind = "open" | "done" | "canceled";
+
 export type IssueView = {
   id: string;
   key: string;
   number: number;
   title: string;
   description: string | null;
-  column: { id: string; name: string };
+  column: { id: string; name: string; kind: IssueColumnKind };
   priority: IssuePriority;
   assignee: PublicUser | null;
   dueDate: string | null;
@@ -99,6 +108,7 @@ export async function loadIssueView(projectKey: string, number: number): Promise
       updatedAt: issue.updatedAt,
       columnId: boardColumn.id,
       columnName: boardColumn.name,
+      columnKind: boardColumn.kind,
       projectKey: project.key,
       projectName: project.name,
     })
@@ -128,7 +138,7 @@ export async function loadIssueView(projectKey: string, number: number): Promise
     number: row.number,
     title: row.title,
     description: row.description,
-    column: { id: row.columnId, name: row.columnName },
+    column: { id: row.columnId, name: row.columnName, kind: row.columnKind as IssueColumnKind },
     priority: row.priority as IssuePriority,
     assignee,
     dueDate: row.dueDate,
@@ -169,4 +179,69 @@ export function buildIssueDeleteReason(projectName: string): string {
 export function resolveIssueDeleteAccess(actor: Actor, project: { name: string }): IssueDeleteAccess {
   const canDelete = isAdmin(actor);
   return { canDelete, deleteReason: canDelete ? "" : buildIssueDeleteReason(project.name) };
+}
+
+export type IssueDetailData = {
+  issue: IssueView;
+  columns: IssueColumnOption[];
+  assigneePool: AssigneeOption[];
+  canWrite: boolean;
+  writeReason: string;
+  canDelete: boolean;
+  deleteReason: string;
+  labelOptions: LabelOption[];
+  canManageLabels: boolean;
+  feedInitialPage: FeedPage;
+  feedFilter: FeedFilterValue;
+  canComment: boolean;
+  commentPostReason: string | null;
+  viewer: { id: string; firstName: string; lastName: string; avatarUrl: string | null };
+};
+
+export async function loadIssueDetailData(
+  projectKey: string,
+  number: number,
+  actor: Actor,
+): Promise<IssueDetailData | null> {
+  const issueView = await loadIssueView(projectKey, number);
+  if (!issueView) {
+    return null;
+  }
+
+  const project = await loadProjectByKey(projectKey);
+  if (!project) {
+    return null;
+  }
+
+  const [columns, assigneePool, writeAccess, labelOptions, feedInitialPage, feedFilter] = await Promise.all([
+    listProjectColumns(project.id),
+    listAssigneePool(project.id),
+    resolveIssueWriteAccess(actor, project, "edit"),
+    listLabelOptionsForIssue(issueView.id),
+    listFeed({ issueId: issueView.id }, { id: actor.id, isAdmin: actor.role === "admin" }),
+    getFeedFilter(actor.id),
+  ]);
+  const deleteAccess = resolveIssueDeleteAccess(actor, project);
+
+  return {
+    issue: issueView,
+    columns,
+    assigneePool,
+    canWrite: writeAccess.canWrite,
+    writeReason: writeAccess.writeReason,
+    canDelete: deleteAccess.canDelete,
+    deleteReason: deleteAccess.deleteReason,
+    labelOptions,
+    canManageLabels: actor.role === "admin",
+    feedInitialPage,
+    feedFilter,
+    canComment: writeAccess.canWrite,
+    commentPostReason: writeAccess.canWrite ? null : `Only project members can comment in ${project.name}.`,
+    viewer: {
+      id: actor.id,
+      firstName: actor.firstName,
+      lastName: actor.lastName,
+      avatarUrl: actor.avatarUrl,
+    },
+  };
 }

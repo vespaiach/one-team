@@ -6,6 +6,7 @@ import type { Actor } from "@/features/auth/server/actor";
 import { formatIssueKey } from "@/features/issues/issue-key";
 import type { IssuePriority } from "@/features/issues/server/input";
 import { listAssigneePool, resolveIssueWriteAccess } from "@/features/issues/server/issue-queries";
+import { isAdmin } from "@/features/projects/server/authorization";
 import { loadProjectByKey } from "@/features/projects/server/queries";
 
 export type BoardPerson = {
@@ -18,6 +19,7 @@ export type BoardPerson = {
 export type BoardCard = {
   id: string;
   key: string;
+  number: number;
   title: string;
   columnId: string;
   assigneeId: string | null;
@@ -29,14 +31,18 @@ export type BoardCard = {
   order: number;
 };
 
+export type ColumnKind = "open" | "done" | "canceled";
+
 export type BoardView = {
   project: { id: string; key: string; name: string; status: string };
-  columns: { id: string; name: string }[];
+  columns: { id: string; name: string; kind: ColumnKind }[];
   cards: BoardCard[];
   assigneePool: BoardPerson[];
   assignedOutsidePool: BoardPerson[];
   canWrite: boolean;
   writeReason: string;
+  viewer: { id: string; firstName: string; lastName: string; avatarUrl: string | null };
+  isAdmin: boolean;
 };
 
 const boardPerson = {
@@ -82,7 +88,7 @@ export async function loadBoard(projectKey: string, actor: Actor): Promise<Board
   }
 
   const columns = await db
-    .select({ id: boardColumn.id, name: boardColumn.name })
+    .select({ id: boardColumn.id, name: boardColumn.name, kind: boardColumn.kind })
     .from(boardColumn)
     .where(eq(boardColumn.projectId, projectRow.id))
     .orderBy(asc(boardColumn.sortOrder), asc(boardColumn.id));
@@ -136,10 +142,11 @@ export async function loadBoard(projectKey: string, actor: Actor): Promise<Board
       name: projectRow.name,
       status: projectRow.status,
     },
-    columns,
+    columns: columns.map((column) => ({ ...column, kind: column.kind as ColumnKind })),
     cards: issueRows.map((row, index) => ({
       id: row.id,
       key: formatIssueKey(projectRow.key, row.number),
+      number: row.number,
       title: row.title,
       columnId: row.columnId,
       assigneeId: row.assigneeId,
@@ -159,5 +166,12 @@ export async function loadBoard(projectKey: string, actor: Actor): Promise<Board
     assignedOutsidePool,
     canWrite,
     writeReason,
+    viewer: {
+      id: actor.id,
+      firstName: actor.firstName,
+      lastName: actor.lastName,
+      avatarUrl: actor.avatarUrl,
+    },
+    isAdmin: isAdmin(actor),
   };
 }

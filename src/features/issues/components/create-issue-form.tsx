@@ -56,6 +56,7 @@ export function CreateIssueForm({
   initialColumnId,
   initialAssigneeId,
   initialPriority = "none",
+  onCancel,
 }: {
   projectId: string;
   projectKey: string;
@@ -68,6 +69,7 @@ export function CreateIssueForm({
   initialColumnId?: string;
   initialAssigneeId?: string;
   initialPriority?: "none" | "low" | "medium" | "high" | "urgent";
+  onCancel?: () => void;
 }) {
   const router = useRouter();
   const [, formAction, isPending] = useActionState(createIssueAction, INITIAL_STATE);
@@ -101,6 +103,10 @@ export function CreateIssueForm({
   }
 
   function handleCancel() {
+    if (onCancel) {
+      onCancel();
+      return;
+    }
     router.push(`/projects/${projectKey}/details`);
   }
 

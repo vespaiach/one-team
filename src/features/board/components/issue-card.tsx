@@ -1,34 +1,22 @@
-import Link from "next/link";
-import type { IssuePriority } from "@/features/issues/server/input";
+import clsx from "clsx";
+import { Button } from "react-aria-components/Button";
+import { Pill } from "@/components/ui/pill";
+import { PriorityGlyph } from "@/components/ui/priority-glyph";
 import { displayName } from "@/lib/display-name";
 import type { BoardCard, BoardPerson } from "../server/board-queries";
-
-type SetPriority = Exclude<IssuePriority, "none">;
-
-const PRIORITY_NAMES: Record<SetPriority, string> = {
-  low: "Low",
-  medium: "Medium",
-  high: "High",
-  urgent: "Urgent",
-};
-
-const PRIORITY_GLYPHS: Record<SetPriority, string> = {
-  low: "▁",
-  medium: "▄",
-  high: "▆",
-  urgent: "█",
-};
-
-function issuePath(projectKey: string, issueKey: string): string {
-  const issueNumber = issueKey.slice(issueKey.lastIndexOf("-") + 1);
-  return `/projects/${projectKey}/issues/${issueNumber}/details`;
-}
 
 function AssigneeAvatar({ person }: { person: BoardPerson }) {
   const name = displayName(person);
 
   if (person.avatarUrl === null) {
-    return <span className="text-label text-(--color-text-muted)">{name}</span>;
+    return (
+      <span className="grid h-4.5 w-4.5 flex-none place-items-center rounded-full bg-(--color-accent-200) font-mono text-[9px] text-(--color-accent-900)">
+        {name
+          .split(" ")
+          .map((part) => part[0])
+          .join("")}
+      </span>
+    );
   }
 
   return (
@@ -36,56 +24,56 @@ function AssigneeAvatar({ person }: { person: BoardPerson }) {
     <img
       src={person.avatarUrl}
       alt={name}
-      className="h-6 w-6 flex-none object-cover"
+      className="h-4.5 w-4.5 flex-none rounded-full object-cover"
     />
   );
 }
 
-export function IssueCard({ card, projectKey }: { card: BoardCard; projectKey: string }) {
-  const showsMeta =
-    card.priority !== "none" || card.dueDate !== null || card.commentCount > 0 || card.assignee !== null;
-
+export function IssueCard({
+  card,
+  isSelected = false,
+  onSelect,
+}: {
+  card: BoardCard;
+  isSelected?: boolean;
+  onSelect: (card: BoardCard) => void;
+}) {
   return (
-    <div className="flex flex-col gap-2 border border-(--color-divider) p-3">
-      <Link
-        href={issuePath(projectKey, card.key)}
-        aria-label={`${card.key} ${card.title}`}
-        className="flex flex-col gap-1">
-        <span className="text-label font-mono text-(--color-text-muted)">{card.key}</span>
-        <span className="text-control text-(--color-text)">{card.title}</span>
-      </Link>
-      {card.labels.length > 0 ? (
-        <ul className="flex flex-wrap gap-1">
-          {card.labels.map((label) => (
-            <li
-              key={label.id}
-              className="border border-(--color-divider) px-1.5 text-label text-(--color-text-muted)">
-              {label.name}
-            </li>
-          ))}
-        </ul>
-      ) : null}
-      {showsMeta ? (
-        <div className="flex items-center gap-2">
-          {card.priority !== "none" ? (
-            <span
-              role="img"
-              aria-label={`Priority: ${PRIORITY_NAMES[card.priority]}`}
-              className="text-label text-(--color-text)">
-              {PRIORITY_GLYPHS[card.priority]}
-            </span>
-          ) : null}
-          {card.dueDate !== null ? (
-            <span className="text-label font-mono text-(--color-text-muted)">{card.dueDate}</span>
-          ) : null}
-          {card.commentCount > 0 ? (
-            <span className="text-label text-(--color-text-muted)">
-              {card.commentCount === 1 ? "1 comment" : `${card.commentCount} comments`}
-            </span>
-          ) : null}
-          {card.assignee !== null ? <AssigneeAvatar person={card.assignee} /> : null}
-        </div>
-      ) : null}
-    </div>
+    <Button
+      onPress={() => onSelect(card)}
+      aria-current={isSelected ? "true" : undefined}
+      className={clsx(
+        "grid gap-1.5 border bg-(--color-bg) p-2.5 text-start",
+        "data-[hovered]:border-(--color-border-control)",
+        "data-[focus-visible]:outline-2 data-[focus-visible]:outline-(--color-accent)",
+        "group-data-[dragging]:rotate-[-1.4deg] group-data-[dragging]:border-(--color-accent) group-data-[dragging]:shadow-md",
+        isSelected ? "border-(--color-accent)" : "border-(--color-divider)",
+      )}>
+      <div className="flex items-center gap-1.5">
+        <span className="font-mono text-(--color-text-muted) text-caption">{card.key}</span>
+        {card.assignee !== null ? (
+          <span className="ml-auto">
+            <AssigneeAvatar person={card.assignee} />
+          </span>
+        ) : null}
+      </div>
+      <h3 className="text-(--color-text) text-control leading-snug">{card.title}</h3>
+      <div className="flex flex-wrap items-center gap-1.5">
+        {card.priority !== "none" ? <PriorityGlyph priority={card.priority} /> : null}
+        {card.labels.map((label) => (
+          <Pill
+            key={label.id}
+            variant="label">
+            {label.name}
+          </Pill>
+        ))}
+        {card.dueDate !== null ? (
+          <span className="font-mono text-(--color-text-muted) text-caption">{card.dueDate}</span>
+        ) : null}
+        {card.commentCount > 0 ? (
+          <span className="font-mono text-(--color-text-muted) text-caption">{card.commentCount}</span>
+        ) : null}
+      </div>
+    </Button>
   );
 }

@@ -221,3 +221,13 @@ export function lanesFor<Card extends GroupedCard>(
   }
   return columnLanes(board.cards, board.columns).map((lane) => ({ ...lane, canAcceptDrop: true }));
 }
+
+export function filterByAssignee<Card extends { assigneeId: string | null }>(
+  cards: readonly Card[],
+  assigneeId: string | null,
+): readonly Card[] {
+  if (assigneeId === null) {
+    return cards;
+  }
+  return cards.filter((card) => card.assigneeId === assigneeId);
+}

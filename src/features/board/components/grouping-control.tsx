@@ -20,6 +20,8 @@ export function GroupingControl({
   grouping?: Grouping;
   onChange: (grouping: Grouping) => void;
 }) {
+  const current = GROUPINGS.find((candidate) => candidate.id === grouping) ?? GROUPINGS[0];
+
   return (
     <Select
       selectedKey={grouping}
@@ -28,20 +30,19 @@ export function GroupingControl({
         if (chosen) {
           onChange(chosen.id);
         }
-      }}
-      className="flex items-center gap-2">
-      <Label className="text-label text-(--color-text-muted)">Group by</Label>
-      <Button className="border border-(--color-divider) px-2 py-1 text-control text-(--color-text) data-[hovered]:bg-(--color-surface-hover) data-[pressed]:bg-(--color-surface) data-[focus-visible]:outline-2 data-[focus-visible]:outline-(--color-accent)">
-        <SelectValue />
+      }}>
+      <Label className="sr-only">Group by</Label>
+      <Button className="flex h-[26px] items-center gap-1 px-2 font-medium text-(--color-text-muted) text-label data-[hovered]:bg-(--color-chrome-tint-strong) data-[hovered]:text-(--color-text) data-[focus-visible]:outline-2 data-[focus-visible]:outline-(--color-accent)">
+        Group: <SelectValue>{current?.name}</SelectValue>
       </Button>
-      <Popover className="min-w-[140px] border border-(--color-divider) bg-(--color-surface) py-1">
+      <Popover className="min-w-[140px] border border-(--color-divider) bg-(--color-bg) py-1 shadow-md">
         <ListBox className="flex flex-col">
           {GROUPINGS.map((candidate) => (
             <ListBoxItem
               key={candidate.id}
               id={candidate.id}
               textValue={candidate.name}
-              className="cursor-default px-3 py-1.5 text-control text-(--color-text) data-[hovered]:bg-(--color-surface-hover) data-[selected]:font-semibold data-[selected]:underline data-[focus-visible]:outline-2 data-[focus-visible]:outline-(--color-accent)">
+              className="cursor-default px-3 py-1.5 text-control text-(--color-text) data-[focus-visible]:outline-2 data-[focus-visible]:outline-(--color-accent) data-[hovered]:bg-(--color-chrome-tint-strong) data-[selected]:bg-(--color-accent-100) data-[selected]:text-(--color-accent-800)">
               {candidate.name}
             </ListBoxItem>
           ))}

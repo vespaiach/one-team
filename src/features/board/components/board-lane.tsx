@@ -2,6 +2,8 @@ import type { DropItem } from "react-aria-components";
 import { Button } from "react-aria-components/Button";
 import { GridList, GridListItem } from "react-aria-components/GridList";
 import { DropIndicator, useDragAndDrop } from "react-aria-components/useDragAndDrop";
+import type { ColumnKind } from "@/components/ui/status-glyph";
+import { StatusGlyph } from "@/components/ui/status-glyph";
 import type { Drop, DropPlacement, Lane } from "../lane-model";
 import type { BoardCard } from "../server/board-queries";
 import { CardComposer, type CardComposerProps } from "./card-composer";
@@ -23,16 +25,20 @@ async function draggedIssueId(items: DropItem[]): Promise<string | null> {
 
 export function BoardLane({
   lane,
-  projectKey,
   onDrop,
+  onSelect,
+  selectedIssueId,
   composer,
   canWrite = true,
+  statusKind,
 }: {
   lane: Lane<BoardCard> & { canAcceptDrop?: boolean };
-  projectKey: string;
   onDrop?: (drop: Drop) => void;
+  onSelect: (card: BoardCard) => void;
+  selectedIssueId?: string | null;
   composer?: CardComposerProps;
   canWrite?: boolean;
+  statusKind?: ColumnKind;
 }) {
   const { dragAndDropHooks } = useDragAndDrop({
     getItems: (keys) => [...keys].map((key) => ({ [BOARD_CARD_DRAG_TYPE]: String(key) })),
@@ -72,7 +78,7 @@ export function BoardLane({
     renderDropIndicator: (target) => (
       <DropIndicator
         target={target}
-        className="h-1 bg-(--color-accent)"
+        className="my-1 h-[46px] border border-(--color-accent) border-dashed bg-(--color-accent-100)"
       />
     ),
   });
@@ -80,38 +86,47 @@ export function BoardLane({
   return (
     <div
       data-region="lane"
-      className="flex w-[288px] shrink-0 flex-col gap-3">
-      <div className="flex items-baseline justify-between">
-        <h2 className="text-control text-(--color-text)">{lane.name}</h2>
-        <span className="text-label font-mono text-(--color-text-muted)">{lane.cards.length}</span>
+      className="flex w-[268px] shrink-0 flex-col border-(--color-divider) border-r bg-(--color-chrome-tint)">
+      <div className="flex h-(--size-row) flex-none items-center gap-1.5 border-(--color-divider) border-b px-2 font-medium text-[10.5px] text-(--color-text-muted) uppercase tracking-[0.1em]">
+        {statusKind ? <StatusGlyph kind={statusKind} /> : null}
+        <span className="truncate text-(--color-text)">{lane.name}</span>
+        <span className="ml-auto font-mono normal-case tracking-normal">{lane.cards.length}</span>
       </div>
       <GridList
         key={canWrite ? "draggable" : "read-only"}
         aria-label={lane.name}
         items={lane.cards}
         dragAndDropHooks={canWrite ? dragAndDropHooks : undefined}
-        renderEmptyState={() => <p className="text-label text-(--color-text-muted)">No cards</p>}
-        className="flex flex-col gap-3 data-[drop-target]:outline-2 data-[drop-target]:outline-(--color-accent)">
+        renderEmptyState={() => <p className="px-2 py-3 text-(--color-text-muted) text-label">No cards</p>}
+        className="grid content-start gap-1.5 p-1.5 data-[drop-target]:outline-2 data-[drop-target]:outline-(--color-accent)">
         {(card) => (
           <GridListItem
             id={card.id}
             textValue={`${card.key} ${card.title}`}
-            className="data-[focus-visible]:outline-2 data-[focus-visible]:outline-(--color-accent)">
+            className="group flex items-start gap-1 data-[focus-visible]:outline-2 data-[focus-visible]:outline-(--color-accent)">
             {canWrite ? (
               <Button
                 slot="drag"
-                className="px-1 text-left text-(--color-text-muted) data-[focus-visible]:outline-2 data-[focus-visible]:outline-(--color-accent)">
+                aria-label={`Reorder ${card.key}`}
+                className="mt-2.5 cursor-grab px-0.5 text-(--color-text-muted) leading-none data-[focus-visible]:outline-2 data-[focus-visible]:outline-(--color-accent)">
                 ⠿
               </Button>
             ) : null}
-            <IssueCard
-              card={card}
-              projectKey={projectKey}
-            />
+            <div className="min-w-0 flex-1">
+              <IssueCard
+                card={card}
+                isSelected={selectedIssueId === card.id}
+                onSelect={onSelect}
+              />
+            </div>
           </GridListItem>
         )}
       </GridList>
-      {composer && <CardComposer {...composer} />}
+      {composer && (
+        <div className="px-1.5 pb-1.5">
+          <CardComposer {...composer} />
+        </div>
+      )}
     </div>
   );
 }
