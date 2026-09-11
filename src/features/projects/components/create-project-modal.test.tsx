@@ -55,4 +55,20 @@ describe("CreateProjectModal", () => {
 
     expect(screen.getByRole("heading", { name: "New project" })).toBeTruthy();
   });
+
+  it("closes the dialog when the close button is pressed", () => {
+    render(
+      <CreateProjectModal
+        createProjectAction={noopCreateProjectAction}
+        checkKeyAvailability={noopCheckKeyAvailability}
+        candidates={[]}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "New project" }));
+    expect(screen.getByRole("heading", { name: "New project" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("heading", { name: "New project" })).toBeNull();
+  });
 });

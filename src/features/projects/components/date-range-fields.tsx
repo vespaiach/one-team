@@ -1,18 +1,7 @@
 "use client";
 
-import { type CalendarDate, parseDate } from "@internationalized/date";
-import {
-  DateInput,
-  DatePicker,
-  DateSegment,
-  FieldError,
-  Group,
-  Label,
-} from "react-aria-components/DatePicker";
-
-function toCalendarDate(value: string | null): CalendarDate | null {
-  return value ? parseDate(value) : null;
-}
+import { parseDate } from "@internationalized/date";
+import { DatePickerPopoverField } from "./date-picker-popover-field";
 
 export function DateRangeFields({
   startDate,
@@ -25,32 +14,24 @@ export function DateRangeFields({
   onStartDateChange: (value: string | null) => void;
   onTargetDateChange: (value: string | null) => void;
 }) {
-  const start = toCalendarDate(startDate);
-  const target = toCalendarDate(targetDate);
+  const start = startDate ? parseDate(startDate) : null;
+  const target = targetDate ? parseDate(targetDate) : null;
   const targetBeforeStart = start !== null && target !== null && target.compare(start) < 0;
 
   return (
-    <div className="flex gap-3">
-      <DatePicker
-        value={start}
-        onChange={(value) => onStartDateChange(value ? value.toString() : null)}
-        className="flex flex-col gap-1">
-        <Label>Start date</Label>
-        <Group>
-          <DateInput>{(segment) => <DateSegment segment={segment} />}</DateInput>
-        </Group>
-      </DatePicker>
-      <DatePicker
-        value={target}
-        onChange={(value) => onTargetDateChange(value ? value.toString() : null)}
+    <div className="flex gap-2">
+      <DatePickerPopoverField
+        label="Start date"
+        value={startDate}
+        onChange={onStartDateChange}
+      />
+      <DatePickerPopoverField
+        label="Target date"
+        value={targetDate}
+        onChange={onTargetDateChange}
         isInvalid={targetBeforeStart}
-        className="flex flex-col gap-1">
-        <Label>Target date</Label>
-        <Group>
-          <DateInput>{(segment) => <DateSegment segment={segment} />}</DateInput>
-        </Group>
-        {targetBeforeStart && <FieldError>Target date can&apos;t be before the start date.</FieldError>}
-      </DatePicker>
+        errorMessage="Target date can't be before the start date."
+      />
     </div>
   );
 }
