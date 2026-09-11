@@ -68,7 +68,7 @@ export function ProjectKeyField({
       isInvalid={requiredError || clashError}
       className="flex flex-col gap-1">
       <Label>Key</Label>
-      <Input />
+      <Input className="w-full border-0 bg-(--color-accent-100) px-3 py-2 font-mono text-(--color-accent-800) text-control uppercase outline-none" />
       {requiredError && <FieldError>A key is required.</FieldError>}
       {clashError && holder && <FieldError>{holder.name} already uses this key.</FieldError>}
     </TextField>
