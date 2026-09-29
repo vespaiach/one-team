@@ -45,7 +45,7 @@ Each sub-spec applies these to the screens, actions and data it adds, rather tha
 ## Working through it
 
 1. Pick the next entry whose dependencies are all `done`. RM-2 only needs RM-1, so doing it early means every later slice ships through the real deploy.
-2. Start its sub-spec with the line below, then run `/speckit.specify`, `/speckit.plan`, `/speckit.tasks` and `/speckit.implement`.
+2. Start its sub-spec with the line below, then run `/speckit.specify`, `/speckit.design`, `/speckit.plan`, `/speckit.tasks` and `/speckit.implement`. `/speckit.design` must freeze the slice's `design.md` (or mark it Not applicable) before planning.
 
    ```
    **Input**: Parent roadmap: `ROADMAP.md` → entry **RM-n**. <intent>
