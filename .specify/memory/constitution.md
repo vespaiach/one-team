@@ -1,14 +1,12 @@
 <!--
 Sync Impact Report
-- Version change: template (unversioned) → 1.0.0
-- Principles defined (template placeholders → new titles):
-  - [PRINCIPLE_1_NAME] → I. Simplicity First
-  - [PRINCIPLE_2_NAME] → II. No Dead Code
-  - [PRINCIPLE_3_NAME] → III. No Code Comments
-  - [PRINCIPLE_4_NAME] → IV. Dependency Approval
-- Removed sections: fifth principle slot (four principles requested)
-- Added sections: Development Constraints, Development Workflow, Governance
-- Deferred TODOs: none
+- Version change: 1.0.0 → 1.1.0
+- Added principles: V. UI Design Gate
+- Modified sections: Development Workflow (design gate before planning)
+- Added templates: .specify/templates/design-template.md (used by /speckit-design)
+- Templates checked: plan-template.md (Constitution Check reads this file; no change needed)
+- Deferred TODOs: none; no design system yet, so Principle V covers layout, states, copy and
+  keyboard only
 -->
 
 # Tracklite Constitution
@@ -59,6 +57,21 @@ version control already keeps history.
 **Rationale**: Every dependency adds security, maintenance and upgrade cost; the owner decides
 whether that cost is worth paying.
 
+### V. UI Design Gate
+
+- Every slice that adds or changes a screen, overlay, email or other user-visible text MUST have a
+  `design.md` in its feature directory with Status Frozen before `/speckit-plan` runs. A slice
+  with no UI records Status Not applicable instead.
+- `design.md` MUST cover every screen the slice touches, each state from the design template's
+  checklist (or N/A with a reason), the exact copy, the component for each element, and the
+  keyboard and focus path.
+- `docs/tracklite-spec.md` decides behavior, permissions and copy; `design.md` and its canvas
+  decide layout only. A design that needs new behavior MUST stop and raise it as a DEC candidate.
+- Implementation MUST match the frozen `design.md`; changing it needs a re-freeze.
+
+**Rationale**: Deciding screens, states and copy before planning keeps the plan and the build from
+guessing at UI, and catches missing states while they are cheap to add.
+
 ## Development Constraints
 
 - Features MUST be built on the stack and dependencies already approved for the project; a plan
@@ -68,10 +81,12 @@ whether that cost is worth paying.
 
 ## Development Workflow
 
-- Every plan MUST pass a Constitution Check against the four principles before design and again
+- Every slice MUST run `/speckit-design` after `/speckit-specify` (and `/speckit-clarify`, if run)
+  and before `/speckit-plan` (Principle V).
+- Every plan MUST pass a Constitution Check against the five principles before design and again
   after design.
-- Every review MUST confirm: no unnecessary abstraction, no unused code or files, no comments, and
-  no unapproved dependencies.
+- Every review MUST confirm: no unnecessary abstraction, no unused code or files, no comments, no
+  unapproved dependencies, and UI that matches the frozen `design.md`.
 - A change that violates a principle MUST NOT be merged until it is fixed or the violation is
   justified and accepted in the plan.
 
@@ -85,4 +100,4 @@ whether that cost is worth paying.
   wording.
 - Compliance is checked in every plan's Constitution Check and in every code review.
 
-**Version**: 1.0.0 | **Ratified**: 2026-09-29 | **Last Amended**: 2026-09-29
+**Version**: 1.1.0 | **Ratified**: 2026-09-29 | **Last Amended**: 2026-09-29
