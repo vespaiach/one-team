@@ -1,702 +1,767 @@
-# Production Specification: One Team
-
-> A single source of truth for product behavior, system contracts, constraints, and acceptance. Resolve blocking decisions and pass the implementation-readiness gate before asking an implementation agent to build production behavior.
-
-**Section labels:** `optional` means omit the section when it does not apply; `if applicable` means keep the heading and record `Not applicable` with a rationale when the condition is absent.
-
-## 1. Document control
-
-- **Product:** One Team
-- **Specification ID:** SPEC-001
-- **Version:** 0.2.0
-- **Current release:** R1
-- **Status:** `Draft`
-- **Last updated:** 2026-09-23
-- **Decision owner:** Owner (holds all roles)
-- **Product owner:** Owner
-- **Technical owner:** Owner
-- **Approvers required:** Owner (sole approver)
-
-### 1.1 Authority and change rules
-
-- This specification is authoritative for: all One Team product behavior, permissions, data rules, and acceptance criteria for R1.
-- The architecture baseline is authoritative for: the stack recorded in section 11 (Next.js, PostgreSQL, Drizzle, single VPS).
-- Repository guidance is authoritative for: engineering workflow and validation commands (not yet defined; see section 13.2).
-- If two authoritative sources conflict, implementation is blocked until the decision owner records a resolution in the decision log.
-- Requirement IDs are append-only. Do not reuse an ID after deletion or supersession.
-- A change to an approved requirement must update its dependents in the requirements index, acceptance criteria, tests, data model, interfaces, and rollout plan.
-- Changes to approved scope or behavior require decision-owner approval and renewed approval of the affected specification version before implementation continues on that change.
-
-## 2. Readiness gate
-
-| Check | Result | Evidence / N/A rationale |
-| --- | --- | --- |
-| Product, release scope, owners, and status are complete. | Yes | Sections 1, 3.4, 3.5 |
-| No open decisions block planning or implementation. | Yes | Section 15: all blocking decisions resolved. DEC-019 open, non-blocking. |
-| Current-release requirements are approved; IDs and references are valid. | No | All requirements are `Proposed`; IDs valid (section 4). |
-| System behavior and failure/recovery paths are defined. | Yes | Section 7, WF-001 to WF-008; DEC-011, DEC-015 |
-| Human-facing behavior and permission rules are defined where applicable. | Yes | Sections 5.2, 5.3, 5.4 |
-| Machine contracts, domain rules, and data lifecycle are defined where applicable. | Yes | Contracts: N/A, no external API exposed (8.1). Domain types: Yes (6.1). Data lifecycle: Yes (6.2). |
-| Security, privacy, and operational assessments are complete, including justified exclusions. | Yes | Sections 9 to 12; exclusions in DEC-003, DEC-010, DEC-017 |
-| Every current-release requirement maps to acceptance criteria and planned verification. | Yes | Sections 4 and 13 |
-| Required approvers have approved this version. | No | Not yet approved |
-
-**Readiness decision:** `Ready for planning`
-**Blocking decisions:** None
-
-## 3. Problem, goals, and scope
-
-### 3.1 Problem and value proposition
-
-A small team tracks its work in Trello, which does not fit how the team works. Trello has no project-level layer: there is nowhere to keep milestones, a project description with its goals, or shared resources next to the work. Linear fits the workflow better but costs too much and is too complex for the team's non-technical members. One Team gives the team one simple place to track issues inside projects, with project context alongside, easy enough for non-technical members to use.
-
-### 3.2 Feature overview
-
-All features trace to no formal goal; see 3.3 for the rationale.
-
-| Feature | Description | Primary actor(s) | Related goal(s) |
-| --- | --- | --- | --- |
-| Projects | Admin creates projects, adds people to them, archives and restores them. Projects are never permanently deleted. | Admin | — |
-| Project description | Rich-text (basic markdown) description on each project, including its goals. | Admin, Member | — |
-| Milestones | Named milestones with optional target date; issues link to them; progress is calculated. | Admin, Member | — |
-| Project resources | Links, notes, and files stored on a project. | Admin, Member | — |
-| Issues | Issues with title, description, status, priority, assignee, milestone, and due date. Deleted issues are hidden, and the Admin can restore them. | Admin, Member | — |
-| Kanban board | One column per status; moving a card changes the issue's status. | Admin, Member | — |
-| List view | Issues of a project as a list. | Admin, Member | — |
-| Filtering and sorting | Narrow and order issues in both views. | Admin, Member | — |
-| Comments | Comments on issues and on projects, with @mentions. | Admin, Member | — |
-| Activity feeds | History of changes and comments on each issue and on each project. | Admin, Member | — |
-| File attachments | Files on issues and on project resources. 10 MB, common types. | Admin, Member | — |
-| Notifications | In-app and email notifications for assignment, comments, @mentions, and status changes. | Admin, Member | — |
-| Accounts and sign-in | Admin invites users by email; users sign in; Admin can deactivate them. | Admin, Member | — |
-
-### 3.3 Goals and measurable outcomes
-
-Not applicable. One Team is an internal tool for the owner's team, with no timeline or tracked metrics. Success is the team using it in place of Trello.
-
-### 3.4 In scope
-
-- Projects: create, rename, archive, restore
-- Project description (basic markdown), which also holds project goals
-- Project membership managed by the Admin
-- Milestones with optional target date, linked to issues, with calculated progress
-- Project resources: link, note, or file
-- Issues: create, edit, soft delete, Admin restore; title, description, status, priority, assignee, milestone, due date
-- Kanban board with fixed statuses; drag to change status
-- List view
-- Filtering and sorting in both views
-- Comments on issues and projects, with @mentions
-- Activity feed on each issue and each project
-- File attachments on issues and project resources
-- In-app and email notifications
-- User invitation, sign-in, deactivation
-- Desktop browsers
-
-### 3.5 Out of scope / non-goals
-
-- Storing credentials or secrets for third-party accounts
-- Integrations with Slack, GitHub, Google Drive (FOLLOWUP-001)
-- Native mobile apps and mobile-browser layouts
-- Importing data from Trello
-- Permanently deleting projects
-- Workspaces, teams, and multi-tenancy
-- Custom or per-project statuses
-- Real-time updates (changes appear on page reload)
-- Attachments on comments
-- Notifications for due dates
-- Notification preferences (email is always on)
-- Backups (DEC-003)
-
-### 3.6 Assumptions and dependencies
-
-- **ASSUMP-001:** The team is small (single-digit to low double-digit users), so one VPS is sufficient. Verify by the owner's headcount before launch.
-- **DEP-001:** Email delivery service for sign-in links, invitations, and notification emails. Vendor chosen at implementation within DEC-011 constraints. Owner: Owner. Needed by: before implementation of REQ-001, REQ-002, and REQ-048.
-
-## 4. Requirements index
-
-Priority is not yet ranked (DEC-019). Target release determines scope; all rows below are R1.
-
-| ID | Type | Canonical requirement | Priority | Target release | Status | Source / decision | Acceptance IDs | Verification IDs |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| REQ-001 | Functional | The system shall let the Admin invite a person by email address. | TBD | R1 | Proposed | Owner interview | AC-001, AC-081 | TEST-001 |
-| REQ-002 | Functional | The system shall let an invited person activate their account from the invitation. | TBD | R1 | Proposed | Owner interview; DEC-001 | AC-002 | TEST-001 |
-| REQ-003 | Functional | The system shall let the Admin deactivate a user, after which that user cannot sign in. | TBD | R1 | Proposed | Owner interview | AC-003 | TEST-001 |
-| REQ-004 | Functional | The system shall let the Admin create a project with a required name and optional description. | TBD | R1 | Proposed | Owner interview | AC-004 | TEST-002 |
-| REQ-005 | Functional | The system shall let the Admin add a user to a project. | TBD | R1 | Proposed | Owner interview | AC-005 | TEST-002 |
-| REQ-006 | Functional | The system shall let the Admin remove a user from a project. | TBD | R1 | Proposed | Owner interview | AC-006 | TEST-002 |
-| REQ-007 | Functional | The system shall let the Admin archive a project, making it read-only. | TBD | R1 | Proposed | Owner interview | AC-007 | TEST-002 |
-| REQ-008 | Functional | The system shall let the Admin restore an archived project to editable. | TBD | R1 | Proposed | Owner interview | AC-008 | TEST-002 |
-| REQ-009 | Functional | The system shall let users with project access edit the project description in basic markdown. | TBD | R1 | Proposed | Owner interview | AC-009 | TEST-004 |
-| REQ-010 | Functional | The system shall provide no way to permanently delete a project. | TBD | R1 | Proposed | Owner interview | AC-010 | TEST-002 |
-| REQ-011 | Functional | The system shall let users with project access create an issue with a required title and optional markdown description. | TBD | R1 | Proposed | Owner interview | AC-011 | TEST-004 |
-| REQ-012 | Functional | The system shall give each issue one status from: Backlog, Todo, In progress, In review, Done, Canceled. | TBD | R1 | Proposed | Owner interview; DEC-013 resolved | AC-012 | TEST-004 |
-| REQ-013 | Functional | The system shall give each issue one priority from: None, Low, Medium, High, Urgent, defaulting to None. | TBD | R1 | Proposed | Owner interview | AC-013 | TEST-004 |
-| REQ-014 | Functional | The system shall allow an optional single assignee chosen from active users with access to the project. | TBD | R1 | Proposed | Owner interview; DEC-018 resolved | AC-014 | TEST-004 |
-| REQ-015 | Functional | The system shall allow an optional milestone chosen from the issue's project. | TBD | R1 | Proposed | Owner interview | AC-015 | TEST-004 |
-| REQ-016 | Functional | The system shall allow an optional due date on an issue. | TBD | R1 | Proposed | Owner interview | AC-016 | TEST-004 |
-| REQ-017 | Functional | The system shall let users with project access edit any field of any issue in the project. | TBD | R1 | Proposed | Owner interview | AC-017 | TEST-004 |
-| REQ-018 | Functional | The system shall let users with project access delete an issue by hiding it, without removing its data. | TBD | R1 | Proposed | Owner interview | AC-018 | TEST-005 |
-| REQ-019 | Functional | The system shall let the Admin list deleted issues. | TBD | R1 | Proposed | Owner interview | AC-019 | TEST-005 |
-| REQ-020 | Functional | The system shall let the Admin restore a deleted issue. | TBD | R1 | Proposed | Owner interview | AC-020 | TEST-005 |
-| REQ-021 | Functional | The system shall show a project's issues on a kanban board with one column per status. | TBD | R1 | Proposed | Owner interview; DEC-009 resolved | AC-021 | TEST-006 |
-| REQ-022 | Functional | The system shall change an issue's status when its card is moved to another column. | TBD | R1 | Proposed | Owner interview | AC-022 | TEST-006 |
-| REQ-023 | Functional | The system shall show a project's issues in a list view. | TBD | R1 | Proposed | Owner interview | AC-023 | TEST-006 |
-| REQ-024 | Functional | The system shall let users filter issues in the board and list views. | TBD | R1 | Proposed | Owner interview; DEC-014 resolved | AC-024 | TEST-006 |
-| REQ-025 | Functional | The system shall let users sort issues in the board and list views. | TBD | R1 | Proposed | Owner interview; DEC-014 resolved | AC-025 | TEST-006 |
-| REQ-026 | Functional | The system shall warn a user who saves an issue changed by someone else since they loaded it, let them reload, and keep their unsaved input. | TBD | R1 | Proposed | Owner interview | AC-026 | TEST-007 |
-| REQ-027 | Functional | The system shall show an activity feed on each issue listing field changes and comments with actor and time. | TBD | R1 | Proposed | Owner interview | AC-027 | TEST-008 |
-| REQ-028 | Functional | The system shall let users with project access comment on an issue in basic markdown. | TBD | R1 | Proposed | Owner interview; DEC-020 resolved | AC-028 | TEST-009 |
-| REQ-029 | Functional | The system shall let users with project access comment on a project in basic markdown. | TBD | R1 | Proposed | Owner interview; DEC-020 resolved | AC-029 | TEST-009 |
-| REQ-030 | Functional | The system shall let a commenter @mention active users with access to the project. | TBD | R1 | Proposed | Owner interview; DEC-018 resolved | AC-030 | TEST-009 |
-| REQ-031 | Functional | The system shall let a comment's author edit that comment. | TBD | R1 | Proposed | DEC-002 | AC-031 | TEST-009 |
-| REQ-032 | Functional | The system shall let a comment's author delete that comment. | TBD | R1 | Proposed | DEC-002; DEC-015 resolved | AC-032 | TEST-009 |
-| REQ-033 | Functional | The system shall show a project activity feed of project changes, issue event summaries, and project comments in time order. | TBD | R1 | Proposed | Owner interview | AC-033 | TEST-008 |
-| REQ-034 | Functional | The system shall let users with project access create a milestone with a required name, optional description, and optional target date. | TBD | R1 | Proposed | Owner interview | AC-034 | TEST-010 |
-| REQ-035 | Functional | The system shall let users with project access edit a milestone. | TBD | R1 | Proposed | Owner interview | AC-035 | TEST-010 |
-| REQ-036 | Functional | The system shall let users with project access delete a milestone. | TBD | R1 | Proposed | Owner interview; DEC-015 resolved | AC-036 | TEST-010 |
-| REQ-037 | Functional | The system shall show milestone progress as Done issues over linked issues, excluding Canceled. | TBD | R1 | Proposed | Owner interview | AC-037 | TEST-010 |
-| REQ-038 | Functional | The system shall let users with project access add a resource of type link, note, or file. | TBD | R1 | Proposed | Owner interview | AC-038 | TEST-011 |
-| REQ-039 | Functional | The system shall let users with project access edit a resource. | TBD | R1 | Proposed | Owner interview | AC-039 | TEST-011 |
-| REQ-040 | Functional | The system shall let users with project access delete a resource. | TBD | R1 | Proposed | Owner interview; DEC-015 resolved | AC-040 | TEST-011 |
-| REQ-041 | Functional | The system shall let users with project access attach files to an issue. | TBD | R1 | Proposed | Owner interview | AC-041 | TEST-011 |
-| REQ-042 | Functional | The system shall reject any uploaded file larger than 10 MB with a visible message. | TBD | R1 | Proposed | Owner interview | AC-042 | TEST-011 |
-| REQ-043 | Functional | The system shall notify a user when they are assigned to an issue. | TBD | R1 | Proposed | Owner interview; DEC-006 resolved | AC-043 | TEST-012 |
-| REQ-044 | Functional | The system shall notify an issue's assignee and creator when a comment is added to it. | TBD | R1 | Proposed | Owner interview; DEC-006 resolved | AC-044 | TEST-012 |
-| REQ-045 | Functional | The system shall notify a user when they are @mentioned in an issue or project comment. | TBD | R1 | Proposed | Owner interview; DEC-006 resolved | AC-045 | TEST-012 |
-| REQ-046 | Functional | The system shall notify an issue's assignee and creator when its status changes. | TBD | R1 | Proposed | Owner interview; DEC-006 resolved | AC-046 | TEST-012 |
-| REQ-047 | Functional | The system shall show each user a list of their in-app notifications. | TBD | R1 | Proposed | Owner interview | AC-047 | TEST-012 |
-| REQ-048 | Functional | The system shall send each notification by email. | TBD | R1 | Proposed | Owner interview; DEC-007 resolved; DEC-011 | AC-048 | TEST-012 |
-| REQ-049 | Functional | The system shall show the Admin all projects, including archived ones. | TBD | R1 | Proposed | Owner interview | AC-049 | TEST-002 |
-| REQ-050 | Functional | The system shall let an Admin promote a Member to Admin. | TBD | R1 | Proposed | DEC-005 | AC-067 | TEST-002 |
-| REQ-051 | Functional | The system shall let an Admin demote another Admin to Member. | TBD | R1 | Proposed | DEC-005 | AC-068 | TEST-002 |
-| REQ-052 | Functional | The system shall not notify a user about an action they performed themselves. | TBD | R1 | Proposed | DEC-006 | AC-070 | TEST-012 |
-| REQ-053 | Functional | The system shall let an Admin reactivate a deactivated user, restoring their previous role and project memberships. | TBD | R1 | Proposed | DEC-008 | AC-071 | TEST-001 |
-| REQ-054 | Functional | The system shall tell a user when their sign-in email could not be sent, so they can try again. | TBD | R1 | Proposed | DEC-011 | AC-072 | TEST-001 |
-| REQ-055 | Functional | The system shall let an Admin rename a project. | TBD | R1 | Proposed | DEC-012 | AC-074 | TEST-002 |
-| REQ-056 | Functional | The system shall set a new issue's status to Backlog. | TBD | R1 | Proposed | DEC-013 | AC-075 | TEST-004 |
-| REQ-057 | Functional | The system shall let users with project access remove an attachment from an issue. | TBD | R1 | Proposed | DEC-015 | AC-076 | TEST-011 |
-| SEC-001 | Security | The system shall require an authenticated session for every page and endpoint except sign-in and invitation acceptance. | TBD | R1 | Proposed | Owner interview; DEC-001 | AC-050 | TEST-003 |
-| SEC-002 | Security | The system shall respond "not found" when a Member requests any resource of a project they are not a member of. | TBD | R1 | Proposed | Owner interview | AC-051 | TEST-003 |
-| SEC-003 | Security | The system shall reject Admin-only actions from Members with a "not allowed" error. | TBD | R1 | Proposed | Owner interview | AC-052 | TEST-003 |
-| SEC-004 | Security | The system shall reject edits or deletes of a comment by anyone other than its author, including the Admin. | TBD | R1 | Proposed | DEC-002 | AC-053 | TEST-003 |
-| SEC-005 | Security | The system shall end all active sessions of a user when they are deactivated. | TBD | R1 | Proposed | Owner interview | AC-054 | TEST-001 |
-| SEC-006 | Security | The system shall accept uploads only of allowlisted types, checked on the server by file content. | TBD | R1 | Proposed | Owner interview | AC-055 | TEST-011 |
-| SEC-007 | Security | The system shall serve uploaded files only to users with access to the owning project. | TBD | R1 | Proposed | Owner interview | AC-056 | TEST-011 |
-| SEC-008 | Security | The system shall render markdown with raw HTML and scripts removed. | TBD | R1 | Proposed | Derived from markdown scope | AC-057 | TEST-013 |
-| SEC-009 | Security | The system shall reject every write to an archived project on the server. | TBD | R1 | Proposed | Owner interview | AC-058 | TEST-002 |
-| SEC-010 | Security | The system shall accept each sign-in link once and only within 15 minutes of issue. | TBD | R1 | Proposed | DEC-001 | AC-064 | TEST-001 |
-| SEC-011 | Security | The system shall reject invitation links more than 7 days old. | TBD | R1 | Proposed | DEC-001 | AC-065 | TEST-001 |
-| SEC-012 | Security | The system shall end a session 30 days after sign-in. | TBD | R1 | Proposed | DEC-001 | AC-066 | TEST-001 |
-| SEC-013 | Security | The system shall reject any demotion or deactivation that would leave no active Admin. | TBD | R1 | Proposed | DEC-005 | AC-069 | TEST-002 |
-| SEC-014 | Security | The system shall serve all traffic over HTTPS and redirect HTTP to HTTPS. | TBD | R1 | Proposed | DEC-017 | AC-082 | TEST-015 |
-| SEC-015 | Security | The system shall keep secrets in a VPS environment file readable only by the app user and outside the repository. | TBD | R1 | Proposed | DEC-017 | AC-083 | TEST-015 |
-| SEC-016 | Security | The system shall send at most 5 sign-in links per email address per 15 minutes. | TBD | R1 | Proposed | DEC-017 | AC-084 | TEST-001 |
-| SEC-017 | Security | The system shall set session cookies as HttpOnly, Secure, and SameSite=Lax. | TBD | R1 | Proposed | DEC-017 | AC-085 | TEST-003 |
-| DATA-001 | Data | The system shall retain deleted issues, with their comments, attachments, and activity, indefinitely. | TBD | R1 | Proposed | Owner interview | AC-059 | TEST-005 |
-| DATA-002 | Data | The system shall retain a deactivated user's account and authored content. | TBD | R1 | Proposed | Owner interview | AC-060 | TEST-001 |
-| DATA-003 | Data | The system shall record each activity event with actor, timestamp, and change, and never alter it afterwards. | TBD | R1 | Proposed | Owner interview | AC-061 | TEST-008 |
-| DATA-004 | Data | The system shall store uploaded files on the VPS disk and their metadata in PostgreSQL. | TBD | R1 | Proposed | Owner interview | AC-062, AC-080 | TEST-011 |
-| DATA-005 | Data | The system shall permanently remove a deleted comment's text and keep a "comment deleted" placeholder with author and time. | TBD | R1 | Proposed | DEC-015 | AC-077 | TEST-009 |
-| DATA-006 | Data | The system shall delete a resource's file from disk when the resource is deleted. | TBD | R1 | Proposed | DEC-015 | AC-078 | TEST-011 |
-| DATA-007 | Data | The system shall delete an attachment's file from disk when it is removed from an issue. | TBD | R1 | Proposed | DEC-015 | AC-079 | TEST-011 |
-| SEC-018 | Security | The system shall never write sign-in tokens, secrets, or comment text to logs. | TBD | R1 | Proposed | DEC-016 | AC-088 | TEST-016 |
-| OPS-001 | Operations | The system shall retry a failed notification or invitation email up to 3 times over about 10 minutes, then drop and log it. | TBD | R1 | Proposed | DEC-011 | AC-073 | TEST-012 |
-| OPS-002 | Operations | The system shall write structured logs to a file on the VPS and delete entries older than 14 days. | TBD | R1 | Proposed | DEC-016 | AC-089 | TEST-016 |
-| OPS-003 | Operations | The system shall be watched by an external uptime monitor that emails the owner when the site is unreachable. | TBD | R1 | Proposed | DEC-016 | AC-090 | TEST-016 |
-| OPS-004 | Operations | The system shall use only additive database migrations so the previous release runs on the current schema. | TBD | R1 | Proposed | DEC-016 | AC-091 | TEST-016 |
-| NFR-001 | Non-functional | The system shall work on current desktop versions of Chrome, Edge, Firefox, and Safari. | TBD | R1 | Proposed | Owner interview | AC-063 | TEST-014 |
-| NFR-002 | Non-functional | The system shall load pages in under 2 seconds in normal team use. | TBD | R1 | Proposed | DEC-016 | AC-086 | TEST-014 |
-| NFR-003 | Non-functional | The system shall let users complete every core journey using only the keyboard. | TBD | R1 | Proposed | DEC-016 | AC-087 | TEST-014 |
-
-**Index rules**
-
-- Use one ID for one independently testable obligation; split compound "and" statements.
-- Use `Must`, `Should`, or `Could` for prioritization. Priority alone neither includes nor excludes a requirement from a release.
-- Target release determines scope. Agents implement only approved requirements assigned to the current release; `Backlog` and other releases are excluded. All selected requirements are commitments regardless of priority.
-- Deferring a selected requirement, including a `Must`, requires a decision-owner-approved `DEC-###` recording the reason, impact, and revised target release. Update dependent scope and obtain renewed specification approval; explanation alone is not approval.
-- Use `Proposed`, `Approved`, `Implemented`, `Verified`, or `Superseded` status.
-- Every current-release requirement needs at least one acceptance criterion and one defined verification method before implementation, regardless of priority. Backlog entries may leave these pending explicitly.
-- `Implemented` means the change exists; `Verified` requires passing evidence for every linked acceptance criterion. Neither status by itself proves release approval.
-- Define each requirement once in this index; detailed sections reuse its ID. Define every referenced `AC-###` and `TEST-###` in section 13 and keep both directions of the mapping consistent.
-- Record removals and replacements as superseded rows; never erase historical meaning.
-
-## 5. Actors, permissions, and user stories
-
-### 5.1 Actors and systems
-
-| Actor / system | Type | Purpose | Trust level | Allowed capabilities |
-| --- | --- | --- | --- | --- |
-| Admin | Human | Runs the app for the team; one or more, all with equal rights | Trusted | Everything a Member can do in any project, plus the Admin-only rows in 5.2 |
-| Member | Human | Team member working in assigned projects | Trusted within assigned projects | Member rows in 5.2, limited to projects they belong to |
-| Anonymous visitor | Human | Not signed in | Untrusted | Sign-in and invitation acceptance only |
-| Email delivery service | External system | Sends invitations and notification emails | External | Receives outbound email requests (DEP-001) |
-| VPS file storage | Internal system | Holds uploaded files on disk | Internal | Read and write by the app only |
-
-### 5.2 Permission matrix
-
-| Capability | Anonymous | Member | Admin | Resource scope | Denied behavior |
-| --- | --- | --- | --- | --- | --- |
-| Invite users | Deny | Deny | Allow | App | Not allowed |
-| Deactivate users | Deny | Deny | Allow (not the last active Admin) | App | Not allowed |
-| Reactivate users | Deny | Deny | Allow | App | Not allowed |
-| Promote a Member to Admin | Deny | Deny | Allow | App | Not allowed |
-| Demote an Admin to Member | Deny | Deny | Allow (not the last active Admin) | App | Not allowed |
-| Create projects | Deny | Deny | Allow | App | Not allowed |
-| Rename projects | Deny | Deny | Allow | Project | Not allowed |
-| Archive and restore projects | Deny | Deny | Allow | Project | Not allowed |
-| Add or remove users on a project | Deny | Deny | Allow | Project | Not allowed |
-| See a project and its contents | Deny | Allow | Allow | Member: own projects; Admin: all | Not found |
-| Create, edit, move, delete issues | Deny | Allow | Allow | Project | Not found (other projects) |
-| View and restore deleted issues | Deny | Deny | Allow | Project | Not allowed |
-| Edit project description | Deny | Allow | Allow | Project | Not found (other projects) |
-| Create, edit, delete milestones | Deny | Allow | Allow | Project | Not found (other projects) |
-| Remove attachments from issues | Deny | Allow | Allow | Project | Not found (other projects) |
-| Add, edit, delete resources | Deny | Allow | Allow | Project | Not found (other projects) |
-| Comment, @mention, attach files to issues | Deny | Allow | Allow | Project | Not found (other projects) |
-| Edit or delete a comment | Deny | Author only | Author only | Comment | Not allowed |
-| Any write in an archived project | Deny | Deny | Deny (restore first) | Project | Not allowed, project is archived |
-
-Unauthenticated requests redirect to sign-in.
-
-### 5.3 User stories and workflow outcomes
-
-Shared outcomes for every story below unless stated:
-
-- **Unauthenticated outcome:** redirected to sign-in; nothing changes.
-- **Unauthorized outcome:** project outside the user's membership shows "not found"; Admin-only action shows "not allowed"; nothing changes.
-- **Invalid-input outcome:** the form stays open with input preserved and the invalid field marked.
-- **Dependency-failure outcome:** database failure shows a generic error with input preserved. Email failure never blocks the user action, except sign-in, which shows "Couldn't send the email, try again" (REQ-054).
-
-- **US-001:** As the Admin, I want to invite a teammate by email, so that they can join One Team.
-  - **Success outcome:** invitation sent; invitee listed as pending.
-- **US-002:** As the Admin, I want to create a project and add teammates to it, so that they can work in it.
-  - **Success outcome:** project appears for the Admin and for each added Member.
-- **US-003:** As a Member, I want to create an issue with a title, so that work is tracked.
-  - **Success outcome:** issue appears on the board in its status column and in the list view.
-- **US-004:** As a Member, I want to drag a card to another column, so that the issue's status updates.
-  - **Success outcome:** card stays in the new column; status change appears in the issue feed; assignee and creator are notified.
-- **US-005:** As a Member, I want to comment and @mention a teammate, so that they see my question.
-  - **Success outcome:** comment appears in the feed; mentioned user gets in-app and email notifications.
-- **US-006:** As a Member, I want to keep links, notes, and files on the project, so that the team finds project material in one place.
-  - **Success outcome:** resource appears on the project overview, newest first.
-- **US-007:** As the Admin, I want to archive a finished project, so that it stops cluttering active work but stays readable.
-  - **Success outcome:** project shows as archived and read-only to its Members.
-- **US-008:** As the Admin, I want to restore an issue someone deleted by mistake, so that no work is lost.
-  - **Success outcome:** issue returns to its previous status column.
-
-### 5.4 User interface behavior
-
-Common to all screens: desktop browsers only (NFR-001). Changes by others appear on reload; there is no live update. Keyboard use required (NFR-003); no formal accessibility standard.
-
-- **Screen: Sign-in and invitation acceptance** (REQ-002, SEC-001). User enters email and receives a magic link; unknown or deactivated emails get the same neutral "check your email" message. Expired or used links show "This link has expired" with a button to request a new one.
-- **Screen: Project list** (REQ-004, REQ-049, SEC-002)
-  - **States:** Member sees their projects; Admin sees all, with archived ones marked. Empty state: Member sees "You haven't been added to a project yet"; Admin sees a create-project action.
-- **Screen: Project overview** (REQ-009, REQ-033 to REQ-040)
-  - **Content:** description, milestones with progress, resources newest first, and the project activity feed with a comment box.
-  - **Archived:** all edit controls hidden and an "Archived" banner shown; the Admin sees a Restore action.
-- **Screen: Board** (REQ-021, REQ-022, REQ-024, REQ-025)
-  - **Columns:** all six status columns always shown, in order Backlog, Todo, In progress, In review, Done, Canceled (DEC-009).
-  - **Drag:** dropping a card saves immediately; on failure the card returns to its original column with an error message.
-- **Screen: List view** (REQ-023 to REQ-025)
-  - **Behavior:** one row per issue with status shown as a column. Same filters and sort as the board.
-- **Filters and sort (both views):** filter by assignee, priority, milestone (combinable). Sort by priority, due date, or created date; default created date, newest first. Issues without a due date sort last.
-- **Screen: Issue detail** (REQ-011 to REQ-018, REQ-026 to REQ-028, REQ-041)
-  - **Content:** all fields, attachments, and the activity feed interleaved with comments.
-  - **Submission and recovery:** the save control is disabled while pending. On a stale save (REQ-026), a warning offers "Reload" and keeps the typed text available to copy.
-  - **Unsaved changes:** leaving with unsaved edits prompts to discard or stay.
-- **Screen: Notifications** (REQ-047)
-  - **Behavior:** list of notifications, newest first, linking to the issue or project.
-- **Screen: Admin, Users** (REQ-001, REQ-003, REQ-050, REQ-051)
-  - **Content:** active, pending, and deactivated users, each with their role, and actions to promote or demote.
-- **Screen: Admin, Deleted issues** (REQ-019, REQ-020)
-  - **Behavior:** per project, with a Restore action.
-
-## 6. Domain model and data lifecycle
-
-### 6.1 Domain types and transformation rules
-
-| Entity | Purpose | Required fields | Relationships | Invariants / uniqueness |
-| --- | --- | --- | --- | --- |
-| User | Person with access | email: text, unique; name: text; role: Admin/Member; state: pending/active/deactivated | Has many ProjectMembership | At least one active Admin at all times (DEC-005) |
-| Invitation | Pending access for an email | email; invited_by; created_at; expires_at | Belongs to User (Admin) | Expires 7 days after sending; resend issues a new link |
-| Project | Container for work | name: text, required; description: markdown, nullable; archived_at: timestamp, nullable | Has many issues, milestones, resources, comments, memberships | Never hard-deleted |
-| ProjectMembership | User access to a project | user_id; project_id | Joins User and Project | Unique (user_id, project_id) |
-| Issue | Unit of work | title: text, required; description: markdown, nullable; status: enum of 6; priority: enum of 5, default None; assignee_id: nullable; milestone_id: nullable; due_date: date, nullable; creator_id; created_at; updated_at; version: int; deleted_at: nullable | Belongs to Project; optional Milestone in same project | Milestone must be in the same project; assignee must have project access |
-| Milestone | Grouping of issues toward a target | name: required; description: nullable; target_date: date, nullable | Belongs to Project; has many Issues | Progress derived, not stored |
-| Resource | Project reference material | title: required; type: link/note/file; url (link); body markdown (note); attachment_id (file) | Belongs to Project | Exactly one payload matching type |
-| Attachment | Uploaded file | filename; mime_type; size_bytes ≤ 10 MB; storage_path; uploaded_by; created_at | Belongs to Issue or Resource | Type in allowlist |
-| Comment | Discussion | body: markdown, required; author_id; created_at; edited_at: nullable | Belongs to Issue or Project | Editable only by author |
-| ActivityEvent | History record | actor_id; timestamp; subject (issue/project); change description | Belongs to Issue or Project | Append-only |
-| Notification | Message to a user | recipient_id; type; link target; created_at; read_at: nullable | Belongs to User | One per recipient per event |
-
-- **Transformations:** markdown is stored as source and rendered sanitized (SEC-008). Milestone progress = count(status = Done) / count(status ≠ Canceled) over linked, non-deleted issues; 0 linked issues shows "No issues."
-- **Upload allowlist (proposed, confirm in review):** PNG, JPEG, GIF, WebP, PDF, DOC/DOCX, XLS/XLSX, PPT/PPTX, TXT, CSV.
-
-### 6.2 Persistent data lifecycle and retention
-
-- **Creation:** users via invitation; projects by the Admin; everything else by users with project access. Each write is a single database transaction with its activity event.
-- **States:** User: pending → active ↔ deactivated (Admin reactivates, REQ-053). Project: active ↔ archived. Issue: live ↔ deleted (Admin restores).
-- **Update authority:** per 5.2. Activity events are never updated.
-- **Deletion/anonymization:** issues soft-deleted (DATA-001). Projects never deleted. Users deactivated, never deleted (DATA-002). Comments: text removed, placeholder kept (DATA-005). Milestones: removed; linked issues unlinked (REQ-036). Resources and removed attachments: record and file deleted permanently (DATA-006, DATA-007). Attachments of a soft-deleted issue are kept with it (DATA-001).
-- **Retention:** indefinite for all data. No purge mechanism in R1.
-- **Audit history:** ActivityEvent covers issue and project changes. Sign-ins, role changes, and deactivations are written to application logs with actor and time, kept 14 days (OPS-002).
-- **Migration/backfill:** Not applicable. R1 is a new system with no existing data; Trello import is out of scope.
-
-## 7. Functional requirements and workflows
-
-### WF-001: Invite and activate a user
-
-- **Related requirements:** REQ-001, REQ-002, SEC-001
-- **Trigger:** Admin submits an email address.
-- **Preconditions:** Admin signed in; email not already an active user.
-- **Normal sequence:**
-  1. System creates an Invitation and a pending User.
-  2. System sends the invitation email.
-  3. Invitee opens the magic link in the invitation and is signed in (DEC-001).
-  4. User becomes active and lands on the project list.
-- **Postconditions:** active user with no project memberships.
-- **Invalid input:** malformed email is rejected inline.
-- **Duplicate/concurrent request:** an existing pending invitation is re-sent, not duplicated. An existing active user is rejected with "already a member."
-- **Timeout/retry:** invitation email retries up to 3 times over about 10 minutes (OPS-001).
-- **Partial failure:** if email fails, the invitation still exists and the Admin can resend.
-- **Observability:** logged with request ID and actor (OPS-002).
-
-### WF-002: Deactivate a user
-
-- **Related requirements:** REQ-003, SEC-005, DATA-002
-- **Trigger:** Admin deactivates a user.
-- **Normal sequence:**
-  1. User state becomes deactivated.
-  2. All their sessions are revoked.
-  3. They are hidden from assignee and @mention pickers; existing assignments still show their name (DEC-018).
-- **Postconditions:** content, assignments, and history remain.
-- **Invalid input:** deactivating the last active Admin is rejected (DEC-005).
-- **Duplicate/concurrent request:** deactivating an already deactivated user has no effect.
-- **Timeout/retry:** Not applicable; single database transaction.
-- **Partial failure:** session revocation happens in the same transaction as the state change.
-- **Observability:** logged with request ID and actor (OPS-002).
-
-### WF-003: Create and edit an issue
-
-- **Related requirements:** REQ-011 to REQ-017, REQ-026, REQ-027, REQ-043, REQ-046
-- **Trigger:** user submits the new-issue or edit form.
-- **Preconditions:** user has access to the project; project not archived.
-- **Normal sequence:**
-  1. System validates fields.
-  2. On edit, system checks that the submitted version matches the stored version.
-  3. System saves, increments the version, and writes activity events for each changed field.
-  4. System creates notifications for assignment or status change.
-- **Postconditions:** issue visible in board and list; feed updated.
-- **Invalid input:** empty title, a milestone from another project, or an assignee without access are each rejected with a field error.
-- **Duplicate/concurrent request:** version mismatch shows a warning with Reload, and the user's input is preserved (REQ-026).
-- **Timeout/retry:** a database failure shows an error; nothing is saved.
-- **Partial failure:** notification and activity writes share the save transaction. Email sending happens after commit (DEC-011).
-- **Observability:** logged with request ID and actor (OPS-002).
-
-### WF-004: Move a card on the board
-
-- **Related requirements:** REQ-022, REQ-026, REQ-046
-- **Trigger:** user drops a card in another column.
-- **Normal sequence:** same as WF-003 with only the status field changing.
-- **Duplicate/concurrent request:** if the issue changed since the board loaded, the move is rejected, the card returns to its column, and a prompt asks the user to reload.
-- **Partial failure:** on save failure, the card returns to its original column with an error.
-
-### WF-005: Delete and restore an issue
-
-- **Related requirements:** REQ-018 to REQ-020, DATA-001
-- **Trigger:** user deletes an issue; Admin restores it.
-- **Normal sequence:**
-  1. Delete sets deleted_at and writes an activity event.
-  2. The issue disappears from all views, filters, and milestone progress.
-  3. Admin restore clears deleted_at and writes an activity event.
-- **Postconditions:** a restored issue returns with all fields, comments, and attachments.
-- **Duplicate/concurrent request:** deleting an already deleted issue has no effect.
-
-### WF-006: Comment and @mention
-
-- **Related requirements:** REQ-028 to REQ-032, REQ-044, REQ-045
-- **Trigger:** user posts a comment on an issue or project.
-- **Normal sequence:**
-  1. System saves the comment and parses @mentions.
-  2. System creates notifications for mentioned users (and, on issues, for the assignee and creator).
-- **Invalid input:** an empty comment is rejected. A mention of a user without project access is left as plain text and does not notify.
-- **Duplicate/concurrent request:** a user who is both mentioned and the assignee gets one notification. The actor is never notified of their own action (REQ-052).
-
-### WF-007: Upload a file
-
-- **Related requirements:** REQ-038, REQ-041, REQ-042, SEC-006, SEC-007, DATA-004
-- **Trigger:** user attaches a file to an issue or creates a file resource.
-- **Normal sequence:**
-  1. System checks size ≤ 10 MB and content type against the allowlist.
-  2. System writes the file to VPS disk under a generated name.
-  3. System stores the metadata.
-- **Invalid input:** oversize or disallowed type is rejected with a message naming the limit.
-- **Partial failure:** if the metadata write fails after the disk write, the orphan file is removed.
-- **Serving:** files are downloaded only through an authorized route (SEC-007).
-
-### WF-008: Archive and restore a project
-
-- **Related requirements:** REQ-007, REQ-008, SEC-009
-- **Trigger:** Admin archives or restores a project.
-- **Normal sequence:**
-  1. System sets or clears archived_at and writes an activity event.
-  2. While archived, all writes to the project and its contents are rejected, and no notifications are generated.
-
-## 8. Interfaces and contracts
-
-### 8.1 API / command / event catalogue
-
-Not applicable. One Team exposes no API, event, or file exchange to other systems. Its HTTP endpoints serve only its own Next.js frontend and are not a published contract.
-
-### 8.2 External dependencies
-
-| Dependency | Used for | Failure modes | Timeout | Retry policy | Fallback | Owner |
-| --- | --- | --- | --- | --- | --- | --- |
-| Email delivery service (DEP-001), vendor chosen at implementation per DEC-011 | Sign-in links, invitations, notification emails | Outage, rejection, slow | Set at implementation | Sign-in: none, user retries. Others: up to 3 retries over ~10 minutes, then drop and log | In-app notification still delivered; Admin can resend invitations | Owner |
-
-## 9. Security, privacy, and abuse controls
-
-- **Authentication:** magic link by email (DEC-001); no passwords stored. Sign-in links are single use and expire after 15 minutes (SEC-010). Invitations expire after 7 days and can be resent (SEC-011). Sessions last 30 days (SEC-012). Sessions revoked on deactivation (SEC-005).
-- **Authorization:** enforced on the server for every request: project membership (SEC-002), role (SEC-003), comment authorship (SEC-004), archived state (SEC-009).
-- **Secrets:** database password, email API key, and session secret in an environment file on the VPS, readable only by the app's OS user, never committed to the repository (SEC-015). Rotation: manual, by the owner.
-- **Input/output safety:** sanitized markdown (SEC-008); upload size and type checks (REQ-042, SEC-006); files served with download headers through an authorized route (SEC-007).
-- **Rate limiting and abuse:** at most 5 sign-in link requests per email address per 15 minutes; excess requests get the same neutral message and send nothing (SEC-016).
-- **Privacy:** personal data is limited to names and email addresses of team members. Resource notes may contain sensitive text if users paste it; accepted without a warning (DEC-010, LIMIT-005).
-- **Encryption:** in transit, HTTPS only with HTTP redirected (SEC-014); session cookies HttpOnly, Secure, SameSite=Lax (SEC-017). At rest: not applicable in R1, excluded by owner decision (DEC-017).
-- **Auditability:** activity events for issues and projects (DATA-003). Security events in application logs, 14 days (OPS-002).
-- **Threats and mitigations:** cross-project data exposure → SEC-002, SEC-007. Script injection → SEC-008. Malicious upload → SEC-006. Deactivated user access → SEC-005. Data loss → accepted risk (LIMIT-002).
-
-## 10. Non-functional requirements
-
-| ID | Area | Requirement | Target / bound | Measurement and environment |
-| --- | --- | --- | --- | --- |
-| NFR-001 | Browser support | Works on current desktop browsers | Chrome, Edge, Firefox, Safari, current versions | Manual check per TEST-014 |
-| NFR-002 | Performance | Page load time in normal team use | Under 2 seconds | Manual timing on production with real data, per TEST-014; no load testing |
-| NFR-003 | Accessibility | All actions usable by keyboard | Every core journey completes without a mouse | Manual check per TEST-014 |
-
-- **Availability:** no target; an uptime monitor alerts the owner (OPS-003).
-- **Scalability:** Not applicable beyond ASSUMP-001; one VPS for a small team.
-- **Accessibility:** no formal standard in R1 (DEC-016); keyboard use required (NFR-003). Card moves on the board need a keyboard alternative to dragging.
-- **Mobile/responsive:** Not applicable; desktop only by owner decision.
-- **Localization/timezones:** English only (DEC-016). Due dates and target dates are calendar dates without time; timestamps are displayed in the viewer's browser timezone.
-- **Data residency:** Not applicable; single VPS chosen by owner.
-- **Recovery point / recovery time objective:** none; no backups (DEC-003, LIMIT-002).
-- **Maintenance windows:** Not applicable; internal tool, downtime accepted.
-
-## 11. Architecture and implementation boundaries
-
-- **Required stack:** Next.js; PostgreSQL; Drizzle ORM; hosted on a single VPS.
-- **Existing repository touchpoints:** Not applicable; new project.
-- **Component boundaries:** authorization checks live in one server-side layer used by every read and write. No client-side-only permission checks.
-- **Consistency/transaction rules:** each user action and its activity events and notification records commit in one transaction. Issue edits use a version number for stale-write detection (REQ-026). Email is sent after commit.
-- **Deployment environments:** local development and production VPS only.
-- **Configuration and feature flags:** none planned. Secrets in a VPS environment file (SEC-015).
-- **Real-time:** none; pages show current data on load.
-- **File storage:** VPS local disk (DATA-004).
-- **Explicitly deferred architecture decisions:** DEC-011 (email vendor, delegated).
-
-## 12. Observability, operations, and recovery
-
-- **Structured logs:** written to a file on the VPS, kept 14 days (OPS-002). Sign-in tokens, secrets, and comment text never logged (SEC-018).
-- **Metrics:** Not applicable in R1; small team, no targets beyond NFR-002.
-- **Traces/correlation:** Not applicable in R1; single server process. Log entries include a request ID.
-- **Alerts:** free external uptime monitor emails the owner when the site is unreachable (OPS-003). No other alerts.
-- **Dashboards:** Not applicable; none in R1.
-- **Queue/job operations:** notification and invitation emails are sent after commit with up to 3 retries over about 10 minutes, then dropped and logged (OPS-001). No dead-letter or replay in R1.
-- **Backup and restore:** Not applicable in R1 by owner decision (DEC-003). Accepted risk: total data loss on VPS failure (LIMIT-002).
-- **Incident behavior:** owner investigates using logs; team told directly. No status page.
-
-## 13. Acceptance and verification
-
-| Acceptance ID | Requirement IDs | Given / when / then | Verification IDs |
-| --- | --- | --- | --- |
-| AC-001 | REQ-001 | Given the Admin, when they invite a valid email, then an invitation exists and an email is queued to that address | TEST-001 |
-| AC-002 | REQ-002 | Given a valid invitation, when the invitee completes activation, then they are active and can sign in | TEST-001 |
-| AC-003 | REQ-003 | Given an active user, when the Admin deactivates them, then their sign-in attempts fail | TEST-001 |
-| AC-004 | REQ-004 | Given the Admin, when they create a project with a name, then it appears in the project list; without a name it is rejected | TEST-002 |
-| AC-005 | REQ-005 | Given a project, when the Admin adds a Member, then that Member sees the project | TEST-002 |
-| AC-006 | REQ-006 | Given a Member on a project, when the Admin removes them, then the project returns "not found" to them | TEST-002 |
-| AC-007 | REQ-007 | Given an active project, when the Admin archives it, then its Members see it marked archived with no edit controls | TEST-002 |
-| AC-008 | REQ-008 | Given an archived project, when the Admin restores it, then Members can edit it again | TEST-002 |
-| AC-009 | REQ-009 | Given project access, when a user saves a markdown description, then it renders formatted on the overview | TEST-004 |
-| AC-010 | REQ-010 | Given any user, when they look for a project delete action in UI or endpoints, then none exists | TEST-002 |
-| AC-011 | REQ-011 | Given project access, when a user creates an issue with a title, then it appears on the board; without a title it is rejected | TEST-004 |
-| AC-012 | REQ-012 | Given an issue, when a user sets a status outside the six, then it is rejected; each of the six is accepted | TEST-004 |
-| AC-013 | REQ-013 | Given a new issue without priority, when it is saved, then its priority is None; each of the five values is accepted | TEST-004 |
-| AC-014 | REQ-014 | Given an issue, when a user assigns an active user with project access, then it saves; an assignee without access is rejected | TEST-004 |
-| AC-015 | REQ-015 | Given an issue, when a user sets a milestone from another project, then it is rejected; one from the same project saves | TEST-004 |
-| AC-016 | REQ-016 | Given an issue, when a user sets or clears a due date, then it saves | TEST-004 |
-| AC-017 | REQ-017 | Given an issue created by another user, when a Member edits it, then the change saves | TEST-004 |
-| AC-018 | REQ-018 | Given an issue, when a user deletes it, then it no longer appears in board, list, filters, or milestone progress, and its row still exists in the database | TEST-005 |
-| AC-019 | REQ-019 | Given deleted issues, when the Admin opens Deleted issues, then they are listed; a Member cannot open this view | TEST-005 |
-| AC-020 | REQ-020 | Given a deleted issue, when the Admin restores it, then it reappears with all fields, comments, and attachments | TEST-005 |
-| AC-021 | REQ-021 | Given issues in several statuses, when a user opens the board, then each issue appears in its status column | TEST-006 |
-| AC-022 | REQ-022 | Given a card in Todo, when a user drops it in In progress, then after reload its status is In progress | TEST-006 |
-| AC-023 | REQ-023 | Given a project with issues, when a user opens the list view, then every non-deleted issue appears | TEST-006 |
-| AC-024 | REQ-024 | Given mixed issues, when a user filters by assignee, priority, or milestone, alone or combined, then only matching issues appear in board and list | TEST-006 |
-| AC-025 | REQ-025 | Given mixed issues, when a user sorts by priority, due date, or created date, then issues appear in that order in board columns and list, with no-due-date issues last | TEST-006 |
-| AC-026 | REQ-026 | Given two users editing the same issue, when the second saves after the first, then the second sees a warning, a Reload option, and their typed text is preserved; nothing is overwritten | TEST-007 |
-| AC-027 | REQ-027 | Given an issue whose status and assignee changed, when a user opens it, then the feed shows each change with actor and time | TEST-008 |
-| AC-028 | REQ-028 | Given project access, when a user posts an issue comment in markdown, then it appears formatted in the issue feed | TEST-009 |
-| AC-029 | REQ-029 | Given project access, when a user posts a project comment, then it appears in the project feed | TEST-009 |
-| AC-030 | REQ-030 | Given a comment box, when a user types @, then only active users with project access are offered | TEST-009 |
-| AC-031 | REQ-031 | Given their own comment, when the author edits it, then the new text shows as edited | TEST-009 |
-| AC-032 | REQ-032 | Given their own comment, when the author deletes it, then its text no longer shows in the feed | TEST-009 |
-| AC-033 | REQ-033 | Given project edits, issue events, and project comments, when a user opens the project feed, then all appear in time order | TEST-008 |
-| AC-034 | REQ-034 | Given project access, when a user creates a milestone with a name, then it appears; without a name it is rejected | TEST-010 |
-| AC-035 | REQ-035 | Given a milestone, when a user changes its name, description, or target date, then the change saves | TEST-010 |
-| AC-036 | REQ-036 | Given a milestone with linked issues, when a user deletes it, then it no longer appears, the issues remain with no milestone, and each issue's feed records the change | TEST-010 |
-| AC-037 | REQ-037 | Given a milestone with 2 Done, 1 Todo, 1 Canceled issue, when viewed, then progress is 2 of 3 | TEST-010 |
-| AC-038 | REQ-038 | Given project access, when a user adds a link, a note, and a file resource, then all three appear newest first | TEST-011 |
-| AC-039 | REQ-039 | Given a resource, when a user edits it, then the change saves | TEST-011 |
-| AC-040 | REQ-040 | Given a resource, when a user deletes it, then it no longer appears | TEST-011 |
-| AC-041 | REQ-041 | Given an issue, when a user attaches an allowed file ≤ 10 MB, then it is listed and downloadable | TEST-011 |
-| AC-042 | REQ-042 | Given a file over 10 MB, when a user uploads it, then it is rejected with a message stating the limit | TEST-011 |
-| AC-043 | REQ-043 | Given an issue, when user A assigns user B, then B receives a notification | TEST-012 |
-| AC-044 | REQ-044 | Given an issue with assignee and creator, when a third user comments, then both receive a notification | TEST-012 |
-| AC-045 | REQ-045 | Given a comment mentioning user B, when posted on an issue or project, then B receives a notification | TEST-012 |
-| AC-046 | REQ-046 | Given an issue with assignee and creator, when a third user changes status, then both receive a notification | TEST-012 |
-| AC-047 | REQ-047 | Given notifications for a user, when they open Notifications, then they see them newest first with links | TEST-012 |
-| AC-048 | REQ-048 | Given any notification, when it is created, then an email is sent to the recipient | TEST-012 |
-| AC-049 | REQ-049 | Given active and archived projects, when the Admin opens the project list, then all appear | TEST-002 |
-| AC-050 | SEC-001 | Given no session, when any app page or endpoint except sign-in and invitation is requested, then access is refused | TEST-003 |
-| AC-051 | SEC-002 | Given a Member not on project P, when they request P, its issues, files, or feed, then the response is "not found" | TEST-003 |
-| AC-052 | SEC-003 | Given a Member, when they call any Admin-only action, then the response is "not allowed" and nothing changes | TEST-003 |
-| AC-053 | SEC-004 | Given a comment by user A, when user B or the Admin tries to edit or delete it, then it is rejected | TEST-003 |
-| AC-054 | SEC-005 | Given a signed-in user, when the Admin deactivates them, then their next request is refused | TEST-001 |
-| AC-055 | SEC-006 | Given an executable renamed to .pdf, when uploaded, then it is rejected | TEST-011 |
-| AC-056 | SEC-007 | Given a file in project P, when a user without access to P requests its URL, then it is not served | TEST-011 |
-| AC-057 | SEC-008 | Given markdown with a script tag or raw HTML, when rendered, then no script runs and no raw HTML is output | TEST-013 |
-| AC-058 | SEC-009 | Given an archived project, when any write request is sent directly to the server, then it is rejected | TEST-002 |
-| AC-059 | DATA-001 | Given a deleted issue, when checked in the database, then the issue, comments, attachments, and events still exist | TEST-005 |
-| AC-060 | DATA-002 | Given a deactivated user, when viewing their past issues and comments, then authorship still shows | TEST-001 |
-| AC-061 | DATA-003 | Given recorded events, when any update or delete is attempted on them through the app, then no path exists | TEST-008 |
-| AC-062 | DATA-004 | Given an uploaded file, when inspected, then the bytes are on VPS disk and a metadata row exists | TEST-011 |
-| AC-064 | SEC-010 | Given a sign-in link, when it is used a second time or after 15 minutes, then sign-in is refused and a new link can be requested | TEST-001 |
-| AC-065 | SEC-011 | Given an invitation older than 7 days, when opened, then it is refused; a resent invitation works | TEST-001 |
-| AC-066 | SEC-012 | Given a session older than 30 days, when a request is made, then the user is sent to sign-in | TEST-001 |
-| AC-067 | REQ-050 | Given a Member, when an Admin promotes them, then they can perform Admin-only actions | TEST-002 |
-| AC-068 | REQ-051 | Given two Admins, when one demotes the other, then the demoted user gets "not allowed" on Admin-only actions | TEST-002 |
-| AC-069 | SEC-013 | Given exactly one active Admin, when anyone tries to demote or deactivate them, then it is rejected | TEST-002 |
-| AC-070 | REQ-052 | Given a user who is assignee and creator of an issue, when they change its status or comment on it, then they receive no notification | TEST-012 |
-| AC-071 | REQ-053 | Given a deactivated Member of project P, when an Admin reactivates them, then they can sign in and see P again | TEST-001 |
-| AC-072 | REQ-054 | Given the email service fails, when a user requests a sign-in link, then they see an error and can request again | TEST-001 |
-| AC-073 | OPS-001 | Given the email service fails for a notification, when sending, then it is attempted 4 times in total within about 10 minutes, then a log entry records the drop, and the in-app notification exists | TEST-012 |
-| AC-074 | REQ-055 | Given a project, when an Admin renames it, then the new name shows everywhere; a Member's rename attempt gets "not allowed" | TEST-002 |
-| AC-075 | REQ-056 | Given a new issue, when it is created, then its status is Backlog and it appears in the Backlog column | TEST-004 |
-| AC-076 | REQ-057 | Given an issue attachment uploaded by someone else, when a user with project access removes it, then it is no longer listed | TEST-011 |
-| AC-077 | DATA-005 | Given a deleted comment, when the feed and database are checked, then the text is gone and a placeholder with author and time remains | TEST-009 |
-| AC-078 | DATA-006 | Given a file resource, when it is deleted, then its file no longer exists on disk | TEST-011 |
-| AC-079 | DATA-007 | Given a removed issue attachment, when the disk is checked, then its file no longer exists | TEST-011 |
-| AC-080 | DATA-004 | Given the metadata write fails after an upload reaches disk, when the upload completes with an error, then no orphan file remains | TEST-011 |
-| AC-081 | REQ-001 | Given a pending invitation, when the Admin invites the same email again, then one invitation exists with a new link and expiry | TEST-001 |
-| AC-082 | SEC-014 | Given the production VPS, when a page is requested over HTTP, then it redirects to HTTPS with a valid certificate | TEST-015 |
-| AC-083 | SEC-015 | Given the production VPS, when the environment file and repository are inspected, then the file is readable only by the app user and no secret is in the repository | TEST-015 |
-| AC-084 | SEC-016 | Given 5 sign-in requests for one email within 15 minutes, when a 6th is made, then no email is sent and the neutral message shows | TEST-001 |
-| AC-085 | SEC-017 | Given a successful sign-in, when the session cookie is inspected, then it has HttpOnly, Secure, and SameSite=Lax | TEST-003 |
-| AC-086 | NFR-002 | Given production with real team data, when core pages are opened, then each loads in under 2 seconds | TEST-014 |
-| AC-087 | NFR-003 | Given only a keyboard, when a user signs in, creates an issue, changes its status, comments, and uploads a file, then all complete | TEST-014 |
-| AC-088 | SEC-018 | Given sign-ins and comments have occurred, when the log file is searched, then no token, secret, or comment text appears | TEST-016 |
-| AC-089 | OPS-002 | Given log entries older than 14 days, when retention runs, then they are gone | TEST-016 |
-| AC-090 | OPS-003 | Given the app is stopped, when the monitor next checks, then the owner receives an email | TEST-016 |
-| AC-091 | OPS-004 | Given a new release with migrations, when the previous release is redeployed against the migrated database, then core journeys still work | TEST-016 |
-| AC-063 | NFR-001 | Given each supported browser, when core journeys are run, then all complete without layout or functional errors | TEST-014 |
-
-| Verification ID | Acceptance IDs | Type | Method / prerequisites / pass condition | Status | Evidence location | Owner |
-| --- | --- | --- | --- | --- | --- | --- |
-| TEST-001 | AC-001, AC-002, AC-003, AC-054, AC-060, AC-064, AC-065, AC-066, AC-071, AC-072, AC-081, AC-084 | Automated end-to-end | Invite, activate, deactivate flows against a test database with email captured by a test double; pass when all listed ACs hold | Planned | Pending | Owner |
-| TEST-002 | AC-004 to AC-008, AC-010, AC-049, AC-058, AC-067, AC-068, AC-069, AC-074 | Automated integration | Project admin actions and archived-write rejection, called through server endpoints; pass when all listed ACs hold | Planned | Pending | Owner |
-| TEST-003 | AC-050 to AC-053, AC-085 | Automated integration | Permission matrix (5.2) run for anonymous, Member-in-project, Member-not-in-project, Admin; pass when every cell matches | Planned | Pending | Owner |
-| TEST-004 | AC-009, AC-011 to AC-017, AC-075 | Automated end-to-end | Issue and description create/edit with valid and invalid values; pass when all listed ACs hold | Planned | Pending | Owner |
-| TEST-005 | AC-018 to AC-020, AC-059 | Automated integration | Delete, list deleted, restore; database check for retained rows | Planned | Pending | Owner |
-| TEST-006 | AC-021 to AC-025 | Automated end-to-end | Board drag, list view, filter and sort on seeded data | Planned | Pending | Owner |
-| TEST-007 | AC-026 | Automated integration | Two sessions edit one issue; second save returns conflict; UI keeps input | Planned | Pending | Owner |
-| TEST-008 | AC-027, AC-033, AC-061 | Automated integration | Perform changes, read issue and project feeds; confirm no update/delete path on events | Planned | Pending | Owner |
-| TEST-009 | AC-028 to AC-032, AC-077 | Automated end-to-end | Comment, mention picker, author edit and delete | Planned | Pending | Owner |
-| TEST-010 | AC-034 to AC-037 | Automated integration | Milestone CRUD and progress calculation on seeded issues | Planned | Pending | Owner |
-| TEST-011 | AC-038 to AC-042, AC-055, AC-056, AC-062, AC-076, AC-078, AC-079, AC-080 | Automated integration | Resource CRUD; uploads of allowed, oversize, and disguised files; unauthorized download; disk and row check | Planned | Pending | Owner |
-| TEST-012 | AC-043 to AC-048, AC-070, AC-073 | Automated integration | Trigger each notification type; check in-app records and emails captured by test double | Planned | Pending | Owner |
-| TEST-013 | AC-057 | Automated unit | Render a set of hostile markdown inputs; pass when output contains no script or raw HTML | Planned | Pending | Owner |
-| TEST-016 | AC-088 to AC-091 | Operational | On production: search logs for sensitive values; confirm 14-day purge; stop app and confirm monitor email; redeploy previous release after a migration and run smoke check. Pass when all hold | Planned | Pending | Owner |
-| TEST-015 | AC-082, AC-083 | Operational | On the production VPS: request http:// URL and check redirect and certificate; check environment file permissions; scan repository for secrets. Pass when all hold | Planned | Pending | Owner |
-| TEST-014 | AC-063, AC-086, AC-087 | Manual | Run sign-in, create issue, move card, comment, upload on each supported browser, time page loads, and repeat once keyboard-only; pass when all complete and loads are under 2 s | Planned | Pending | Owner |
-
-### 13.1 Required scenario coverage
-
-- **Happy path and boundary values:** covered, AC-001 to AC-049; 10 MB boundary in AC-042.
-- **Authentication, authorization, and resource isolation:** AC-050 to AC-054, AC-056, AC-058.
-- **Invalid, malformed, oversized, and unsupported input:** AC-004, AC-011, AC-012, AC-014, AC-015, AC-034, AC-042, AC-055, AC-057.
-- **Empty, missing, deleted, disabled, and stale resources:** AC-018 to AC-020, AC-026, AC-054, AC-058.
-- **Duplicate, concurrent, reordered, timed-out, and retried operations:** AC-026 (concurrent edit), AC-073 (email retry), AC-081 (duplicate invitation).
-- **Dependency outage, partial failure, recovery, and replay:** email outage covered by AC-072 and AC-073; no replay in R1. File orphan cleanup covered by AC-080.
-- **Accessibility and responsive behavior:** responsive is Not applicable (desktop only). Keyboard use covered by AC-087.
-- **Migration, rollback, backup/restore, and operational alert behavior:** data migration Not applicable (new system); backup/restore Not applicable (DEC-003); rollback covered by AC-091; alerting by AC-090.
-
-### 13.2 Verification commands and limits
-
-- **Static checks:** type check and lint; exact commands set when the repository is created.
-- **Unit/integration/e2e checks:** test runner and e2e browser tool chosen when the repository is created; commands recorded here before approval.
-- **Performance/security/accessibility checks:** manual, per TEST-014 and TEST-015.
-- **Production-only gates:** owner sign-off after deploying to the VPS.
-- Do not claim production readiness from local or static checks alone.
-
-## 14. Rollout and follow-up
-
-- **Release strategy:** deploy to the VPS, owner runs a smoke check, then invites the team. Local and production environments only; no staging.
-- **Backward compatibility:** Not applicable; no prior version or data.
-- **Rollback:** trigger is a broken production release. Redeploy the previous version. Migrations are additive only, so the previous version runs on the new schema (OPS-004). Owner: Owner.
-- **Post-release monitoring:** uptime monitor (OPS-003) and log review by the owner during the first week.
-- **Known limitations:**
-  - **LIMIT-001:** One VPS holds the app, database, and files; any VPS failure takes the whole app down.
-  - **LIMIT-002:** No backups. Losing the VPS disk loses all data permanently.
-  - **LIMIT-003:** No real-time updates; users see others' changes only after reload.
-  - **LIMIT-004:** Desktop browsers only.
-  - **LIMIT-006:** Sign-in depends on email delivery. If the email service is down, nobody can sign in who isn't already signed in.
-  - **LIMIT-005:** Nothing stops users pasting credentials into resource notes, which are stored as plain text (accepted, DEC-010).
-- **Future work:**
-  - **FOLLOWUP-001:** Integrations with Slack, GitHub, and Google Drive. Out of R1 scope.
-
-## 15. Decision log
-
-| Decision ID | Question / conflict | Status | Blocks while open | Owner | Affected requirement IDs | Resolution / rationale / constraints | Due date | Resolved date / approval |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| DEC-001 | How do users sign in (email and password, magic link, Google, or combination)? Includes invitation expiry and resend rules. | Resolved | — | Owner | REQ-002, SEC-001, SEC-010 to SEC-012, WF-001 | Magic link by email; no passwords stored. Sign-in link single use, 15 minutes. Invitation 7 days, Admin can resend. Session 30 days. | — | 2026-09-23, Owner |
-| DEC-002 | Who can edit or delete comments? | Resolved | — | Owner | REQ-031, REQ-032, SEC-004 | Only the author, including for the Admin. | — | 2026-09-23, Owner |
-| DEC-003 | Backups for database and files? | Resolved | — | Owner | Section 12, LIMIT-002 | No backups in R1. Owner accepts the risk of total data loss. | — | 2026-09-23, Owner |
-| DEC-004 | Integrations in R1? | Resolved | — | Owner | FOLLOWUP-001 | Removed to keep the first iteration simple. | — | 2026-09-23, Owner |
-| DEC-005 | With a single Admin seat, what happens if the Admin leaves or is locked out? Can the Admin role be transferred? | Resolved | — | Owner | REQ-003, REQ-050, REQ-051, SEC-013, 5.1, 5.2, 6.1 | Multiple Admins with equal rights. Any Admin can promote or demote others. The last active Admin cannot be demoted or deactivated. | — | 2026-09-23, Owner |
-| DEC-006 | Are users notified of their own actions (e.g. assigning themselves)? | Resolved | — | Owner | REQ-043 to REQ-046, REQ-052 | No. A user is never notified about an action they performed. | — | 2026-09-23, Owner |
-| DEC-007 | Can users turn off email notifications? | Resolved | — | Owner | REQ-048 | No. Email notifications are always on; there is no preference setting in R1. | — | 2026-09-23, Owner |
-| DEC-008 | Can the Admin reactivate a deactivated user? | Resolved | — | Owner | REQ-003, REQ-053, 6.2 | Yes. An Admin can reactivate; the user returns with their previous role and project memberships. | — | 2026-09-23, Owner |
-| DEC-009 | Is the Canceled column hidden on the board by default? | Resolved | — | Owner | REQ-021 | No. All six columns always show; there is no column toggle. | — | 2026-09-23, Owner |
-| DEC-010 | Should the resource note form warn against pasting credentials? | Resolved | — | Owner | REQ-038, LIMIT-005 | No warning. Accepted as known limitation LIMIT-005. | — | 2026-09-23, Owner |
-| DEC-011 | Which email service, and how are send failures retried? | Resolved (vendor delegated) | — | Owner | REQ-001, REQ-048, REQ-054, OPS-001, DEP-001 | Vendor delegated to implementation within constraints: transactional service with HTTP API; free or low-cost tier fits a small team; sends from owner's domain with SPF and DKIM; API key in server config only. Exceeding any constraint is a blocker. Sign-in link failure is shown to the user with no background retry. Notification and invitation emails retry up to 3 times over about 10 minutes, then are dropped and logged. | — | 2026-09-23, Owner |
-| DEC-012 | Who can rename a project: Admin only, or Members too? | Resolved | — | Owner | 5.2, REQ-055 | Admin only. | — | 2026-09-23, Owner |
-| DEC-013 | What status does a new issue start in? | Resolved | — | Owner | REQ-012, REQ-056 | Backlog. | — | 2026-09-23, Owner |
-| DEC-014 | Which fields can issues be filtered and sorted by? | Resolved | — | Owner | REQ-024, REQ-025 | Filter: assignee, priority, milestone. Sort: priority, due date, created date. Default sort: created date, newest first (proposed by Claude, confirm in review). No status filter; list view shows status as a column. | — | 2026-09-23, Owner |
-| DEC-015 | Delete behavior for comments, milestones, resources, and issue attachments: hidden or removed? What happens to issues linked to a deleted milestone? Can attachments be removed from an issue? | Resolved | — | Owner | REQ-032, REQ-036, REQ-040, REQ-057, DATA-005 to DATA-007 | Comment: text removed permanently; feed keeps a "comment deleted" placeholder with author and time. Milestone: removed permanently; linked issues stay with no milestone, recorded in each issue's feed. Resource: removed permanently, file deleted from disk. Attachment: anyone with project access can remove it from an issue; file deleted from disk. | — | 2026-09-23, Owner |
-| DEC-016 | Operations baseline: logging, error alerting, performance and accessibility targets, staging environment, rollout and rollback steps, language. | Resolved | — | Owner | Sections 10, 12, 14; NFR-002, NFR-003, OPS-002 to OPS-004, SEC-018 | Logs to file on VPS, 14 days, no tokens, secrets, or comment text. Free uptime monitor emails owner on downtime; no other alerts. Pages load under 2 s in normal use; no load testing. No formal accessibility standard; keyboard-usable. Local and production only. Rollout: deploy, owner smoke check, invite team. Rollback: redeploy previous version; migrations additive only. English only. | — | 2026-09-23, Owner |
-| DEC-017 | Security baseline: HTTPS, where secrets live, sign-in rate limiting, encryption at rest. | Resolved | — | Owner | Section 9, SEC-014 to SEC-017 | HTTPS only with a free TLS certificate, HTTP redirected. Secrets in an environment file on the VPS readable only by the app user, never committed. Max 5 sign-in link requests per email per 15 minutes. Session cookies HttpOnly, Secure, SameSite=Lax. Encryption at rest excluded from R1 by owner. | — | 2026-09-23, Owner |
-| DEC-018 | Confirm assumption: deactivated users are removed from assignee and @mention pickers. | Resolved | — | Owner | REQ-014, REQ-030, WF-002 | Confirmed. Deactivated users are hidden from pickers; existing assignments and authorship still show their name. | — | 2026-09-23, Owner |
-| DEC-019 | Priority ranking (Must/Should/Could) for requirements. | Open | Neither | Owner | Section 4 | Pending. Cannot affect readiness: per index rules, priority does not determine scope; all R1 rows are commitments. | Before approval | Pending |
-| DEC-020 | Confirm assumption: issue descriptions and comments use the same basic markdown as project descriptions. | Resolved | — | Owner | REQ-011, REQ-028, REQ-029, SEC-008 | Confirmed. Same basic markdown for project descriptions, issue descriptions, comments, and resource notes. | — | 2026-09-23, Owner |
-
-## 16. Glossary and revision history
-
-### 16.1 Glossary
-
-- **Admin:** a user who manages users and projects; there can be several, all equal. Not "owner" or "manager."
-- **Member:** any non-Admin user. Sees only projects they belong to.
-- **Project member:** a user added to a specific project by the Admin.
-- **Archived project:** read-only project, restorable by the Admin. Not "closed."
-- **Deleted issue:** an issue hidden from all views but kept in the database; the Admin can restore it.
-- **Deactivated user:** a user who can no longer sign in; their content stays. Not "deleted user."
-- **Resource:** a link, note, or file stored on a project.
-- **Activity feed:** time-ordered history of changes and comments on an issue or project.
-
-### 16.2 Revision history
-
-| Version | Date | Author | Summary | Approval / impact |
-| --- | --- | --- | --- | --- |
-| 0.1.0 | 2026-09-23 | Owner, drafted with Claude | Initial draft from discovery | Not approved |
-| 0.2.0 | 2026-09-23 | Owner, drafted with Claude | Clarification pass: DEC-001, DEC-005 to DEC-018, DEC-020 resolved; added REQ-050 to REQ-057, SEC-010 to SEC-018, DATA-005 to DATA-007, OPS-001 to OPS-004, NFR-002, NFR-003 | Not approved |
+---
+product: "One Team"
+version: "0.2.0"
+release: "R1"
+status: Ready to build
+updated: "2026-09-23"
+---
+
+# One Team: Spec
+
+## Overview
+
+### 1. Summary
+
+One Team is an issue tracker for a small team that outgrew Trello but finds Linear too costly and too complex for its non-technical members. Trello has no project layer, so milestones, goals and shared resources have nowhere to live next to the work. One Team tracks issues inside projects, with each project's description, milestones and resources alongside, and stays simple enough for everyone on the team.
+
+### 2. Features
+
+| ID | Feature | Release | Priority |
+|---|---|---|---|
+| F-001 | Projects | R1 | Must |
+| F-002 | Project description | R1 | Must |
+| F-003 | Milestones | R1 | Must |
+| F-004 | Project resources | R1 | Must |
+| F-005 | Issues | R1 | Must |
+| F-006 | Issue fields | R1 | Must |
+| F-007 | Deleted issues | R1 | Should |
+| F-008 | Kanban board | R1 | Must |
+| F-009 | List view | R1 | Should |
+| F-010 | Filtering and sorting | R1 | Should |
+| F-011 | Comments | R1 | Must |
+| F-012 | Activity feeds | R1 | Should |
+| F-013 | File attachments | R1 | Should |
+| F-014 | Notifications | R1 | Should |
+| F-015 | Accounts and sign-in | R1 | Must |
+| F-016 | User management | R1 | Should |
+
+### 3. Scope limits
+
+- **Out of scope:**
+  - Storing credentials or secrets for third-party accounts
+  - Integrations with Slack, GitHub or Google Drive (DEC-004)
+  - Native mobile apps and mobile-browser layouts
+  - Importing data from Trello
+  - Workspaces, teams and multi-tenancy
+  - Custom or per-project statuses
+  - Attachments on comments
+  - Notifications for due dates
+  - Notification preferences; email is always on (DEC-007)
+  - Encryption at rest (DEC-017)
+  - A formal accessibility standard; keyboard use is required instead (NFR-003)
+  - Languages other than English
+  - Load testing, an availability target, metrics, tracing, dashboards, a status page and a staging environment (DEC-016)
+- **Assumptions:** The team is small (single-digit to low double-digit users), so one VPS is enough. Confirm against the owner's headcount before launch.
+- **Known limitations in R1:**
+  - One VPS holds the app, database and files; any VPS failure takes the whole app down.
+  - No backups (DEC-003): losing the VPS disk loses all data permanently.
+  - No real-time updates: users see others' changes only after a reload.
+  - Desktop browsers only.
+  - Sign-in depends on email delivery: while the email service is down, only users already signed in can work.
+  - Nothing stops users pasting credentials into resource notes, which are stored as plain text (DEC-010).
+
+### 4. Open questions
+
+| ID | Question | Type | Affects |
+|---|---|---|---|
+| DEC-025 | Email vendor and request timeout. | Agent's choice (limits in section 12) | API-001 |
+| DEC-026 | Test runner and end-to-end browser tool. | Agent's choice (limits in section 12) | Section 12 |
+
+### 5. Glossary
+
+- **Admin:** a user who manages users and projects. There can be several, all with equal rights. Not "owner" or "manager".
+- **Member:** any user who isn't an Admin. Sees only the projects they belong to.
+- **Project member:** a user an Admin has added to a specific project.
+- **Archived project:** a read-only project that an Admin can restore. Not "closed".
+- **Deleted issue:** an issue hidden from all views but kept in the database; an Admin can restore it.
+- **Deactivated user:** a user who can no longer sign in; their content stays. Not "deleted user".
+- **Resource:** a link, note or file stored on a project.
+- **Activity feed:** the time-ordered history of changes and comments on an issue or a project.
+
+## Features
+
+### F-001 Projects
+
+**Release:** R1 · **Priority:** Must
+
+**What and why:** Admins create projects, add people to them, and archive finished ones so active work stays uncluttered. Projects are never permanently deleted.
+
+**Flow**
+
+1. An Admin creates a project with a name and an optional description.
+2. The Admin adds users to it; each one now sees it in their project list.
+3. When the work is done, the Admin archives the project.
+4. The system marks it archived, hides its edit controls and rejects every write to it (SEC-009).
+5. An Admin can restore it to editable at any time.
+
+**Rules and examples**
+
+- **REQ-004** The system shall let the Admin create a project with a required name and optional description.
+  - REQ-004.1: Lan (Admin) creates "Website refresh" with no description → it appears in the project list. (Verify: auto)
+  - REQ-004.2: Lan submits the form with an empty name → rejected with a field error; no project is created. (Verify: auto)
+- **REQ-005** The system shall let the Admin add a user to a project.
+  - REQ-005.1: Lan adds Bao (Member) to "Website refresh" → it appears in Bao's project list. (Verify: auto)
+- **REQ-006** The system shall let the Admin remove a user from a project.
+  - REQ-006.1: Lan removes Bao from "Website refresh" → opening it gives Bao "not found". (Verify: auto)
+- **REQ-007** The system shall let the Admin archive a project, making it read-only.
+  - REQ-007.1: Lan archives "Website refresh" → Bao sees it with an "Archived" banner and no edit controls. (Verify: auto)
+- **REQ-008** The system shall let the Admin restore an archived project to editable.
+  - REQ-008.1: Lan restores the archived "Website refresh" → its edit controls return, and Bao can create issues in it again. (Verify: auto)
+- **REQ-010** The system shall provide no way to permanently delete a project.
+  - REQ-010.1: Any user, including an Admin, looks for a way to delete "Website refresh" in the UI or among server endpoints → none exists. (Verify: auto)
+- **REQ-049** The system shall show the Admin all projects, including archived ones.
+  - REQ-049.1: 3 active projects and 1 archived project exist, and Lan is a member of none → Lan's project list shows all 4, with the archived one marked. (Verify: auto)
+- **REQ-055** The system shall let an Admin rename a project.
+  - REQ-055.1: Lan renames "Website refresh" to "Website 2026" → the new name shows in the project list and on the project. (Verify: auto)
+  - REQ-055.2: Bao tries to rename it → "not allowed" (STD-2); the name doesn't change. (Verify: auto)
+
+**Exceptions to standard behaviors:** STD-7: on an empty project list, a Member sees "You haven't been added to a project yet" and an Admin sees a create-project action.
+
+**Uses:** Project, ProjectMembership · SEC-002, SEC-003, SEC-009
+
+### F-002 Project description
+
+**Release:** R1 · **Priority:** Must
+
+**What and why:** Each project has a description in basic markdown that also holds its goals, so the team sees why the work exists right next to it.
+
+**Flow**
+
+1. A user with project access opens the project overview.
+2. They edit the description in basic markdown and save it.
+3. The overview shows the description formatted.
+
+**Rules and examples**
+
+- **REQ-009** The system shall let users with project access edit the project description in basic markdown.
+  - REQ-009.1: Bao saves "## Goals" followed by "- Launch by 2026-12-01" → the overview shows a "Goals" heading and one bullet. (Verify: auto)
+  - REQ-009.2: The project is archived → no edit control shows, and a direct save request is rejected (SEC-009). (Verify: auto)
+
+**Exceptions to standard behaviors:** None
+
+**Uses:** Project · SEC-008, SEC-009
+
+### F-003 Milestones
+
+**Release:** R1 · **Priority:** Must
+
+**What and why:** Milestones group a project's issues toward a named target with an optional date, and show how much of it is done.
+
+**Flow**
+
+1. A user with project access creates a milestone with a name, an optional description and an optional target date.
+2. Users link issues to it through each issue's milestone field (REQ-015).
+3. The project overview shows each milestone with its progress.
+4. Deleting a milestone leaves its issues in place with no milestone.
+
+**Rules and examples**
+
+- **REQ-034** The system shall let users with project access create a milestone with a required name, optional description, and optional target date.
+  - REQ-034.1: Bao creates "Beta" with target date 2026-11-15 → it appears on the project overview. (Verify: auto)
+  - REQ-034.2: Bao submits the form with an empty name → rejected with a field error. (Verify: auto)
+- **REQ-035** The system shall let users with project access edit a milestone.
+  - REQ-035.1: Bao moves the target date of "Beta" from 2026-11-15 to 2026-12-01 → the new date shows. (Verify: auto)
+- **REQ-036** The system shall let users with project access delete a milestone.
+  - REQ-036.1: "Beta" has 3 linked issues and Bao deletes it → "Beta" no longer appears, the 3 issues remain with no milestone, and each issue's feed records the change. (Verify: auto)
+- **REQ-037** The system shall show milestone progress as Done issues over linked issues, excluding Canceled and deleted issues, or "No issues" when none are linked.
+  - REQ-037.1: "Beta" has 2 Done, 1 Todo and 1 Canceled issue → progress shows 2 of 3. (Verify: auto)
+  - REQ-037.2: "Beta" has no linked issues → it shows "No issues". (Verify: auto)
+
+**Exceptions to standard behaviors:** None
+
+**Uses:** Milestone, Issue
+
+### F-004 Project resources
+
+**Release:** R1 · **Priority:** Must
+
+**What and why:** Links, notes and files kept on a project, so the team finds its material in one place.
+
+**Flow**
+
+1. A user with project access adds a resource with a title and a type: link (a URL), note (basic markdown) or file (an upload, F-013).
+2. The project overview lists resources, newest first.
+3. Users edit or delete resources; deleting a file resource also deletes its file (DATA-006).
+
+**Rules and examples**
+
+- **REQ-038** The system shall let users with project access add a resource of type link, note, or file.
+  - REQ-038.1: Bao adds the link "Brand guide" (https://example.com/brand), then the note "Hosting notes", then the file "logo.png" (200 KB) → all three show, newest first: "logo.png", "Hosting notes", "Brand guide". (Verify: auto)
+  - REQ-038.2: Bao picks the type link and leaves the URL empty → rejected with a field error. (Verify: auto)
+- **REQ-039** The system shall let users with project access edit a resource.
+  - REQ-039.1: Bao changes the URL of "Brand guide" to https://example.com/brand-v2 → the new URL is saved. (Verify: auto)
+- **REQ-040** The system shall let users with project access delete a resource.
+  - REQ-040.1: Bao deletes "Brand guide" → it no longer appears. (Verify: auto)
+
+**Exceptions to standard behaviors:** None
+
+**Uses:** Resource, Attachment · DATA-004, DATA-006, SEC-006, SEC-007, SEC-008
+
+### F-005 Issues
+
+**Release:** R1 · **Priority:** Must
+
+**What and why:** Issues are the units of work in a project. Any user with project access can create and edit any issue in it.
+
+**Flow**
+
+1. A user with project access enters a title and, optionally, a description and the fields in F-006.
+2. The system validates the input and saves the issue in Backlog.
+3. The issue shows on the board and in the list view.
+4. When someone edits it, the system checks nobody else saved it since they loaded it (REQ-026).
+5. The system saves the change, records each changed field in the issue feed (F-012) and creates any notifications (F-014).
+
+**Rules and examples**
+
+- **REQ-011** The system shall let users with project access create an issue with a required title and optional markdown description.
+  - REQ-011.1: Bao creates "Fix welcome email typo" → it appears in the Backlog column and in the list view. (Verify: auto)
+  - REQ-011.2: Bao submits the form with an empty title → rejected with a field error, and the typed description is kept. (Verify: auto)
+- **REQ-017** The system shall let users with project access edit any field of any issue in the project.
+  - REQ-017.1: Chi edits the title of an issue Bao created → the change is saved. (Verify: auto)
+- **REQ-026** The system shall warn a user who saves an issue changed by someone else since they loaded it, let them reload, and keep their unsaved input.
+  - REQ-026.1: Bao and Chi open the same issue, Chi saves a new title, then Bao saves a new description → Bao sees a warning with a Reload action, Bao's typed description stays available to copy, and Chi's title is not overwritten. (Verify: auto)
+- **REQ-056** The system shall set a new issue's status to Backlog.
+  - REQ-056.1: Bao creates an issue → its status is Backlog. (Verify: auto)
+- **REQ-058** When a user leaves an issue with unsaved edits, the system shall ask whether to discard them or stay.
+  - REQ-058.1: Bao edits an issue's description and clicks the board link → a prompt offers Discard and Stay; Stay keeps the edits on screen. (Verify: auto)
+*REQ-059 was superseded by STD-5 (DEC-023).*
+
+**Exceptions to standard behaviors:** None
+
+**Uses:** Issue · F-006, F-012, F-014, SEC-009
+
+### F-006 Issue fields
+
+**Release:** R1 · **Priority:** Must
+
+**What and why:** Each issue carries a status, priority, assignee, milestone and due date, so the team can see its state, urgency and owner.
+
+**Flow**
+
+1. A user sets fields on the new-issue form or on an existing issue.
+2. The system checks each value against the rules below.
+3. The system saves valid values and rejects invalid ones with a field error (STD-3).
+
+**Rules and examples**
+
+- **REQ-012** The system shall give each issue one status from: Backlog, Todo, In progress, In review, Done, Canceled.
+  - REQ-012.1: Bao sets an issue's status to In review → it is saved. (Verify: auto)
+  - REQ-012.2: A request sets the status to "Blocked" → rejected. (Verify: auto)
+- **REQ-013** The system shall give each issue one priority from: None, Low, Medium, High, Urgent, defaulting to None.
+  - REQ-013.1: Bao creates an issue without choosing a priority → its priority is None. (Verify: auto)
+  - REQ-013.2: Bao sets the priority to Urgent → it is saved. (Verify: auto)
+- **REQ-014** The system shall allow an optional single assignee chosen from active users with access to the project.
+  - REQ-014.1: Bao assigns Chi, a member of the project → it is saved. (Verify: auto)
+  - REQ-014.2: A request assigns Dung, who isn't a member of the project → rejected with a field error. (Verify: auto)
+  - REQ-014.3: Em, a project member, is deactivated → the assignee picker no longer offers Em. (Verify: auto)
+- **REQ-015** The system shall allow an optional milestone chosen from the issue's project.
+  - REQ-015.1: Bao sets milestone "Beta" from the same project → it is saved. (Verify: auto)
+  - REQ-015.2: A request sets milestone "Q1 launch" from the project "Mobile app" → rejected with a field error. (Verify: auto)
+- **REQ-016** The system shall allow an optional due date on an issue.
+  - REQ-016.1: Bao sets the due date to 2026-10-15, then clears it → each change is saved, and the issue ends with no due date. (Verify: auto)
+
+**Exceptions to standard behaviors:** None
+
+**Uses:** Issue, Milestone, User · DATA-008
+
+### F-007 Deleted issues
+
+**Release:** R1 · **Priority:** Should
+
+**What and why:** Deleting an issue hides it everywhere but keeps its data, so an Admin can restore work deleted by mistake.
+
+**Flow**
+
+1. A user with project access deletes an issue.
+2. The issue disappears from the board, the list, filter results and milestone progress; its feed records the deletion.
+3. An Admin opens Deleted issues for the project and restores it.
+4. The issue returns to its previous status column with all its fields, comments and attachments; its feed records the restore.
+
+**Rules and examples**
+
+- **REQ-018** The system shall let users with project access delete an issue by hiding it, without removing its data.
+  - REQ-018.1: Bao deletes "Fix welcome email typo" (In progress, milestone "Beta") → it disappears from the board, the list and filter results, "Beta" no longer counts it, and its database row remains. (Verify: auto)
+  - REQ-018.2: Bao deletes an issue that Chi already deleted → nothing changes. (Verify: auto)
+- **REQ-019** The system shall let the Admin list deleted issues.
+  - REQ-019.1: "Website refresh" has 2 deleted issues → Lan's Deleted issues page for that project lists both. (Verify: auto)
+  - REQ-019.2: Bao opens the Deleted issues page → "not allowed" (STD-2). (Verify: auto)
+- **REQ-020** The system shall let the Admin restore a deleted issue.
+  - REQ-020.1: Lan restores "Fix welcome email typo" → it returns to the In progress column with its 2 comments and 1 attachment. (Verify: auto)
+
+**Exceptions to standard behaviors:** None
+
+**Uses:** Issue · DATA-001
+
+### F-008 Kanban board
+
+**Release:** R1 · **Priority:** Must
+
+**What and why:** The board shows a project's issues in one column per status, and moving a card changes the issue's status.
+
+**Flow**
+
+1. A user opens a project's board; all six status columns show, in order.
+2. The user drags a card to another column, or moves it with the keyboard (NFR-003).
+3. The system saves the new status at once, records it in the issue feed and notifies the assignee and creator (F-014).
+4. If the save fails or the issue changed since the board loaded, the card goes back to its column.
+
+**Rules and examples**
+
+- **REQ-021** The system shall show a project's issues on a kanban board with one column per status, always showing all six columns in the order Backlog, Todo, In progress, In review, Done, Canceled.
+  - REQ-021.1: A project has issues only in Todo and Done → six columns show in order, and the other four are empty. (Verify: auto)
+- **REQ-022** The system shall change an issue's status when its card is moved to another column.
+  - REQ-022.1: Bao drops a card from Todo into In progress → after a reload, its status is In progress. (Verify: auto)
+- **REQ-060** If saving a card move fails, the system shall return the card to its original column and show an error message.
+  - REQ-060.1: The database is unavailable when Bao drops a card from Todo into Done → the card returns to Todo, an error shows, and the status stays Todo. (Verify: auto)
+- **REQ-061** If an issue changed since the board loaded, the system shall reject a move of its card, return the card to its column, and ask the user to reload.
+  - REQ-061.1: Chi edits an issue after Bao loaded the board, then Bao drags its card to Done → the move is rejected, the card returns to its column and Bao is asked to reload. (Verify: auto)
+
+**Exceptions to standard behaviors:** None
+
+**Uses:** Issue · F-014, NFR-003
+
+### F-009 List view
+
+**Release:** R1 · **Priority:** Should
+
+**What and why:** The list view shows a project's issues as rows, for scanning and sorting.
+
+**Flow**
+
+1. A user opens a project's list view.
+2. The system shows one row per issue, with its status as a column.
+3. The user filters and sorts it the same way as the board (F-010).
+
+**Rules and examples**
+
+- **REQ-023** The system shall show a project's issues in a list view, one row per issue with its status as a column.
+  - REQ-023.1: A project has 12 issues, 1 of them deleted → the list shows 11 rows, each with its status. (Verify: auto)
+
+**Exceptions to standard behaviors:** None
+
+**Uses:** Issue
+
+### F-010 Filtering and sorting
+
+**Release:** R1 · **Priority:** Should
+
+**What and why:** Users narrow and order the issues shown on the board and in the list view.
+
+**Flow**
+
+1. A user picks filters: assignee, priority, milestone, alone or combined.
+2. The user picks a sort: priority, due date or created date.
+3. The board and the list show only matching issues, in that order.
+
+**Rules and examples**
+
+- **REQ-024** The system shall let users filter issues in the board and list views by assignee, priority and milestone, alone or combined.
+  - REQ-024.1: Bao filters by assignee Chi and priority High → only Chi's High issues show on the board and in the list. (Verify: auto)
+- **REQ-025** The system shall let users sort issues in the board and list views by priority (Urgent first, None last), due date (soonest first, issues without one last) or created date (newest first).
+  - REQ-025.1: Bao sorts by due date, and 3 issues are due 2026-10-20, never and 2026-10-01 → they show as 2026-10-01, 2026-10-20, then the one with no due date, on the board and in the list. (Verify: auto)
+  - REQ-025.2: Bao sorts by priority, and a column holds Low, Urgent, None and High issues → they show as Urgent, High, Low, None. (Verify: auto)
+- **REQ-062** Where the user hasn't picked a sort, the system shall sort by created date, newest first.
+  - REQ-062.1: Bao opens the list without picking a sort, and issues were created on 2026-10-01, 2026-10-03 and 2026-10-02 → they show as 2026-10-03, 2026-10-02, 2026-10-01. (Verify: auto)
+
+**Exceptions to standard behaviors:** None
+
+**Uses:** Issue
+
+### F-011 Comments
+
+**Release:** R1 · **Priority:** Must
+
+**What and why:** Users discuss issues and projects in comments and @mention teammates to get their attention.
+
+**Flow**
+
+1. A user writes a comment in basic markdown on an issue or on a project, optionally @mentioning teammates.
+2. The system saves it and shows it in the issue or project feed.
+3. The system notifies mentioned users and, for an issue, its assignee and creator (F-014).
+4. The author can later edit or delete their own comment.
+
+**Rules and examples**
+
+- **REQ-028** The system shall let users with project access comment on an issue in basic markdown.
+  - REQ-028.1: Bao posts "**Blocked** on the API key" on an issue → it shows in the issue feed with "Blocked" in bold. (Verify: auto)
+  - REQ-028.2: Bao posts an empty comment → rejected; nothing is posted. (Verify: auto)
+- **REQ-029** The system shall let users with project access comment on a project in basic markdown.
+  - REQ-029.1: Bao posts a comment on "Website refresh" → it shows in the project feed. (Verify: auto)
+- **REQ-030** The system shall let a commenter @mention active users with access to the project; any other @name stays plain text.
+  - REQ-030.1: Bao types "@" → the picker offers only active project members, not Em (deactivated) or Dung (not a project member). (Verify: auto)
+  - REQ-030.2: Bao types "@Dung" by hand and posts → "@Dung" shows as plain text, and Dung gets no notification. (Verify: auto)
+- **REQ-031** The system shall let a comment's author edit that comment.
+  - REQ-031.1: Bao edits their own comment → the new text shows, marked as edited. (Verify: auto)
+- **REQ-032** The system shall let a comment's author delete that comment.
+  - REQ-032.1: Bao deletes their own comment → its text no longer shows in the feed (DATA-005). (Verify: auto)
+
+**Exceptions to standard behaviors:** None
+
+**Uses:** Comment · SEC-004, SEC-008, DATA-005
+
+### F-012 Activity feeds
+
+**Release:** R1 · **Priority:** Should
+
+**What and why:** Each issue and project keeps a time-ordered history of changes and comments, so anyone can see what happened and who did it.
+
+**Flow**
+
+1. A user changes an issue or a project, or comments on one.
+2. In the same save, the system records an activity event with the actor, the time and the change (DATA-003).
+3. The issue page shows its feed interleaved with comments.
+4. The project overview shows the project feed with a comment box.
+
+**Rules and examples**
+
+- **REQ-027** The system shall show an activity feed on each issue listing field changes and comments with actor and time.
+  - REQ-027.1: Chi moves an issue from Todo to In progress, then Bao reassigns it to Minh → the feed shows both changes, each with its actor and time. (Verify: auto)
+- **REQ-033** The system shall show a project activity feed of project changes, issue event summaries, and project comments in time order.
+  - REQ-033.1: Lan renames the project at 10:00, Bao creates an issue at 10:05 and Chi comments on the project at 10:10 → the project feed shows all three in that order. (Verify: auto)
+
+**Exceptions to standard behaviors:** None
+
+**Uses:** ActivityEvent, Comment · DATA-003, DATA-009
+
+### F-013 File attachments
+
+**Release:** R1 · **Priority:** Should
+
+**What and why:** Users attach files of up to 10 MB to issues, so related material sits with the work.
+
+**Flow**
+
+1. A user with project access attaches a file to an issue, or adds a file resource (F-004).
+2. The system checks the size and the file type (SEC-006).
+3. The system stores the file on disk under a generated name and its details in the database (DATA-004).
+4. Users download it through a route that checks project access (SEC-007).
+5. Any user with project access can remove it, which deletes the file (DATA-007).
+
+**Rules and examples**
+
+- **REQ-041** The system shall let users with project access attach files to an issue.
+  - REQ-041.1: Bao attaches "brief.pdf" (2 MB) to an issue → it is listed on the issue and can be downloaded. (Verify: auto)
+- **REQ-042** The system shall reject any uploaded file larger than 10 MB with a visible message.
+  - REQ-042.1: Bao uploads a 10.5 MB file → rejected with a message stating the 10 MB limit. (Verify: auto)
+- **REQ-057** The system shall let users with project access remove an attachment from an issue.
+  - REQ-057.1: Chi removes a file that Bao attached → it is no longer listed. (Verify: auto)
+
+**Exceptions to standard behaviors:** None
+
+**Uses:** Attachment · DATA-004, DATA-007, DATA-010, SEC-006, SEC-007
+
+### F-014 Notifications
+
+**Release:** R1 · **Priority:** Should
+
+**What and why:** Users hear about assignments, comments, @mentions and status changes, in the app and by email.
+
+**Flow**
+
+1. A user assigns an issue, comments, @mentions someone or changes a status.
+2. In the same save, the system creates one in-app notification per recipient, never for the user who acted.
+3. After the save, the system emails each notification (OPS-001 retries failures).
+4. The recipient opens Notifications and follows a link to the issue or project.
+
+**Rules and examples**
+
+In these examples, Chi is the issue's assignee and Bao created it.
+
+- **REQ-043** The system shall notify a user when they are assigned to an issue.
+  - REQ-043.1: Bao assigns an issue to Chi → Chi gets a notification. (Verify: auto)
+- **REQ-044** The system shall notify an issue's assignee and creator when a comment is added to it.
+  - REQ-044.1: Minh comments on the issue → Chi and Bao each get a notification. (Verify: auto)
+- **REQ-045** The system shall notify a user when they are @mentioned in an issue or project comment.
+  - REQ-045.1: Bao's comment on the project "Website refresh" mentions @Minh → Minh gets a notification. (Verify: auto)
+- **REQ-046** The system shall notify an issue's assignee and creator when its status changes.
+  - REQ-046.1: Minh moves the issue to Done → Chi and Bao each get a notification. (Verify: auto)
+- **REQ-047** The system shall show each user a list of their in-app notifications.
+  - REQ-047.1: Chi has 3 notifications → Notifications lists them newest first, each linking to its issue or project. (Verify: auto)
+- **REQ-048** The system shall send each notification by email.
+  - REQ-048.1: A notification for Chi is created → an email goes to Chi's address. (Verify: auto)
+- **REQ-052** The system shall not notify a user about an action they performed themselves.
+  - REQ-052.1: Chi is both assignee and creator of an issue and changes its status → Chi gets no notification. (Verify: auto)
+- **REQ-063** The system shall create at most one notification per recipient for each event.
+  - REQ-063.1: Minh comments "@Chi please check" on the issue → Chi gets one notification, not two. (Verify: auto)
+
+**Exceptions to standard behaviors:** None
+
+**Uses:** Notification · API-001, OPS-001
+
+### F-015 Accounts and sign-in
+
+**Release:** R1 · **Priority:** Must
+
+**What and why:** Admins invite people by email, and users sign in with a one-time link sent to their email, so no passwords are stored.
+
+**Flow**
+
+1. An Admin enters an email address to invite.
+2. The system creates a pending user and emails an invitation link that lasts 7 days (SEC-011).
+3. The invitee opens the link, is signed in, becomes active and lands on the project list with no projects.
+4. Later, the user enters their email on the sign-in page and gets a one-time link that lasts 15 minutes (SEC-010).
+
+**Rules and examples**
+
+- **REQ-001** The system shall let the Admin invite a person by email address.
+  - REQ-001.1: Lan invites chi@example.com → a pending user and an invitation exist, and an invitation email is sent to chi@example.com. (Verify: auto)
+  - REQ-001.2: Lan enters "chi@" → rejected with a field error. (Verify: auto)
+- **REQ-002** The system shall let an invited person activate their account from the invitation.
+  - REQ-002.1: Chi opens the invitation link 2 days after it was sent → Chi is signed in, active, and sees the project list with no projects. (Verify: auto)
+- **REQ-054** The system shall tell a user when their sign-in email could not be sent, so they can try again.
+  - REQ-054.1: The email service returns an error when Bao requests a sign-in link → "Couldn't send the email, try again" shows, and Bao can request again. (Verify: auto)
+- **REQ-064** If the Admin invites an email address that has a pending invitation, the system shall keep one invitation for it with a new link and a new expiry.
+  - REQ-064.1: chi@example.com was invited on 2026-10-01, and Lan invites it again on 2026-10-03 → one invitation exists, with a new link that expires on 2026-10-10. (Verify: auto)
+- **REQ-065** If the Admin invites the email address of an active user, the system shall reject it with "already a member".
+  - REQ-065.1: Lan invites bao@example.com, which belongs to an active user → rejected with "already a member"; no email is sent. (Verify: auto)
+
+**Exceptions to standard behaviors:** None
+
+**Uses:** User, Invitation · API-001, SEC-001, SEC-010, SEC-011, SEC-012, SEC-016, SEC-017, SEC-019
+
+### F-016 User management
+
+**Release:** R1 · **Priority:** Should
+
+**What and why:** Admins control who can use One Team: several Admins with equal rights, promotion and demotion, and deactivation that keeps a person's work.
+
+**Flow**
+
+1. An Admin opens the Users page, which lists active, pending and deactivated users with their roles.
+2. The Admin promotes a Member to Admin or demotes another Admin, never leaving zero active Admins (SEC-013).
+3. The Admin deactivates a user; the system ends their sessions and hides them from assignee and @mention pickers.
+4. An Admin can later reactivate them with their previous role and project memberships.
+
+**Rules and examples**
+
+- **REQ-003** The system shall let the Admin deactivate a user, after which that user cannot sign in.
+  - REQ-003.1: Lan deactivates Chi → Chi's next sign-in attempt fails. (Verify: auto)
+  - REQ-003.2: Lan deactivates Chi a second time → nothing changes. (Verify: auto)
+- **REQ-050** The system shall let an Admin promote a Member to Admin.
+  - REQ-050.1: Lan promotes Bao → Bao can invite users. (Verify: auto)
+- **REQ-051** The system shall let an Admin demote another Admin to Member.
+  - REQ-051.1: Lan and Hoa are Admins, and Lan demotes Hoa → Hoa gets "not allowed" on Admin-only actions. (Verify: auto)
+- **REQ-053** The system shall let an Admin reactivate a deactivated user, restoring their previous role and project memberships.
+  - REQ-053.1: Chi was a Member of "Website refresh" when deactivated, and Lan reactivates Chi → Chi can sign in and sees "Website refresh" again. (Verify: auto)
+
+**Exceptions to standard behaviors:** None
+
+**Uses:** User, ProjectMembership · SEC-005, SEC-013, SEC-020, DATA-002
+
+## System
+
+### 6. Standard behaviors
+
+One Team has no public API (section 9), so these rows state only what the user sees.
+
+| ID | Situation | What happens |
+|---|---|---|
+| STD-1 | Not signed in | Redirected to sign-in; nothing changes (SEC-001). |
+| STD-2 | Not allowed | A project the user isn't a member of, and anything in it, shows "not found". An Admin-only action shows "not allowed". Any write to an archived project shows "not allowed, project is archived". Nothing changes. |
+| STD-3 | Invalid input | The form stays open with the input kept and the invalid field marked. |
+| STD-4 | Item not found | Opening something that doesn't exist or was deleted, such as a notification link to a deleted issue, shows the same "not found" page as STD-2, with a link back to the project list. Nothing changes. Admins restore deleted issues from the Deleted issues page (REQ-019). |
+| STD-5 | Same action sent twice | Every form disables its submit control while a save is pending. Repeating an action whose result already holds changes nothing, for example deleting an issue that is already deleted. |
+| STD-6 | A service we depend on fails | A database failure shows a generic error; the input is kept and nothing is saved. An email failure never blocks the action, except sign-in (REQ-054); other emails retry per OPS-001. |
+| STD-7 | Every screen | A simple loading indicator shows while a page or a save is in progress. An empty list shows a one-line message and, where the user can add something, the add action (for example "No issues yet" with a New issue button); a feature block may state its own. Errors show next to the failed control or at the top of the page, and input is kept. Every screen works in the desktop browsers in NFR-001 and by keyboard (NFR-003). Changes by others show after a reload. |
+
+### 7. Roles and permissions
+
+Anyone not signed in can only sign in and accept an invitation (SEC-001). Denials follow STD-2.
+
+| Action | Member | Admin |
+|---|---|---|
+| Invite, deactivate and reactivate users | No | Yes, never deactivating the last active Admin (SEC-013) |
+| Promote a Member; demote an Admin | No | Yes, never demoting the last active Admin (SEC-013) |
+| Create, rename, archive and restore projects; add and remove project members | No | Yes |
+| See a project and everything in it | Own projects | All projects |
+| Create, edit, move and delete issues; edit the project description; manage milestones, resources and issue attachments; comment and @mention | Own projects | All projects |
+| View and restore deleted issues | No | Yes |
+| Edit or delete a comment | Own comments | Own comments |
+| Any write in an archived project | No | No (restore it first) |
+
+### 8. Data
+
+| Entity | What it holds | Notes |
+|---|---|---|
+| User | Email, name, role (Admin or Member), state (pending, active or deactivated) | Email is unique. Never deleted (DATA-002). States: pending → active ↔ deactivated. |
+| Invitation | Email, invited by, created at, expires at | Created with a pending User. Lasts 7 days (SEC-011); one per email address (REQ-064). |
+| Project | Name, description (markdown, optional), archived at | Never deleted (REQ-010). States: active ↔ archived. |
+| ProjectMembership | User, project | Unique per user and project. |
+| Issue | Title, description (markdown), status, priority, assignee, milestone, due date, creator, created at, updated at, version, deleted at | Milestone must be in the same project; assignee must have project access. The version number detects stale saves (REQ-026, REQ-061). States: live ↔ deleted. |
+| Milestone | Name, description, target date | Progress is calculated, never stored (REQ-037). |
+| Resource | Title, type (link, note or file), URL for a link, markdown body for a note, attachment for a file | Holds exactly one payload, matching its type. |
+| Attachment | Filename, file type, size, storage path, uploaded by, created at | Belongs to an issue or a resource. At most 10 MB (REQ-042). Allowed types: PNG, JPEG, GIF, WebP, PDF, DOC/DOCX, XLS/XLSX, PPT/PPTX, TXT, CSV (DEC-021). |
+| Comment | Body (markdown), author, created at, edited at | Belongs to an issue or a project. |
+| ActivityEvent | Actor, time, subject (issue or project), change | Append-only (DATA-003). |
+| Notification | Recipient, type, link target, created at, read at | At most one per recipient per event (REQ-063). |
+
+All data is kept indefinitely; R1 has no purge.
+
+- **DATA-001** The system shall retain deleted issues, with their comments, attachments, and activity, indefinitely.
+  - DATA-001.1: A deleted issue had 2 comments and 1 attachment → the issue, both comments, the attachment with its file, and its activity events all remain in storage. (Verify: auto)
+- **DATA-002** The system shall retain a deactivated user's account and authored content.
+  - DATA-002.1: Em is deactivated → Em still shows as author on Em's issues and comments, and issues assigned to Em still show Em's name. (Verify: auto)
+- **DATA-003** The system shall record each activity event with actor, timestamp, and change, and never alter it afterwards.
+  - DATA-003.1: Events exist for an issue → the app offers no way, in the UI or on the server, to update or delete them. (Verify: auto)
+- **DATA-004** The system shall store uploaded files on the VPS disk and their metadata in PostgreSQL.
+  - DATA-004.1: Bao uploads "logo.png" → its bytes are on the VPS disk under a generated name, and a database row holds its filename, type and size. (Verify: auto)
+- **DATA-005** The system shall permanently remove a deleted comment's text and keep a "comment deleted" placeholder with author and time.
+  - DATA-005.1: Bao deletes a comment posted at 14:02 → the database no longer holds its text, and the feed shows "comment deleted" with Bao and 14:02. (Verify: auto)
+- **DATA-006** The system shall delete a resource's file from disk when the resource is deleted.
+  - DATA-006.1: Bao deletes the file resource "logo.png" → the file no longer exists on disk. (Verify: auto)
+- **DATA-007** The system shall delete an attachment's file from disk when it is removed from an issue.
+  - DATA-007.1: Chi removes an attachment from an issue → its file no longer exists on disk. (Verify: auto)
+- **DATA-008** The system shall store due dates and target dates as calendar dates without a time.
+  - DATA-008.1: Bao sets a due date of 2026-10-15 → viewers in any timezone see 2026-10-15. (Verify: auto)
+- **DATA-009** The system shall show timestamps in the viewer's browser timezone.
+  - DATA-009.1: A comment is posted at 14:00 UTC → a viewer whose browser is set to UTC+7 sees 21:00. (Verify: auto)
+- **DATA-010** If saving an upload's metadata fails after its file reaches the disk, the system shall delete that file.
+  - DATA-010.1: The database write fails after "logo.png" is written to disk → the upload ends with an error, and no "logo.png" file remains on disk. (Verify: auto)
+
+### 9. Interfaces and integrations
+
+One Team has no public API. Its HTTP endpoints serve only its own frontend.
+
+| ID | Call or system | Used for |
+|---|---|---|
+| API-001 | Email delivery service (vendor: DEC-025) | Sign-in links and invitations (F-015), and notification emails (F-014). If it fails: sign-in shows an error and the user tries again (REQ-054); other emails retry per OPS-001, the in-app notification still exists, and an Admin can resend an invitation (REQ-064). |
+
+### 10. Security and privacy
+
+- **SEC-001** The system shall require an authenticated session for every page and endpoint except sign-in and invitation acceptance.
+  - SEC-001.1: With no session, someone opens the project list → they are redirected to sign-in. (Verify: auto)
+  - SEC-001.2: With no session, Chi opens a valid invitation link → the invitation page opens. (Verify: auto)
+- **SEC-002** The system shall respond "not found" when a Member requests any resource of a project they are not a member of.
+  - SEC-002.1: Dung, not a member of "Website refresh", requests the project, one of its issues, one of its files and its feed → each returns "not found". (Verify: auto)
+- **SEC-003** The system shall reject Admin-only actions from Members with a "not allowed" error.
+  - SEC-003.1: Bao (Member) sends an invite request straight to the server → "not allowed"; nothing changes. (Verify: auto)
+- **SEC-004** The system shall reject edits or deletes of a comment by anyone other than its author, including the Admin.
+  - SEC-004.1: Lan (Admin) tries to edit Bao's comment, then to delete it → both are rejected. (Verify: auto)
+- **SEC-005** The system shall end all active sessions of a user when they are deactivated.
+  - SEC-005.1: Chi is signed in on two browsers, and Lan deactivates Chi → Chi's next request from either browser is refused. (Verify: auto)
+- **SEC-006** The system shall accept uploads only of allowlisted types (section 8, Attachment), checked on the server by file content.
+  - SEC-006.1: Bao uploads an executable renamed "invoice.pdf" → rejected. (Verify: auto)
+  - SEC-006.2: Bao uploads "notes.md" → rejected, because Markdown files aren't on the list. (Verify: auto)
+- **SEC-007** The system shall serve uploaded files only to users with access to the owning project.
+  - SEC-007.1: Dung opens the download link of a file in "Website refresh" → the file isn't served, and Dung gets "not found". (Verify: auto)
+- **SEC-008** The system shall render markdown with raw HTML and scripts removed.
+  - SEC-008.1: A comment reads `<script>alert(1)</script>**hi**` → it renders a bold "hi", and no script runs. (Verify: auto)
+  - SEC-008.2: A note contains `<img src=x onerror=alert(1)>` → the output contains no HTML tag from the note. (Verify: auto)
+- **SEC-009** The system shall reject every write to an archived project on the server.
+  - SEC-009.1: "Website refresh" is archived, and Bao sends a create-issue request straight to the server → rejected with "not allowed, project is archived". (Verify: auto)
+- **SEC-010** The system shall accept each sign-in link once and only within 15 minutes of issue.
+  - SEC-010.1: A link sent at 08:50 is opened at 09:00 → Bao is signed in. (Verify: auto)
+  - SEC-010.2: The same link is opened again at 09:02 → "This link has expired" shows, with a button to request a new one. (Verify: auto)
+  - SEC-010.3: A link sent at 08:40 is opened for the first time at 08:56 → "This link has expired" shows. (Verify: auto)
+- **SEC-011** The system shall reject invitation links more than 7 days old.
+  - SEC-011.1: An invitation sent on 2026-10-01 is opened on 2026-10-09 → refused; after Lan invites the address again, the new link works. (Verify: auto)
+- **SEC-012** The system shall end a session 30 days after sign-in.
+  - SEC-012.1: Bao signed in on 2026-10-01 at 09:00 and makes a request on 2026-10-31 at 09:01 → Bao is sent to sign-in. (Verify: auto)
+- **SEC-013** The system shall reject any demotion or deactivation that would leave no active Admin.
+  - SEC-013.1: Lan is the only active Admin, and a request demotes Lan → rejected. (Verify: auto)
+  - SEC-013.2: Lan is the only active Admin, and a request deactivates Lan → rejected. (Verify: auto)
+- **SEC-014** The system shall serve all traffic over HTTPS and redirect HTTP to HTTPS.
+  - SEC-014.1: A page is requested over http:// on production → it redirects to https:// with a valid certificate. (Verify: ops)
+- **SEC-015** The system shall keep secrets in a VPS environment file readable only by the app user and outside the repository.
+  - SEC-015.1: On the production VPS, the environment file is readable only by the app's OS user, and a scan of the repository finds no secrets. (Verify: ops)
+- **SEC-016** The system shall send at most 5 sign-in links per email address per 15 minutes.
+  - SEC-016.1: bao@example.com requests a 6th sign-in link within 15 minutes → no email is sent, and the usual "check your email" message shows. (Verify: auto)
+- **SEC-017** The system shall set session cookies as HttpOnly, Secure, and SameSite=Lax.
+  - SEC-017.1: After Bao signs in, the session cookie has HttpOnly, Secure and SameSite=Lax set. (Verify: auto)
+- **SEC-018** The system shall never write sign-in tokens, secrets, or comment text to logs.
+  - SEC-018.1: After sign-ins and comments on production, a search of the log file finds no token, secret or comment text. (Verify: ops)
+- **SEC-019** When someone requests a sign-in link for an unknown or deactivated email address, the system shall show the same "check your email" message it shows for an active user.
+  - SEC-019.1: Sign-in is requested for nobody@example.com → "check your email" shows, and no email is sent. (Verify: auto)
+  - SEC-019.2: Sign-in is requested for Em's address, and Em is deactivated → "check your email" shows, and no link is sent. (Verify: auto)
+- **SEC-020** The system shall log each sign-in, role change and deactivation with the actor and the time.
+  - SEC-020.1: Lan promotes Bao at 11:30 → a log entry records the role change with Lan as actor and 11:30 as the time. (Verify: auto)
+
+### 11. Quality targets
+
+| ID | Target | How measured |
+|---|---|---|
+| NFR-001 | Works in current desktop versions of Chrome, Edge, Firefox and Safari. | Run sign-in, create issue, move card, comment and upload by hand in each browser; pass when all complete without layout or functional errors. |
+| NFR-002 | Pages load in under 2 seconds in normal team use. | Time the core pages by hand on production with real team data. |
+| NFR-003 | Every core journey can be completed with only the keyboard, including moving a board card. | By hand: sign in, create an issue, change its status on the board, comment and upload a file without a mouse. |
+
+### 12. Stack and constraints
+
+- **Stack:** Next.js, PostgreSQL, Drizzle ORM, hosted on a single VPS. Uploaded files on the VPS disk (DATA-004). Email through a transactional service (API-001).
+- **Commands:** the npm scripts in `package.json` are the build, test and lint commands (DEC-024). AGENTS.md tells agents to use them and doesn't copy them.
+- **Boundaries:**
+  - This spec is the source of truth for product behavior.
+  - Authorization lives in one server-side layer used by every read and write. There are no client-side-only permission checks.
+  - Each user action commits in one database transaction together with its activity events and notification records. Email is sent after the commit.
+  - Issues carry a version number that detects stale saves (REQ-026, REQ-061).
+  - No real-time updates; pages show current data when they load.
+  - Environments: local development and the production VPS only. No feature flags.
+- **Agent's choices:**
+  - DEC-025 (email vendor and request timeout): a transactional service with an HTTP API; a free or low-cost tier that fits a small team; sends from the owner's domain with SPF and DKIM; the API key lives only in server config (SEC-015). If no vendor fits all of these, stop and ask.
+  - DEC-026 (test runner and end-to-end browser tool): pick them when creating the codebase, and run them through npm scripts in `package.json` (DEC-024).
+
+### 13. Release and operations
+
+- **Launch:** deploy to the VPS, the owner runs a smoke check, then the owner invites the team.
+- **Rollback:** redeploy the previous version (OPS-004 keeps it compatible with the database).
+- **After launch:** the owner reviews the logs during the first week. In an incident, the owner investigates using the logs and tells the team directly.
+
+- **OPS-001** The system shall retry a failed notification or invitation email up to 3 times over about 10 minutes, then drop and log it.
+  - OPS-001.1: The email service is down when a notification for Chi is created → sending is tried 4 times in total within about 10 minutes, a log entry records the drop, and Chi's in-app notification still exists. (Verify: auto)
+- **OPS-002** The system shall write structured logs, each entry with a request ID, to a file on the VPS and delete entries older than 14 days.
+  - OPS-002.1: The log file has entries from 15 days ago → after the retention job runs, they are gone and entries from 13 days ago remain. (Verify: ops)
+- **OPS-003** The system shall be watched by an external uptime monitor that emails the owner when the site is unreachable.
+  - OPS-003.1: The app is stopped → the owner gets an email after the monitor's next check. (Verify: ops)
+- **OPS-004** The system shall use only additive database migrations so the previous release runs on the current schema.
+  - OPS-004.1: A release with a migration is deployed, then the previous release is redeployed → sign-in, creating an issue and commenting still work. (Verify: ops)
+
+## Appendix: Decisions and changes
+
+**Resolved decisions**
+
+| ID | Decision | Why |
+|---|---|---|
+| DEC-001 | Sign-in uses a magic link sent by email; no passwords are stored. Sign-in links work once, for 15 minutes. Invitations last 7 days, and an Admin can resend them. Sessions last 30 days. | Owner's choice (2026-09-23). |
+| DEC-002 | Only a comment's author can edit or delete it, and that includes Admins. | Owner's choice (2026-09-23). |
+| DEC-003 | No backups in R1. | The owner accepts the risk of total data loss. |
+| DEC-004 | No integrations in R1. | Keeps the first release simple. |
+| DEC-005 | There can be several Admins, all with equal rights; any Admin can promote or demote others; the last active Admin can't be demoted or deactivated. | So the team isn't locked out if an Admin leaves. |
+| DEC-006 | A user is never notified about their own action. | Owner's choice (2026-09-23). |
+| DEC-007 | Email notifications are always on; R1 has no preference setting. | Owner's choice (2026-09-23). |
+| DEC-008 | An Admin can reactivate a deactivated user, who returns with their previous role and project memberships. | Owner's choice (2026-09-23). |
+| DEC-009 | All six board columns always show; there is no column toggle. | Owner's choice (2026-09-23). |
+| DEC-010 | The resource note form doesn't warn against pasting credentials. | Accepted as a known limitation (section 3). |
+| DEC-011 | A failed sign-in email is shown to the user, with no background retry. Notification and invitation emails retry up to 3 times over about 10 minutes, then are dropped and logged. The vendor is the agent's choice (DEC-025). | Owner's choice (2026-09-23). |
+| DEC-012 | Only Admins can rename a project. | Owner's choice (2026-09-23). |
+| DEC-013 | A new issue starts in Backlog. | Owner's choice (2026-09-23). |
+| DEC-014 | Filter by assignee, priority and milestone. Sort by priority, due date and created date. There is no status filter; the list view shows status as a column. The default sort was never confirmed and moved to DEC-022. | Owner's choice (2026-09-23). |
+| DEC-015 | Deleting a comment removes its text for good and leaves a "comment deleted" placeholder with author and time. Deleting a milestone removes it; its issues stay with no milestone, and each issue's feed records it. Deleting a resource removes it and its file. Anyone with project access can remove an issue attachment, and its file is deleted. | Owner's choice (2026-09-23). |
+| DEC-016 | Operations baseline: logs to a file on the VPS for 14 days, without tokens, secrets or comment text; a free uptime monitor emails the owner; pages load in under 2 seconds in normal use, with no load testing; no formal accessibility standard, but keyboard-usable; local and production environments only; launch by deploy, smoke check and invite; roll back by redeploying the previous version, with additive migrations only; English only. | Owner's choice (2026-09-23). |
+| DEC-017 | Security baseline: HTTPS only, with a free TLS certificate and HTTP redirected; secrets in a VPS environment file readable only by the app user; at most 5 sign-in link requests per email address per 15 minutes; session cookies HttpOnly, Secure and SameSite=Lax; no encryption at rest in R1. | Owner's choice (2026-09-23). |
+| DEC-018 | Deactivated users are hidden from the assignee and @mention pickers; existing assignments and authorship still show their name. | Owner's choice (2026-09-23). |
+| DEC-019 | Must: F-001, F-002, F-003, F-004, F-005, F-006, F-008, F-011, F-015. Should: F-007, F-009, F-010, F-012, F-013, F-014, F-016. Could: none. All stay in R1. | The Must features replace Trello and add the project layer that is the reason to build One Team. |
+| DEC-020 | Project descriptions, issue descriptions, comments and resource notes all use the same basic markdown. | Owner's choice (2026-09-23). |
+| DEC-021 | Uploads are limited to PNG, JPEG, GIF, WebP, PDF, DOC/DOCX, XLS/XLSX, PPT/PPTX, TXT, CSV. | Covers screenshots, office documents and data exports, and leaves out types that can carry scripts or hide their contents. |
+| DEC-022 | The default sort is created date, newest first. Each sort has one fixed direction: priority from Urgent to None, due date soonest first, created date newest first. There is no direction toggle. | Keeps the views simple for non-technical members. |
+| DEC-023 | STD-4: missing or deleted items show the "not found" page with a link to the project list. STD-5: every form disables its submit control while saving, and repeating a completed action changes nothing. STD-7: loading indicator, one-line empty states with an add action, errors next to the control or at the top with input kept. | One consistent behavior on every screen; STD-5 replaces the issue-only REQ-059. |
+| DEC-024 | Build, test and lint commands are the npm scripts in `package.json`; AGENTS.md tells agents to use them and doesn't copy them. | Owner's choice (2026-09-29). |
+
+**ID changes**
+
+- F-001 to F-016 are new; the old features had no IDs. The old Issues feature became F-005 Issues, F-006 Issue fields and F-007 Deleted issues. Accounts and sign-in became F-015, with user management split off as F-016. Both splits keep each feature within 8 rules.
+- REQ-058 to REQ-065, SEC-019, SEC-020 and DATA-008 to DATA-010 are new IDs for behavior the old spec stated only in its workflows, screens, data model or non-functional notes.
+- The wording of REQ-021, REQ-023, REQ-024, REQ-025, REQ-030, REQ-037 and OPS-002 now includes detail from old sections 5.4, 6.1, 10 and 12 and from DEC-014. SEC-006 now points to the allowlist in section 8.
+- STD-1 to STD-7 replace the shared outcomes in old section 5.3. API-001 replaces DEP-001.
+- AC-001 to AC-091 became examples under the rules they tested. AC-081 moved from REQ-001 to REQ-064.1, and AC-080 moved from DATA-004 to DATA-010.1.
+- TEST-001 to TEST-016 became the Verify tag on each example.
+- WF-001 to WF-008 became the flows and rules of F-015, F-016, F-005, F-008, F-007, F-011, F-013 and F-001.
+- US-001 to US-008 were dropped; the flows cover them.
+- LIMIT-001 to LIMIT-006 became known limitations, FOLLOWUP-001 became an out-of-scope item and ASSUMP-001 became an assumption, all in section 3.
+- SPEC-001 was dropped.
+
+**Changelog**
+
+- None.
+
+**Superseded items**
+
+- REQ-059: While an issue save is pending, the system shall disable its save control. Superseded by STD-5, which covers every form (DEC-023).
