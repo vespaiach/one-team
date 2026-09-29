@@ -1,6 +1,6 @@
 ---
 product: "Tracklite"
-version: "0.1"
+version: "0.2"
 release: "R1"
 status: Ready to build
 updated: "2026-09-29"
@@ -72,6 +72,7 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
 - **Project:** a named container for issues.
 - **Project key:** a short uppercase code such as `WEB`, fixed when the project is created.
 - **Archived project:** a project an admin has made read-only and removed from the sidebar.
+- **Project details:** a project's page for its description and comments, opened from a link next to the project name.
 - **Issue:** a unit of work.
 - **Issue ID:** the project key plus a number, such as `WEB-42`.
 - **Status:** where an issue is in the workflow; the columns on the board.
@@ -99,7 +100,7 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
 4. Later, the member enters their email on the sign-in page.
 5. The system emails them a magic link.
 6. The member opens the link and is signed in, landing on My issues.
-7. The member can edit their profile at any time.
+7. The member can edit their full name at any time. Username and email are fixed.
 
 **Rules and examples**
 
@@ -115,9 +116,10 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
   - REQ-002.2: Sam opens the link on day 8, or after already accepting it → "This invitation has expired. Ask an admin for a new one." (Verify: auto)
   - REQ-002.3: Alex, signed in, opens Sam's invitation link → "You're signed in as Alex. Sign out to accept this invitation." (Verify: auto)
   - REQ-002.4: The admin revokes the invitation while Sam is filling in the profile → on submit: "This invitation is no longer valid.", no member created. (Verify: auto)
-- **REQ-003** The system shall store each profile as a full name (1 to 60 characters), a unique username (2 to 20 characters: lowercase letters, digits, hyphens; used for @mentions) and the invited email. The avatar is the member's initials. Email can't be changed in R1.
+- **REQ-003** The system shall store each profile as a full name (1 to 60 characters), a unique username (2 to 20 characters: lowercase letters, digits, hyphens; used for @mentions) and the invited email. The avatar is the member's initials. Username and email can't be changed in R1.
   - REQ-003.1: Sam enters username `Sam` → saved as `sam`. (Verify: auto)
   - REQ-003.2: Username `sam` is already taken → field error "Username taken" (STD-3). (Verify: auto)
+  - REQ-003.3: Sam opens their profile → the full name can be edited; username and email are shown but can't be edited, and an API request that changes them is refused. (Verify: auto)
 - **REQ-004** When someone enters an email on the sign-in page, the system shall email a single-use magic link that expires after 15 minutes, only if the email belongs to an active member. The page shows the same message either way. Each link works on its own until it's used or expires, and requests are limited by SEC-001.
   - REQ-004.1: `sam@acme.com` (active member) → email sent; the page shows "Check your email". (Verify: auto)
   - REQ-004.2: `stranger@x.com` → no email; the page shows the same "Check your email". (Verify: auto)
@@ -152,7 +154,7 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
 
 1. An admin creates a project with a name and a key such as `WEB`.
 2. The project appears in the sidebar for every member.
-3. A member opens the project and sees its description, its issues (board or list) and its comments.
+3. A member opens the project and sees its issues on the board or list. A link next to the project name opens the project details, with its description and comments.
 4. Any member edits the description in Markdown.
 5. An admin renames the project, archives it when the work is finished, or deletes it.
 
@@ -172,11 +174,13 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
   - REQ-012.1: Member saves a description with a heading and a bullet list → shown formatted. (Verify: auto)
   - REQ-012.2: Description of 20,001 characters → field error "Too long (max 20,000)". (Verify: auto)
   - REQ-012.3: Description contains `<script>alert(1)</script>` → shown as text; nothing runs. (Verify: auto)
-- **REQ-013** When an admin archives a project, the system shall move it from the sidebar to an Archived list. It shall make its description, issues and comments read-only, and hide its issues from My issues. An admin can unarchive it.
+- **REQ-013** When an admin archives a project, the system shall move it from the sidebar to an Archived list. It shall make its description, issues, comments and labels read-only, and hide its issues from My issues. An admin can unarchive it.
   - REQ-013.1: Admin archives `WEB` → it disappears from the sidebar and appears under Archived; `WEB-42` opens read-only, with no edit or comment controls. (Verify: auto)
   - REQ-013.2: `WEB-42` is assigned to Sam → it no longer appears in Sam's My issues. (Verify: auto)
   - REQ-013.3: Admin unarchives `WEB` → it's back in the sidebar and fully editable, and `WEB-42` is back in Sam's My issues. (Verify: auto)
   - REQ-013.4: Sam is editing `WEB-42` when `WEB` is archived → Sam's save fails with the toast "This project is archived" (STD-9), and Sam's text is kept. (Verify: auto)
+  - REQ-013.5: `WEB` is archived → its Labels page still lists the labels, with no create, rename, recolor or delete controls. (Verify: auto)
+  - REQ-013.6: Sam has `WEB`'s Labels page open when `WEB` is archived, then renames `bug` → the toast "This project is archived" (STD-9), and `bug` is unchanged. (Verify: auto)
 - **REQ-014** When an admin deletes a project, active or archived, the system shall ask them to type the project key to confirm, then permanently delete the project with all its issues and comments (DATA-002). Nothing can be restored.
   - REQ-014.1: Admin types `WEB` and confirms → project gone; opening `WEB-42` shows Not found (STD-4). (Verify: auto)
   - REQ-014.2: Admin types `WEBB` → the Delete button stays disabled. (Verify: auto)
@@ -186,6 +190,9 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
   - REQ-015.1: Projects "Website", "API" and "Mobile" → shown as API, Mobile, Website. (Verify: auto)
   - REQ-015.2: A 50-character name → cut off with "…"; hovering shows the full name. (Verify: manual)
   - REQ-015.3: Two projects named "Website", with keys `WEB` and `SITE` → shown as "Website · SITE", then "Website · WEB". (Verify: auto)
+- **REQ-046** The system shall show a project's description and comments on its project details page, `/project/{KEY}/detail`. A link or icon next to the project name, at the top of the board and the list view, opens it. The board and list view don't show the description or the project's comments.
+  - REQ-046.1: Sam clicks the details link next to "Website" on the `WEB` board → `/project/WEB/detail` opens, with the description and the project's comments. (Verify: auto)
+  - REQ-046.2: Sam opens the `WEB` board → no description or project comments on it. (Verify: auto)
 
 **Exceptions to standard behaviors:** None.
 **Uses:** Project, Issue, Comment · DEC-001 (Markdown) · DATA-002 (deletion) · SEC-002 (safe Markdown)
@@ -341,7 +348,7 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
 
 **Flow**
 
-1. A member opens an issue or a project and goes to its comments.
+1. A member opens an issue, or a project's details, and goes to its comments.
 2. The member writes a comment in Markdown, @mentioning teammates if needed, and posts it.
 3. The system adds it to the thread with the author's name and the time.
 4. Anyone mentioned gets an email (F-008).
@@ -355,9 +362,9 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
   - REQ-031.3: A comment of 10,001 characters → field error "Too long (max 10,000)". (Verify: auto)
   - REQ-031.4: A comment posted 9 days ago → shows its date, such as "Sep 20". (Verify: auto)
   - REQ-031.5: A comment has a 300-character line of code → the code block scrolls sideways; the page doesn't. (Verify: manual)
-- **REQ-032** The system shall show all of an issue's comments below its description, and all of a project's comments below its description, with no paging. Each thread is flat (no replies), oldest first.
+- **REQ-032** The system shall show all of an issue's comments below its description, and all of a project's comments below its description on the project details page (REQ-046), with no paging. Each thread is flat (no replies), oldest first.
   - REQ-032.1: Comments posted on `WEB-42` at 09:00 and 09:05 → the 09:00 comment is above. (Verify: auto)
-  - REQ-032.2: Alex comments on project `WEB` → shown on the `WEB` project page, not on any issue. (Verify: auto)
+  - REQ-032.2: Alex comments on project `WEB` → shown on the `WEB` project details page, not on any issue. (Verify: auto)
   - REQ-032.3: `WEB` is archived → its threads are shown with no comment box and no Edit or Delete options (REQ-013). (Verify: auto)
   - REQ-032.4: `WEB-42` has 200 comments → all 200 are on the page. (Verify: auto)
 - **REQ-033** When the author edits their own comment, the system shall save the change with the same limits as REQ-031 and mark it "(edited)", with the edit time on hover. Nobody else, including admins, can edit it.
@@ -428,7 +435,7 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
   - REQ-044.2: Sam writes `@sam` in their own comment → no email. (Verify: auto)
   - REQ-044.3: Alex edits a comment that already mentions `@sam` and adds `@jo` → only Jo is emailed. (Verify: auto)
   - REQ-044.4: One comment mentions `@sam` twice → Sam gets one email. (Verify: auto)
-  - REQ-044.5: Alex mentions `@sam` in a comment on project `WEB` → the email links to the `WEB` project page. (Verify: auto)
+  - REQ-044.5: Alex mentions `@sam` in a comment on project `WEB` → the email links to the `WEB` project details page. (Verify: auto)
 - **REQ-045** The system shall wait 2 minutes before sending a notification. Notifications for the same member about the same issue or project within that time are combined into one email. A notification is dropped if, within that time, the assignment is undone, the mention is edited out, the comment holding it is deleted, or the recipient is deactivated. A failed send is retried as in STD-6. A bounce reported by the email service is logged and not retried; the action in the app is unaffected. Notifications for issues or projects deleted during the wait are still sent.
   - REQ-045.1: Within 1 minute, Alex assigns `WEB-42` to Sam and mentions `@sam` in a comment on it → Sam gets one email covering both. (Verify: auto)
   - REQ-045.2: Alex assigns `WEB-42` to Sam, then reassigns it to Jo 30 seconds later → Sam gets nothing; Jo gets one email. (Verify: auto)
@@ -514,7 +521,7 @@ There are no private projects. The first admin is created by the setup command (
 | API-001 | The app's own HTTP API, under `/api/…`, used only by its own web front end | Every feature. It isn't public or documented for outside use. Errors follow STD-1 to STD-4 (`401`, `403`, `422`, `404`). The exact list of endpoints is the agent's choice (DEC-002). |
 | API-002 | Outgoing email service (a transactional email provider, DEC-003) | Invitations (REQ-001), magic links (REQ-004) and notifications (F-008). If it fails, see STD-6: sign-in shows "We couldn't send the email", and notifications are retried 3 times. |
 | API-003 | `POST /webhooks/email` (bounce reports from the email service) | Marking notifications as Bounced (REQ-045.6). It accepts only requests signed by the email service; anything else gets `401`. |
-| API-004 | Page addresses: `/sign-in`, `/my-issues`, `/project/{KEY}` (board), `/project/{KEY}/list`, `/project/{KEY}/labels`, `/issue/{ID}`, `/settings/members` | Links in emails and between members. Keys and IDs are matched ignoring capitals (REQ-016.5). The list view's filters go in the query string (REQ-040). |
+| API-004 | Page addresses: `/sign-in`, `/my-issues`, `/project/{KEY}` (board), `/project/{KEY}/list`, `/project/{KEY}/detail`, `/project/{KEY}/labels`, `/issue/{ID}`, `/settings/members` | Links in emails and between members. Keys and IDs are matched ignoring capitals (REQ-016.5). The list view's filters go in the query string (REQ-040). |
 
 ### 10. Security and privacy
 
@@ -603,7 +610,7 @@ There's no uptime target: one server has no redundancy (section 3). Section 13 c
 
 **Changelog**
 
-*No entries.*
+- **0.2 (2026-09-29):** A project's description and comments move to its project details page, `/project/{KEY}/detail` (REQ-046; REQ-032, REQ-044.5 and API-004 updated). Archiving a project also freezes its labels (REQ-013, REQ-013.5, REQ-013.6). Usernames can't be changed (REQ-003, REQ-003.3).
 
 **Superseded items**
 
