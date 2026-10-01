@@ -1,9 +1,0 @@
-.ds-field{display:flex;flex-direction:column;gap:6px;min-width:0}
-.ds-field__label{font:500 var(--body-sm-size)/1.3 var(--font-text);color:var(--ink-muted)}
-.ds-field__hint{font:400 var(--caption-size)/var(--caption-lh) var(--font-text);color:var(--ink-subtle)}
-.ds-input{box-sizing:border-box;width:100%;padding:8px 12px;border-radius:var(--radius-md);border:1px solid var(--hairline);background:var(--surface-1);color:var(--ink);font:400 var(--body-size)/var(--body-lh) var(--font-text);letter-spacing:var(--body-ls);outline:none;transition:border-color var(--duration-fast) var(--ease-standard),box-shadow var(--duration-fast) var(--ease-standard)}
-.ds-input::placeholder{color:var(--ink-tertiary)}
-.ds-input:hover{border-color:var(--hairline-strong)}
-.ds-input:focus,.ds-input.is-focused{border-color:var(--primary);box-shadow:0 0 0 2px var(--focus-ring-color)}
-.ds-input:disabled{opacity:.5;cursor:not-allowed}
-textarea.ds-input{resize:vertical;min-height:112px}

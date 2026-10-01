@@ -53,6 +53,8 @@
 --mono-lh:1.50; /* @kind font */
 --mono-ls:0; /* @kind font */
 }
+/* Composite type classes — also available as Tailwind pairs, e.g. font-display text-headline */
+@layer components{
 .t-display-xl{font:var(--display-xl-weight) var(--display-xl-size)/var(--display-xl-lh) var(--font-display);letter-spacing:var(--display-xl-ls)}
 .t-display-lg{font:var(--display-lg-weight) var(--display-lg-size)/var(--display-lg-lh) var(--font-display);letter-spacing:var(--display-lg-ls)}
 .t-display-md{font:var(--display-md-weight) var(--display-md-size)/var(--display-md-lh) var(--font-display);letter-spacing:var(--display-md-ls)}
@@ -67,3 +69,4 @@
 .t-eyebrow{font:var(--eyebrow-weight) var(--eyebrow-size)/var(--eyebrow-lh) var(--font-text);letter-spacing:var(--eyebrow-ls)}
 .t-mono{font:400 var(--mono-size)/var(--mono-lh) var(--font-mono);letter-spacing:var(--mono-ls)}
 @media (max-width:480px){.t-display-xl{font-size:40px;letter-spacing:-1px}.t-display-lg{font-size:36px;letter-spacing:-1px}}
+}

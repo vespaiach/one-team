@@ -53,5 +53,13 @@
 --focus-ring-color:rgba(221,116,80,.5); /* primary-focus @ 50% */
 --focus-ring:0 0 0 2px var(--focus-ring-color); /* @kind shadow */
 --edge-highlight:inset 0 1px 0 0 rgba(255,255,255,.04); /* @kind shadow */
---scrim:rgba(0,0,0,.72);
+--scrim:rgba(0,0,0,.72); /* Derived mixes (used by components via Tailwind) */
+--hairline-warm:color-mix(in oklab,var(--earth-sand) 35%,var(--hairline-strong));
+--hairline-featured:color-mix(in oklab,var(--primary) 55%,var(--hairline-strong));
+--hairline-tab:color-mix(in oklab,var(--primary) 45%,var(--hairline-strong));
+--avatar-edge:color-mix(in oklab,var(--earth-rust) 70%,var(--earth-sand));
+--cta-surface:color-mix(in oklab,var(--earth-rust) 22%,var(--surface-1));
+--cta-edge:color-mix(in oklab,var(--earth-rust) 60%,var(--hairline));
+--badge-accent-surface:color-mix(in oklab,var(--primary) 14%,var(--surface-1));
+--badge-accent-edge:color-mix(in oklab,var(--primary) 40%,var(--hairline));
 }

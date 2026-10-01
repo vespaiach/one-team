@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { NotFoundFocus } from "./NotFoundFocus";
-import styles from "./not-found.module.css";
 
 export const metadata: Metadata = {
   title: "Not found",
@@ -14,14 +13,14 @@ export default function NotFound() {
     <>
       <h1
         id={headingId}
-        className={styles.heading}
+        className="mb-4 font-display text-headline text-ink"
         tabIndex={-1}>
         Not found
       </h1>
       <NotFoundFocus headingId={headingId} />
       <Link
         href="/my-issues"
-        className={styles.link}>
+        className="text-body">
         My issues
       </Link>
     </>
