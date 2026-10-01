@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import "./globals.css";
-import { AppShell } from "../components/AppShell";
-import { AriaRouterProvider } from "../components/AriaRouterProvider";
-import { ToastProvider } from "../components/Toast";
+import "../styles/globals.css";
+import { AppShell } from "../components/layout/AppShell";
+import { AriaRouterProvider } from "../components/layout/AriaRouterProvider";
+import { ToastProvider } from "../components/ui/Toast";
 
 export const metadata: Metadata = {
   title: {

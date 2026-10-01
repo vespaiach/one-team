@@ -1,6 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { AppShell } from "../components/AppShell.tsx";
+import { AppShell } from "../components/layout/AppShell.tsx";
 import NotFound from "./not-found.tsx";
 
 const hadGetEntriesByType = typeof performance.getEntriesByType === "function";

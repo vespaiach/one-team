@@ -4,7 +4,7 @@
   "files": {
     "includes": [
       "**",
-      "!src/hairline",
+      "!src/components/ui/hairline",
       "!**/.claude",
       "!**/node_modules",
       "!**/docs",
@@ -22,6 +22,7 @@
     "trailingNewline": false,
     "attributePosition": "multiline"
   },
+  "css": { "parser": { "tailwindDirectives": true } },
   "assist": { "enabled": false },
   "linter": {
     "enabled": true,

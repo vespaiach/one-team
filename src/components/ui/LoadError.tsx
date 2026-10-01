@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "../hairline/index.ts";
+import { Button } from "./hairline/index.ts";
 
 export function LoadError({ onRetry }: { onRetry: () => void }) {
   return (
