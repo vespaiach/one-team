@@ -41,6 +41,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-/.claude/
+/.claude/*
+!/.claude/skills/
+/.claude/skills/*
+!/.claude/skills/speckit-design/
+/.claude/skills/speckit-design/*
+!/.claude/skills/speckit-design/SKILL.md
 /.worktrees/
 /.vscode/
