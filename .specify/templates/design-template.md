@@ -72,7 +72,8 @@
   Each element of each screen, the shared component that renders it, and
   whether that component is reused, extended or new against the components
   already in the codebase. Name components by role (button, text field,
-  dialog, menu, toast, table, card), not by library or styling.
+  dialog, menu, toast, table, card) and name the Hairline component used
+  (for example Button, TextInput); a new one is built from Hairline tokens.
 -->
 
 | Screen | Element | Component | Reuse / extend / new |

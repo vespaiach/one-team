@@ -1,0 +1,26 @@
+.heading {
+  margin: 0 0 var(--space-md);
+  color: var(--text-heading);
+  font-family: var(--font-display);
+  font-size: var(--headline-size);
+  font-weight: var(--headline-weight);
+  line-height: var(--headline-lh);
+  letter-spacing: var(--headline-ls);
+}
+
+.link {
+  color: var(--text-link);
+  font-size: var(--body-size);
+  line-height: var(--body-lh);
+  letter-spacing: var(--body-ls);
+}
+
+.link:hover {
+  color: var(--text-link-hover);
+}
+
+.heading:focus-visible,
+.link:focus-visible {
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 2px;
+}

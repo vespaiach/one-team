@@ -1,12 +1,20 @@
 <!--
 Sync Impact Report
-- Version change: 1.0.0 → 1.1.0
-- Added principles: V. UI Design Gate
-- Modified sections: Development Workflow (design gate before planning)
-- Added templates: .specify/templates/design-template.md (used by /speckit-design)
-- Templates checked: plan-template.md (Constitution Check reads this file; no change needed)
-- Deferred TODOs: none; no design system yet, so Principle V covers layout, states, copy and
-  keyboard only
+- Version change: 1.3.0 → 1.4.0
+- Modified principles: IV. Dependency Approval (adds the npm packages the owner approved for RM-1:
+  runtime `next`, `react`, `react-dom`, `postgres`; dev `typescript`, `@types/node`,
+  `@types/react`, `@types/react-dom`, `eslint`, `eslint-config-next`, `vitest`,
+  `@testing-library/react`, `@testing-library/dom`, `jsdom`; the `lucide-react` rationale now says
+  "automated tests" instead of "e2e tests", since DEC-005 drops browser end-to-end tests; the
+  existing Hairline, Lucide CDN and `lucide-react` approvals stand)
+- Added sections: none
+- Removed sections: none
+- Templates checked: plan-template.md, spec-template.md, tasks-template.md and
+  design-template.md (no change needed; none names approved dependencies)
+- Dependent files updated to cite constitution v1.4.0 (done):
+  specs/001-project-foundation/plan.md, research.md and checklists/ops-api.md (CHK032 records the
+  v1.3.0 conflict this amendment resolves)
+- Deferred TODOs: none
 -->
 
 # Tracklite Constitution
@@ -53,6 +61,20 @@ version control already keeps history.
   dependencies or a small amount of our own code cannot do the job.
 - Upgrading or removing an existing dependency does not need prior approval, but MUST be called
   out in the change description.
+- Approved dependencies: the Hairline Design System (its tokens, its `_ds_bundle.js` bundle, and
+  its Button and TextInput components) and the Lucide icon library, which Hairline loads from a
+  CDN; and the npm package `lucide-react`, added to `package.json` dependencies, for vector icons
+  in the UI (for example toast icons), rendered as inline SVG components. The app uses
+  `lucide-react`, not Hairline's CDN icon loader, because it has no run-time dependency on a
+  third-party server, its version is pinned in the lockfile, it is tree-shaken so only the icons
+  used ship, and it works offline and in automated tests.
+- Approved for the stack in `docs/tracklite-spec.md` section 12: runtime `next`, `react` and
+  `react-dom` for the Next.js app and `postgres` (postgres.js) as the PostgreSQL driver; dev
+  `typescript`, `@types/node`, `@types/react` and `@types/react-dom` for TypeScript, and `eslint`
+  and `eslint-config-next` for lint.
+- Approved as the DEC-005 test tools, for unit and component tests (there are no browser
+  end-to-end tests): dev `vitest`, `@testing-library/react`, `@testing-library/dom` and `jsdom`.
+- Nothing else is approved.
 
 **Rationale**: Every dependency adds security, maintenance and upgrade cost; the owner decides
 whether that cost is worth paying.
@@ -67,6 +89,11 @@ whether that cost is worth paying.
   keyboard and focus path.
 - `docs/tracklite-spec.md` decides behavior, permissions and copy; `design.md` and its canvas
   decide layout only. A design that needs new behavior MUST stop and raise it as a DEC candidate.
+- The project's design system is the Hairline Design System, from the Claude Design project
+  "Hairline Design System" (https://claude.ai/design/p/81b94f56-0ba4-49c6-a8c1-99b52fbd73b0):
+  its tokens (colors, type, spacing, radii, elevation, wordmark), guidelines and shared
+  components (for example Button and TextInput). UI work MUST use Hairline's tokens and
+  components rather than inventing new styling.
 - Implementation MUST match the frozen `design.md`; changing it needs a re-freeze.
 
 **Rationale**: Deciding screens, states and copy before planning keeps the plan and the build from
@@ -100,4 +127,4 @@ guessing at UI, and catches missing states while they are cheap to add.
   wording.
 - Compliance is checked in every plan's Constitution Check and in every code review.
 
-**Version**: 1.1.0 | **Ratified**: 2026-09-29 | **Last Amended**: 2026-09-29
+**Version**: 1.4.0 | **Ratified**: 2026-09-29 | **Last Amended**: 2026-09-30
