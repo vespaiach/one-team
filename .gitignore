@@ -49,3 +49,4 @@ next-env.d.ts
 !/.claude/skills/speckit-design/SKILL.md
 /.worktrees/
 /.vscode/
+.specify/loop-state.json
