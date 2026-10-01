@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import "../hairline/tokens/colors.css";
-import "../hairline/tokens/typography.css";
-import "../hairline/tokens/spacing.css";
-import "../hairline/tokens/base.css";
-import "../hairline/components/buttons/buttons.css";
-import "../hairline/components/forms/forms.css";
-import "./globals.css";
-import { AppShell } from "../components/AppShell";
-import { ToastProvider } from "../components/Toast";
+import "../components/ui/hairline/tokens/colors.css";
+import "../components/ui/hairline/tokens/typography.css";
+import "../components/ui/hairline/tokens/spacing.css";
+import "../components/ui/hairline/tokens/base.css";
+import "../components/ui/hairline/components/buttons/buttons.css";
+import "../components/ui/hairline/components/forms/forms.css";
+import "../styles/globals.css";
+import { AppShell } from "../components/layout/AppShell";
+import { ToastProvider } from "../components/ui/Toast";
 
 export const metadata: Metadata = {
   title: {

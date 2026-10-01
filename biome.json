@@ -4,7 +4,7 @@
   "files": {
     "includes": [
       "**",
-      "!src/hairline",
+      "!src/components/ui/hairline",
       "!**/.claude",
       "!**/node_modules",
       "!**/docs",

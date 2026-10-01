@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { formatTime } from "../lib/time.ts";
+import { formatTime } from "../../lib/time.ts";
 
 function subscribe() {
   return () => {};

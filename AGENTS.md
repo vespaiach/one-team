@@ -13,6 +13,7 @@ Build, test and lint with the scripts in `package.json`; run them from the repos
 
 ## Conventions
 
+- Source layout: `src/app` holds routes, layouts and composition only. Shared UI goes in `src/components/ui` (vendored Hairline in `src/components/ui/hairline`, imported through `src/components/ui/hairline.ts`) and `src/components/layout`. Code for one feature goes in `src/features/<feature>/` (`components/`, `hooks/`, `services/`). Shared hooks go in `src/hooks`, shared browser utilities in `src/lib`, server-only code in `src/server`, shared types in `src/types`, global CSS in `src/styles` and static files in `public/`. Tests sit beside the code they test.
 - Schema changes are new SQL files in `migrations/`, applied in name order. Each must keep working with the previous release's code (OPS-004). Once applied, a migration file is never edited, renamed or deleted.
 - Every timestamp column is `timestamptz`, and values are written in UTC (DATA-003).
 - Every route handler lives under `src/app/api/…/route.ts`, uses resource-style plural paths (`/api/projects/WEB/labels`) and JSON bodies, and is wrapped in `apiRoute` from `src/server/api.ts`. It raises `401`, `403`, `404` and `422` by throwing `ApiError`; the wrapper turns anything else into a `500` (`specs/001-project-foundation/contracts/http-api.md`).

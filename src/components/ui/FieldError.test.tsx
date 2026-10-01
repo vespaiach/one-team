@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { saveJson } from "../lib/save.ts";
+import { saveJson } from "../../lib/save.ts";
 import { FieldError } from "./FieldError.tsx";
 import { Button, TextInput } from "./hairline.ts";
 import { ToastProvider, useToast } from "./Toast.tsx";
