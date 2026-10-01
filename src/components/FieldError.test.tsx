@@ -35,8 +35,15 @@ function NameForm() {
         aria-invalid={error ? "true" : undefined}
         aria-describedby={error ? "name-error" : undefined}
       />
-      {error ? <FieldError fieldId="name" message={error} /> : null}
-      <Button variant="primary" type="submit">
+      {error ? (
+        <FieldError
+          fieldId="name"
+          message={error}
+        />
+      ) : null}
+      <Button
+        variant="primary"
+        type="submit">
         Save
       </Button>
     </form>
@@ -46,11 +53,12 @@ function NameForm() {
 function stubFetch(status: number, body: unknown) {
   vi.stubGlobal(
     "fetch",
-    vi.fn(async () =>
-      new Response(JSON.stringify(body), {
-        status,
-        headers: { "Content-Type": "application/json" },
-      }),
+    vi.fn(
+      async () =>
+        new Response(JSON.stringify(body), {
+          status,
+          headers: { "Content-Type": "application/json" },
+        }),
     ),
   );
 }

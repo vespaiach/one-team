@@ -57,7 +57,16 @@ describe("apiRoute logging", () => {
     expect(lines).toHaveLength(1);
     expect(lines[0]).toMatchObject({ method: "POST", path: "/api/x", status: 200 });
     const text = loggedText();
-    for (const value of [queryValue, "token=", authValue, "secret-auth-value", cookieValue, "secret-cookie-value", bodyValue, "password"]) {
+    for (const value of [
+      queryValue,
+      "token=",
+      authValue,
+      "secret-auth-value",
+      cookieValue,
+      "secret-cookie-value",
+      bodyValue,
+      "password",
+    ]) {
       expect(text).not.toContain(value);
     }
   });
@@ -113,7 +122,9 @@ describe("apiRoute error shape", () => {
   });
 
   it("answers a thrown ApiError(422) with the field messages", async () => {
-    const response = await answer(new ApiError(422, "Check the highlighted fields.", { name: "Enter a name." }));
+    const response = await answer(
+      new ApiError(422, "Check the highlighted fields.", { name: "Enter a name." }),
+    );
 
     expect(response.status).toBe(422);
     expect(response.headers.get("content-type")).toContain("application/json");

@@ -15,5 +15,11 @@ export function Loading() {
     return null;
   }
 
-  return <div role="status" aria-label="Loading" className={styles.spinner} />;
+  return (
+    <div
+      role="status"
+      aria-label="Loading"
+      className={styles.spinner}
+    />
+  );
 }

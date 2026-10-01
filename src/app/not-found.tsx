@@ -12,11 +12,16 @@ const headingId = "not-found-heading";
 export default function NotFound() {
   return (
     <>
-      <h1 id={headingId} className={styles.heading} tabIndex={-1}>
+      <h1
+        id={headingId}
+        className={styles.heading}
+        tabIndex={-1}>
         Not found
       </h1>
       <NotFoundFocus headingId={headingId} />
-      <Link href="/my-issues" className={styles.link}>
+      <Link
+        href="/my-issues"
+        className={styles.link}>
         My issues
       </Link>
     </>

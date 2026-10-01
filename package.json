@@ -10,7 +10,7 @@
     "build": "next build",
     "start": "next start",
     "test": "vitest run",
-    "lint": "biome lint --error-on-warnings",
+    "lint": "biome check",
     "db:migrate": "node scripts/migrate.ts"
   },
   "dependencies": {
