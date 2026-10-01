@@ -1,6 +1,6 @@
 ---
 product: "Tracklite"
-version: "0.2"
+version: "0.4"
 release: "R1"
 status: Ready to build
 updated: "2026-09-29"
@@ -60,7 +60,6 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
 | DEC-002 | Exact API endpoints and request and response shapes | Agent's choice (limits in section 12) | API-001 |
 | DEC-003 | Which transactional email provider to use | Agent's choice (limits in section 12) | API-002, API-003, NFR-008, NFR-009 |
 | DEC-004 | How background jobs run | Agent's choice (limits in section 12) | REQ-045, STD-6 |
-| DEC-005 | Unit test runner and browser end-to-end tool | Agent's choice (limits in section 12) | All `Verify: auto` examples |
 
 ### 5. Glossary
 
@@ -460,9 +459,9 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
 | STD-4 | Item not found | A "Not found" page with a link to My issues. This also covers a project key or issue ID that doesn't exist, such as `WEB-999`. API: `404`. |
 | STD-5 | Same action sent twice | The submit button is disabled while saving. Creating an issue or comment carries a request ID, so a retry or double-click never creates two. |
 | STD-6 | A service we depend on fails | The only outside service is email. If a magic-link email fails, the member sees "We couldn't send the email. Try again." If a notification email fails, the app retries 3 times over about 15 minutes, then logs the failure; the action that caused it still succeeds. |
-| STD-7 | Every screen | A loading indicator shows if loading takes more than 300 ms. Empty states name the next action ("No issues yet. Create one."). An error state offers a Retry button. Speed targets are in section 11. |
+| STD-7 | Every screen | A loading indicator shows if loading takes more than 300 ms. Empty states name the next action ("No issues yet. Create one."). An error state shows "Couldn't load this." beside a Retry button (DEC-006). Speed targets are in section 11. |
 | STD-8 | Two members edit the same thing | Single fields such as status, assignee, priority and labels: the last save wins. Descriptions: if someone else saved since you opened the editor, nothing is saved. You see "This was changed by [name]. Copy your text and reload.", and your text stays in the editor. |
-| STD-9 | A form submission fails | A toast error appears, disappears after 5 seconds, and the form keeps everything typed. This covers failures not tied to one field, such as a network error, a server error, a `403` (STD-2) or a failed magic-link email (STD-6). Validation errors stay next to their fields (STD-3), and the STD-8 conflict message stays in the editor. |
+| STD-9 | A form submission fails | A toast error appears, disappears after 5 seconds with no dismiss or pause control, and the form keeps everything typed (DEC-006). This covers failures not tied to one field, such as a network error, a server error, a `403` (STD-2) or a failed magic-link email (STD-6). Validation errors stay next to their fields (STD-3), and the STD-8 conflict message stays in the editor. For a network error or a server error, the toast reads "Couldn't save. Try again." |
 
 ### 7. Roles and permissions
 
@@ -566,7 +565,7 @@ There's no uptime target: one server has no redundancy (section 3). Section 13 c
 
 ### 12. Stack and constraints
 
-- **Stack:** Next.js (TypeScript), PostgreSQL, Drizzle ORM, all on a single VPS. Email goes through a transactional email service (API-002).
+- **Stack:** Next.js (TypeScript), PostgreSQL, Drizzle ORM, all on a single VPS. Email goes through a transactional email service (API-002). Automated tests are unit and component tests only, using Vitest with React Testing Library on jsdom, run through npm scripts; there are no browser end-to-end tests (DEC-005).
 - **Commands:** build, test and lint commands live in the npm scripts in `package.json`. AGENTS.md tells agents to use them and doesn't copy them.
 - **Boundaries:**
   - This spec is the source of truth for product behavior.
@@ -580,7 +579,6 @@ There's no uptime target: one server has no redundancy (section 3). Section 13 c
   - DEC-002 (API endpoints): JSON over HTTPS, resource-style paths such as `/api/issues/WEB-42`, the STD-1 to STD-4 status codes, and a request ID on creates (STD-5). Every endpoint needs a session except sign-in, invitation acceptance and the webhook (API-003).
   - DEC-003 (email provider): it must have an HTTP API and bounce webhooks (API-003), fit within NFR-009's budget, send from the team's domain with SPF and DKIM, and keep its API key only in server config (OPS-006). If no provider fits, stop and ask.
   - DEC-004 (background jobs): run on the same VPS with no paid queue service, and survive a restart without losing pending notifications.
-  - DEC-005 (test tools): a unit test runner and a browser end-to-end tool, run through npm scripts.
 
 ### 13. Release and operations
 
@@ -607,9 +605,13 @@ There's no uptime target: one server has no redundancy (section 3). Section 13 c
 | ID | Decision | Why |
 |---|---|---|
 | DEC-001 | R1 descriptions and comments use Markdown, shown formatted. | It's normal for the team and gives a clean path to rich text (F-010). |
+| DEC-005 | Test tools: Vitest with React Testing Library on jsdom, run through npm scripts, for all `Verify: auto` examples. There are no browser end-to-end tests; shared screen states are checked by component tests. | The owner chose one fast test setup with no browser end-to-end tool. |
+| DEC-006 | Generic error copy: a network or server error toast reads "Couldn't save. Try again." (STD-9), and an error state reads "Couldn't load this." beside Retry (STD-7). The STD-9 toast keeps its fixed 5 seconds with no dismiss or pause control. | The owner chose short, plain copy, and kept the fixed toast timing deliberately despite WCAG 2.2 timing guidance. |
 
 **Changelog**
 
+- **0.4 (2026-09-29):** Test tools decided: Vitest with React Testing Library on jsdom, and no browser end-to-end tests (DEC-005; section 12 updated).
+- **0.3 (2026-09-29):** Exact copy for a network or server error toast (STD-9) and for the error state (STD-7), and the STD-9 toast timing confirmed with no dismiss or pause control (DEC-006).
 - **0.2 (2026-09-29):** A project's description and comments move to its project details page, `/project/{KEY}/detail` (REQ-046; REQ-032, REQ-044.5 and API-004 updated). Archiving a project also freezes its labels (REQ-013, REQ-013.5, REQ-013.6). Usernames can't be changed (REQ-003, REQ-003.3).
 
 **Superseded items**

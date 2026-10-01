@@ -1,0 +1,9 @@
+.message {
+  margin: var(--space-xxs) 0 0;
+  font-family: var(--font-text);
+  font-size: var(--caption-size);
+  line-height: var(--caption-lh);
+  letter-spacing: var(--caption-ls);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
