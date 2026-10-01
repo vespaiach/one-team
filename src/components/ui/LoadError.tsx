@@ -1,15 +1,14 @@
 "use client";
 
-import { Button } from "./hairline.ts";
-import styles from "./LoadError.module.css";
+import { Button } from "./hairline/index.ts";
 
 export function LoadError({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className={styles.error}>
-      <p className={styles.message}>Couldn&apos;t load this.</p>
+    <div className="flex flex-col items-start gap-3">
+      <p className="font-text text-body text-ink">Couldn&apos;t load this.</p>
       <Button
         variant="secondary"
-        onClick={onRetry}>
+        onPress={onRetry}>
         Retry
       </Button>
     </div>

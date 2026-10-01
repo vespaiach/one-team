@@ -22,6 +22,7 @@
     "trailingNewline": false,
     "attributePosition": "multiline"
   },
+  "css": { "parser": { "tailwindDirectives": true } },
   "assist": { "enabled": false },
   "linter": {
     "enabled": true,

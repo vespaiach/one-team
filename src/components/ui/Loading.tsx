@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import styles from "./Loading.module.css";
 
 export function Loading() {
   const [visible, setVisible] = useState(false);
@@ -19,7 +18,7 @@ export function Loading() {
     <div
       role="status"
       aria-label="Loading"
-      className={styles.spinner}
+      className="size-6 animate-[spin_800ms_linear_infinite] rounded-full border-2 border-hairline border-t-primary"
     />
   );
 }

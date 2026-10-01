@@ -2,7 +2,6 @@
 
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import styles from "./Toast.module.css";
 
 type ToastApi = { showToast: (text: string) => void };
 
@@ -27,11 +26,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div
         aria-live="polite"
-        className={styles.region}>
+        className="pointer-events-none fixed right-6 bottom-6 z-1 flex w-[360px] max-w-[calc(100%-24px)] flex-col gap-2 max-md:right-3 max-md:bottom-3 max-md:left-3 max-md:w-auto max-md:max-w-none">
         {toasts.map((toast) => (
           <p
             key={toast.id}
-            className={styles.toast}>
+            className="rounded-md bg-inverse-canvas px-4 py-3 font-text text-body-sm text-inverse-ink wrap-anywhere">
             {toast.text}
           </p>
         ))}

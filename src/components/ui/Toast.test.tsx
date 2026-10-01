@@ -128,10 +128,10 @@ describe("ToastProvider and useToast", () => {
     fireEvent.click(screen.getByRole("button", { name: "Raise forbidden" }));
     await advance(0);
     for (const text of [failed, forbidden]) {
-      const style = getComputedStyle(toastElement(text));
-      expect(style.overflowWrap).toBe("anywhere");
-      expect(style.whiteSpace).not.toBe("nowrap");
-      expect(style.textOverflow).not.toBe("ellipsis");
+      const { classList } = toastElement(text);
+      expect(classList).toContain("wrap-anywhere");
+      expect(classList).not.toContain("whitespace-nowrap");
+      expect(classList).not.toContain("truncate");
     }
   });
 });

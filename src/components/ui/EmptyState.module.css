@@ -1,8 +1,0 @@
-.message {
-  margin: 0;
-  font-family: var(--font-text);
-  font-size: var(--body-size);
-  line-height: var(--body-lh);
-  letter-spacing: var(--body-ls);
-  color: var(--ink-muted);
-}

@@ -1,19 +1,18 @@
 <!--
 Sync Impact Report
-- Version change: 1.3.0 → 1.4.0
-- Modified principles: IV. Dependency Approval (adds the npm packages the owner approved for RM-1:
-  runtime `next`, `react`, `react-dom`, `postgres`; dev `typescript`, `@types/node`,
-  `@types/react`, `@types/react-dom`, `eslint`, `eslint-config-next`, `vitest`,
-  `@testing-library/react`, `@testing-library/dom`, `jsdom`; the `lucide-react` rationale now says
-  "automated tests" instead of "e2e tests", since DEC-005 drops browser end-to-end tests; the
-  existing Hairline, Lucide CDN and `lucide-react` approvals stand)
+- Version change: 1.4.0 → 1.5.0
+- Modified principles: IV. Dependency Approval (approves runtime `react-aria-components` and dev
+  `tailwindcss` and `@tailwindcss/postcss`, which the Hairline Design System handoff for React,
+  Tailwind CSS v4 and React Aria needs; the Hairline approval now covers its whole component set
+  and drops the retired `_ds_bundle.js` bundle); V. UI Design Gate (styling is Tailwind utilities
+  over Hairline tokens, and Hairline's components are built on React Aria Components)
 - Added sections: none
 - Removed sections: none
 - Templates checked: plan-template.md, spec-template.md, tasks-template.md and
-  design-template.md (no change needed; none names approved dependencies)
-- Dependent files updated to cite constitution v1.4.0 (done):
-  specs/001-project-foundation/plan.md, research.md and checklists/ops-api.md (CHK032 records the
-  v1.3.0 conflict this amendment resolves)
+  design-template.md (no change needed; none names approved dependencies or a styling method)
+- Dependent files: docs/tracklite-spec.md section 12 names the UI stack (spec 0.6);
+  specs/001-project-foundation records RM-1 as built with CSS Modules and the earlier Hairline
+  export, and is left as the record of that slice
 - Deferred TODOs: none
 -->
 
@@ -61,8 +60,8 @@ version control already keeps history.
   dependencies or a small amount of our own code cannot do the job.
 - Upgrading or removing an existing dependency does not need prior approval, but MUST be called
   out in the change description.
-- Approved dependencies: the Hairline Design System (its tokens, its `_ds_bundle.js` bundle, and
-  its Button and TextInput components) and the Lucide icon library, which Hairline loads from a
+- Approved dependencies: the Hairline Design System (its tokens, its Tailwind CSS v4 theme and its
+  components, vendored in `src/hairline/`) and the Lucide icon library, which Hairline loads from a
   CDN; and the npm package `lucide-react`, added to `package.json` dependencies, for vector icons
   in the UI (for example toast icons), rendered as inline SVG components. The app uses
   `lucide-react`, not Hairline's CDN icon loader, because it has no run-time dependency on a
@@ -72,6 +71,10 @@ version control already keeps history.
   `react-dom` for the Next.js app and `postgres` (postgres.js) as the PostgreSQL driver; dev
   `typescript`, `@types/node`, `@types/react` and `@types/react-dom` for TypeScript, and
   `@biomejs/biome` for lint (it replaces `eslint` and `eslint-config-next`).
+- Approved for the Hairline Design System: runtime `react-aria-components`, which Hairline's
+  interactive components (Button, TextInput, links, toggles) are built on for accessible press,
+  hover, focus and keyboard behavior, and dev `tailwindcss` with `@tailwindcss/postcss`, which
+  compile Hairline's theme and the Tailwind utility classes that style the app.
 - Approved as the DEC-005 test tools, for unit and component tests (there are no browser
   end-to-end tests): dev `vitest`, `@testing-library/react`, `@testing-library/dom` and `jsdom`.
 - Nothing else is approved.
@@ -92,8 +95,9 @@ whether that cost is worth paying.
 - The project's design system is the Hairline Design System, from the Claude Design project
   "Hairline Design System" (https://claude.ai/design/p/81b94f56-0ba4-49c6-a8c1-99b52fbd73b0):
   its tokens (colors, type, spacing, radii, elevation, wordmark), guidelines and shared
-  components (for example Button and TextInput). UI work MUST use Hairline's tokens and
-  components rather than inventing new styling.
+  components (for example Button and TextInput), built on React Aria Components. UI work MUST use
+  Hairline's components where one fits and otherwise style elements with Tailwind utility classes
+  from Hairline's theme, rather than inventing new styling.
 - Implementation MUST match the frozen `design.md`; changing it needs a re-freeze.
 
 **Rationale**: Deciding screens, states and copy before planning keeps the plan and the build from
@@ -127,4 +131,4 @@ guessing at UI, and catches missing states while they are cheap to add.
   wording.
 - Compliance is checked in every plan's Constitution Check and in every code review.
 
-**Version**: 1.4.0 | **Ratified**: 2026-09-29 | **Last Amended**: 2026-09-30
+**Version**: 1.5.0 | **Ratified**: 2026-09-29 | **Last Amended**: 2026-10-01
