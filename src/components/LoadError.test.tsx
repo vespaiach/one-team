@@ -68,7 +68,10 @@ describe("LoadError with useLoad", () => {
   });
 
   it.each([404, 500])("shows the load error and Retry for a %i answer", async (status) => {
-    vi.stubGlobal("fetch", vi.fn(async () => json(status, { error: { message: "Nope" } })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => json(status, { error: { message: "Nope" } })),
+    );
     render(<Host />);
     await flush();
     expect(screen.getByText("Couldn't load this.")).toBeTruthy();

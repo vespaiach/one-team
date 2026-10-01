@@ -2,8 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { AppShell } from "./AppShell.tsx";
 
-const focusable =
-  "a[href], button, input, select, textarea, summary, iframe, [tabindex], [contenteditable]";
+const focusable = "a[href], button, input, select, textarea, summary, iframe, [tabindex], [contenteditable]";
 
 describe("AppShell", () => {
   it("shows the product name as plain text in the navigation region", () => {

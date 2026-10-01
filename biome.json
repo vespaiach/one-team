@@ -1,0 +1,37 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+  "files": {
+    "includes": [
+      "**",
+      "!src/hairline",
+      "!**/.claude",
+      "!**/node_modules",
+      "!**/docs",
+      "!**/public",
+      "!**/specs",
+      "!**/.specify"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 110,
+    "bracketSameLine": true,
+    "trailingNewline": false,
+    "attributePosition": "multiline"
+  },
+  "assist": { "enabled": false },
+  "linter": {
+    "enabled": true,
+    "domains": { "next": "recommended", "react": "recommended" },
+    "rules": { "preset": "recommended" }
+  },
+  "overrides": [
+    {
+      "includes": ["**/*.test.ts", "**/*.test.tsx"],
+      "linter": { "rules": { "performance": { "noDynamicNamespaceImportAccess": "off" } } }
+    }
+  ]
+}

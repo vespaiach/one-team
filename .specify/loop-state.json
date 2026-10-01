@@ -242,20 +242,8 @@
       "recurring Edge Runtime warnings for process.exit/stderr in src/instrumentation.ts (check in converge)"
     ],
     "phase3": {
-      "P_batch": [
-        "T013",
-        "T014",
-        "T015",
-        "T059",
-        "T018"
-      ],
-      "seq": [
-        "T016",
-        "T017",
-        "T019",
-        "T020",
-        "T021"
-      ],
+      "P_batch": ["T013", "T014", "T015", "T059", "T018"],
+      "seq": ["T016", "T017", "T019", "T020", "T021"],
       "reported": {
         "T013": "done; passes standalone (3/3); normal run fails in global setup: TEST_DATABASE_URL database does not exist (3D000)",
         "T014": "file written (5 cases), NOT run: tracklite_test does not exist (3D000)",
@@ -263,12 +251,7 @@
         "T015": "done; needs named export AppShell, <nav> sidebar, <main> children; blocked by test DB",
         "T018": "done; 4/4 AppShell tests pass w/o DB setup; sidebar 240px, breakpoint 767px"
       },
-      "tick": [
-        "T013",
-        "T015",
-        "T018",
-        "T059"
-      ],
+      "tick": ["T013", "T015", "T018", "T059"],
       "held": {}
     },
     "test_db": "owner allowed subagent to run createdb tracklite_test",
@@ -276,12 +259,7 @@
     "phase5": {
       "P_queue": [],
       "in_flight": [],
-      "seq": [
-        "T035",
-        "T036",
-        "T039",
-        "T040"
-      ],
+      "seq": ["T035", "T036", "T039", "T040"],
       "reported": {
         "T025": "done; T032: default export, heading 'Not found' tabIndex=-1, link 'My issues' href=/my-issues; NotFoundFocus focuses on mount iff performance.getEntriesByType('navigation')[0]?.name !== location.href",
         "T027": "done; T034: named export EmptyState, prop message: string, plain text",
@@ -296,32 +274,14 @@
         "T032": "done 3/3; metadata export on not-found.tsx undocumented in Next 16.3.8 docs (only global-not-found) but Next code reads it -> owner question",
         "T038": "written {fieldId,message}; test unrun until Toast.tsx (T039); uses --ink (no error colour token)"
       },
-      "tick": [
-        "T025",
-        "T026",
-        "T027",
-        "T028",
-        "T029",
-        "T030",
-        "T031",
-        "T032",
-        "T033",
-        "T034",
-        "T037"
-      ],
+      "tick": ["T025", "T026", "T027", "T028", "T029", "T030", "T031", "T032", "T033", "T034", "T037"],
       "held": {}
     },
     "T032_metadata": "owner: keep metadata export on not-found.tsx, verify real tab title in running app (T058/quickstart)",
     "phase6": {
       "in_flight": [],
       "P_queue": [],
-      "seq": [
-        "T045",
-        "T046",
-        "T048",
-        "T049",
-        "T050"
-      ],
+      "seq": ["T045", "T046", "T048", "T049", "T050"],
       "reported": {
         "T041": "done 3/3; no bug in api.ts",
         "T043": "done; T047 formatTime(iso,tz) en-GB h23 HH:mm, RangeError->UTC",
@@ -331,15 +291,7 @@
         "T047": "done 3/3",
         "T061": "done; T046 GET=apiRoute(...), ctx accepts undefined, one log line, 200/503 bodies; T045 default query calls db() lazily `select 1`"
       },
-      "tick": [
-        "T041",
-        "T042",
-        "T043",
-        "T044",
-        "T060",
-        "T061",
-        "T047"
-      ]
+      "tick": ["T041", "T042", "T043", "T044", "T060", "T061", "T047"]
     },
     "T050_permission": "owner allowed subagent to brew services stop/start postgresql@18; must restart at end",
     "T050": "partial: health up 10/10 200, down 10/10 503, start-with-DB-down ok, secrets checks ok; /api/nope check needs T053; FAIL: Next dev request log prints full URL incl ?token=abc123 (FR-016); leak fixed (logging.incomingRequests=false), dev output clean; remaining: /api/nope check after T053",

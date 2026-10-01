@@ -50,7 +50,8 @@ describe("applyMigrations", () => {
   it("applies files in name order and records each one", async () => {
     await writeMigrations({
       "0002_second.sql": "insert into steps (name) values ('second');",
-      "0001_first.sql": "create table steps (id serial primary key, name text not null); insert into steps (name) values ('first');",
+      "0001_first.sql":
+        "create table steps (id serial primary key, name text not null); insert into steps (name) values ('first');",
       "0003_third.sql": "insert into steps (name) values ('third');",
     });
 

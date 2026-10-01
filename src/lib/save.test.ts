@@ -5,11 +5,12 @@ const retryToast = "Couldn't save. Try again.";
 const permissionToast = "You don't have permission to do that.";
 
 function stubFetch(status: number, body: unknown) {
-  const fetchMock = vi.fn(async () =>
-    new Response(typeof body === "string" ? body : JSON.stringify(body), {
-      status,
-      headers: { "Content-Type": "application/json" },
-    }),
+  const fetchMock = vi.fn(
+    async () =>
+      new Response(typeof body === "string" ? body : JSON.stringify(body), {
+        status,
+        headers: { "Content-Type": "application/json" },
+      }),
   );
   vi.stubGlobal("fetch", fetchMock);
   return fetchMock;

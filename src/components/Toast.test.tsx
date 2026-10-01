@@ -9,10 +9,14 @@ function Consumer() {
   const { showToast } = useToast();
   return (
     <>
-      <button type="button" onClick={() => showToast(failed)}>
+      <button
+        type="button"
+        onClick={() => showToast(failed)}>
         Raise failed
       </button>
-      <button type="button" onClick={() => showToast(forbidden)}>
+      <button
+        type="button"
+        onClick={() => showToast(forbidden)}>
         Raise forbidden
       </button>
     </>

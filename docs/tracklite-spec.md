@@ -1,9 +1,9 @@
 ---
 product: "Tracklite"
-version: "0.4"
+version: "0.5"
 release: "R1"
 status: Ready to build
-updated: "2026-09-29"
+updated: "2026-10-01"
 ---
 
 # Tracklite: Spec
@@ -565,7 +565,7 @@ There's no uptime target: one server has no redundancy (section 3). Section 13 c
 
 ### 12. Stack and constraints
 
-- **Stack:** Next.js (TypeScript), PostgreSQL, Drizzle ORM, all on a single VPS. Email goes through a transactional email service (API-002). Automated tests are unit and component tests only, using Vitest with React Testing Library on jsdom, run through npm scripts; there are no browser end-to-end tests (DEC-005).
+- **Stack:** Next.js (TypeScript), PostgreSQL, Drizzle ORM, all on a single VPS. Email goes through a transactional email service (API-002). Automated tests are unit and component tests only, using Vitest with React Testing Library on jsdom, run through npm scripts; there are no browser end-to-end tests (DEC-005). Lint uses Biome.
 - **Commands:** build, test and lint commands live in the npm scripts in `package.json`. AGENTS.md tells agents to use them and doesn't copy them.
 - **Boundaries:**
   - This spec is the source of truth for product behavior.
@@ -610,6 +610,7 @@ There's no uptime target: one server has no redundancy (section 3). Section 13 c
 
 **Changelog**
 
+- **0.5 (2026-10-01):** Lint tool named in section 12: Biome.
 - **0.4 (2026-09-29):** Test tools decided: Vitest with React Testing Library on jsdom, and no browser end-to-end tests (DEC-005; section 12 updated).
 - **0.3 (2026-09-29):** Exact copy for a network or server error toast (STD-9) and for the error state (STD-7), and the STD-9 toast timing confirmed with no dismiss or pause control (DEC-006).
 - **0.2 (2026-09-29):** A project's description and comments move to its project details page, `/project/{KEY}/detail` (REQ-046; REQ-032, REQ-044.5 and API-004 updated). Archiving a project also freezes its labels (REQ-013, REQ-013.5, REQ-013.6). Usernames can't be changed (REQ-003, REQ-003.3).

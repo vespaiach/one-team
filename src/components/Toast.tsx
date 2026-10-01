@@ -25,9 +25,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext value={api}>
       {children}
-      <div aria-live="polite" className={styles.region}>
+      <div
+        aria-live="polite"
+        className={styles.region}>
         {toasts.map((toast) => (
-          <p key={toast.id} className={styles.toast}>
+          <p
+            key={toast.id}
+            className={styles.toast}>
             {toast.text}
           </p>
         ))}
