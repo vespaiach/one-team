@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-29
 
-**Status**: Approved
+**Status**: Implemented
 
 **Input**: User description: "**Input**: Parent roadmap: `ROADMAP.md` → entry **RM-1**. A running app skeleton with the database, test tools and shared conventions every later slice builds on."
 
