@@ -17,16 +17,19 @@
     "next": "^16.3.8",
     "postgres": "^3.4.9",
     "react": "^19.3.0",
+    "react-aria-components": "^1.21.1",
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
+    "@tailwindcss/postcss": "^4.3.3",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/react": "^16.3.3",
     "@types/node": "^26.6.3",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "jsdom": "^29.1.1",
+    "tailwindcss": "^4.3.3",
     "typescript": "^5.9.3",
     "vitest": "^5.0.3"
   }

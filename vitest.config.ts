@@ -29,7 +29,6 @@ export default defineConfig({
           name: "components",
           include: ["src/**/*.test.tsx"],
           environment: "jsdom",
-          css: { include: [/\.module\.css$/] },
           setupFiles: ["scripts/setup-components.ts"],
         },
       },

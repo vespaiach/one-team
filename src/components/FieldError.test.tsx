@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { saveJson } from "../lib/save.ts";
 import { FieldError } from "./FieldError.tsx";
-import { Button, TextInput } from "./hairline.ts";
+import { Button, TextInput } from "../hairline/index.ts";
 import { ToastProvider, useToast } from "./Toast.tsx";
 
 const message = "Enter a name.";
@@ -31,8 +31,9 @@ function NameForm() {
         id="name"
         label="Name"
         value={name}
-        onChange={(event) => setName(event.target.value)}
-        aria-invalid={error ? "true" : undefined}
+        onChange={setName}
+        validationBehavior="aria"
+        isInvalid={Boolean(error)}
         aria-describedby={error ? "name-error" : undefined}
       />
       {error ? (
@@ -108,10 +109,9 @@ describe("FieldError", () => {
     await save();
 
     const error = await screen.findByText(message);
-    const style = getComputedStyle(error);
-    expect(style.overflowWrap).toBe("anywhere");
-    expect(style.whiteSpace).not.toBe("nowrap");
-    expect(style.textOverflow).not.toBe("ellipsis");
+    expect(error.classList).toContain("wrap-anywhere");
+    expect(error.classList).not.toContain("whitespace-nowrap");
+    expect(error.classList).not.toContain("truncate");
     expect(error.textContent).toBe(message);
   });
 
