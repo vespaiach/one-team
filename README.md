@@ -54,6 +54,7 @@ Open http://localhost:3000.
 | `npm start` | Serves the production build |
 | `npm test` | Runs the tests with Vitest |
 | `npm run lint` | Checks code with Biome |
+| `npm run typecheck` | Checks types with TypeScript |
 | `npm run db:migrate` | Applies pending migrations |
 
 ## Project structure
