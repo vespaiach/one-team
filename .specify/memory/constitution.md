@@ -1,18 +1,15 @@
 <!--
 Sync Impact Report
-- Version change: 1.4.0 → 1.5.0
-- Modified principles: IV. Dependency Approval (approves runtime `react-aria-components` and dev
-  `tailwindcss` and `@tailwindcss/postcss`, which the Hairline Design System handoff for React,
-  Tailwind CSS v4 and React Aria needs; the Hairline approval now covers its whole component set
-  and drops the retired `_ds_bundle.js` bundle); V. UI Design Gate (styling is Tailwind utilities
-  over Hairline tokens, and Hairline's components are built on React Aria Components)
+- Version change: 1.7.0 → 1.8.0
+- Modified principles: III. No Code Comments (now scoped to JavaScript and TypeScript files under
+  `src/`: `.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`, `.mts` and `.cts`; config and directive
+  files such as `.gitignore` and `biome.json`, CSS, SQL migrations, and code outside `src/` such
+  as `scripts/` are out of scope)
 - Added sections: none
 - Removed sections: none
 - Templates checked: plan-template.md, spec-template.md, tasks-template.md and
-  design-template.md (no change needed; none names approved dependencies or a styling method)
-- Dependent files: docs/tracklite-spec.md section 12 names the UI stack (spec 0.6);
-  specs/001-project-foundation records RM-1 as built with CSS Modules and the earlier Hairline
-  export, and is left as the record of that slice
+  design-template.md (no change needed; none restates the comment rule)
+- Dependent files: none
 - Deferred TODOs: none
 -->
 
@@ -39,13 +36,20 @@ not call for frameworks of our own.
 - Code MUST NOT be kept "for later", commented out, or left behind unused feature flags.
 - Pre-existing dead code found outside the change's scope MUST be reported, and removed in its own
   change.
+- Exception: a new shared component in `src/components/` (with its own tests) MAY be added and kept
+  before any code uses it. The rules above still apply inside it: unused imports, variables,
+  props, styles and helpers in the component MUST be removed. The exception does not cover code
+  outside `src/components/`.
 
 **Rationale**: Dead code misleads readers and reviewers and costs maintenance for no value;
 version control already keeps history.
 
 ### III. No Code Comments
 
-- Source code MUST NOT contain comments, including doc comments and commented-out code.
+- JavaScript and TypeScript files under `src/` (`.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`,
+  `.mts`, `.cts`) MUST NOT contain comments, including doc comments and commented-out code.
+- Other files are out of scope: config and directive files (for example `.gitignore` and
+  `biome.json`), CSS, SQL migrations, and any code outside `src/`.
 - Intent MUST be expressed through clear names, small functions, types and tests instead.
 - The only exception is a machine-read directive that a tool requires to work (for example a
   lint-disable or type-check directive), kept to the single line that needs it.
@@ -54,30 +58,8 @@ version control already keeps history.
 
 ### IV. Dependency Approval
 
-- No external or third-party package (runtime, dev, CLI tool or service SDK) may be installed or
-  added to a manifest without asking the project owner first and receiving explicit approval.
-- The request MUST state the package, what it is for, and why the platform, the existing
-  dependencies or a small amount of our own code cannot do the job.
-- Upgrading or removing an existing dependency does not need prior approval, but MUST be called
-  out in the change description.
-- Approved dependencies: the Hairline Design System (its tokens, its Tailwind CSS v4 theme and its
-  components, vendored in `src/hairline/`) and the Lucide icon library, which Hairline loads from a
-  CDN; and the npm package `lucide-react`, added to `package.json` dependencies, for vector icons
-  in the UI (for example toast icons), rendered as inline SVG components. The app uses
-  `lucide-react`, not Hairline's CDN icon loader, because it has no run-time dependency on a
-  third-party server, its version is pinned in the lockfile, it is tree-shaken so only the icons
-  used ship, and it works offline and in automated tests.
-- Approved for the stack in `docs/tracklite-spec.md` section 12: runtime `next`, `react` and
-  `react-dom` for the Next.js app and `postgres` (postgres.js) as the PostgreSQL driver; dev
-  `typescript`, `@types/node`, `@types/react` and `@types/react-dom` for TypeScript, and
-  `@biomejs/biome` for lint (it replaces `eslint` and `eslint-config-next`).
-- Approved for the Hairline Design System: runtime `react-aria-components`, which Hairline's
-  interactive components (Button, TextInput, links, toggles) are built on for accessible press,
-  hover, focus and keyboard behavior, and dev `tailwindcss` with `@tailwindcss/postcss`, which
-  compile Hairline's theme and the Tailwind utility classes that style the app.
-- Approved as the DEC-005 test tools, for unit and component tests (there are no browser
-  end-to-end tests): dev `vitest`, `@testing-library/react`, `@testing-library/dom` and `jsdom`.
-- Nothing else is approved.
+- A third-party package MUST be approved by the project owner before it is installed or used.
+- The packages already in `package.json` are approved.
 
 **Rationale**: Every dependency adds security, maintenance and upgrade cost; the owner decides
 whether that cost is worth paying.
@@ -116,7 +98,8 @@ guessing at UI, and catches missing states while they are cheap to add.
   and before `/speckit-plan` (Principle V).
 - Every plan MUST pass a Constitution Check against the five principles before design and again
   after design.
-- Every review MUST confirm: no unnecessary abstraction, no unused code or files, no comments, no
+- Every review MUST confirm: no unnecessary abstraction, no unused code or files (apart from the
+  shared components Principle II allows), no comments in the files Principle III covers, no
   unapproved dependencies, and UI that matches the frozen `design.md`.
 - A change that violates a principle MUST NOT be merged until it is fixed or the violation is
   justified and accepted in the plan.
@@ -131,4 +114,4 @@ guessing at UI, and catches missing states while they are cheap to add.
   wording.
 - Compliance is checked in every plan's Constitution Check and in every code review.
 
-**Version**: 1.5.0 | **Ratified**: 2026-09-29 | **Last Amended**: 2026-10-01
+**Version**: 1.8.0 | **Ratified**: 2026-09-29 | **Last Amended**: 2026-10-01
