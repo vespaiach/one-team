@@ -7,6 +7,7 @@ export function useLoad<T = unknown>(url: string) {
   });
   const [attempt, setAttempt] = useState(0);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: attempt re-runs the fetch on retry
   useEffect(() => {
     let current = true;
     fetch(url)

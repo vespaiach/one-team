@@ -70,8 +70,8 @@ version control already keeps history.
   used ship, and it works offline and in automated tests.
 - Approved for the stack in `docs/tracklite-spec.md` section 12: runtime `next`, `react` and
   `react-dom` for the Next.js app and `postgres` (postgres.js) as the PostgreSQL driver; dev
-  `typescript`, `@types/node`, `@types/react` and `@types/react-dom` for TypeScript, and `eslint`
-  and `eslint-config-next` for lint.
+  `typescript`, `@types/node`, `@types/react` and `@types/react-dom` for TypeScript, and
+  `@biomejs/biome` for lint (it replaces `eslint` and `eslint-config-next`).
 - Approved as the DEC-005 test tools, for unit and component tests (there are no browser
   end-to-end tests): dev `vitest`, `@testing-library/react`, `@testing-library/dom` and `jsdom`.
 - Nothing else is approved.
