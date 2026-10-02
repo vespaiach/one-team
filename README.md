@@ -56,6 +56,8 @@ Open http://localhost:3000.
 | `npm run lint` | Checks code with Biome |
 | `npm run typecheck` | Checks types with TypeScript |
 | `npm run db:migrate` | Applies pending migrations |
+| `npm run deploy` | Deploys `main` to production |
+| `npm run rollback` | Switches production back to the previous release |
 
 ## Project structure
 
@@ -74,3 +76,4 @@ docs/           product spec
 - [docs/tracklite-spec.md](docs/tracklite-spec.md): what the product does.
 - [ROADMAP.md](ROADMAP.md): the slices and their order.
 - [AGENTS.md](AGENTS.md): coding conventions.
+- [docs/production.md](docs/production.md): production server setup, deploy, rollback, backups and logs.
