@@ -12,7 +12,9 @@
     "test": "vitest run",
     "lint": "biome check",
     "typecheck": "next typegen && tsc --noEmit",
-    "db:migrate": "node scripts/migrate.ts"
+    "db:migrate": "node scripts/migrate.ts",
+    "setup": "node scripts/setup.ts",
+    "db:seed": "node scripts/seed.ts"
   },
   "dependencies": {
     "next": "^16.3.8",

@@ -148,3 +148,82 @@ describe("apiRoute error shape", () => {
     }
   });
 });
+describe("apiRoute cross-site check", () => {
+  const forbidden = { error: { message: "You don't have permission to do that." } };
+  const writeMethods = ["POST", "PUT", "PATCH", "DELETE"];
+
+  beforeEach(() => {
+    writeSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  async function send(method: string, headers: Record<string, string>) {
+    const handler = vi.fn(() => Response.json({ ok: true }));
+    const route = apiRoute(handler);
+    const response = await route(
+      new Request("http://localhost:3000/api/things", { method, headers }),
+      undefined,
+    );
+    return { response, handler };
+  }
+
+  for (const method of writeMethods) {
+    it.each(["cross-site", "same-site", "none"])(
+      `answers ${method} with Sec-Fetch-Site %s with 403 and does not call the handler`,
+      async (site) => {
+        const { response, handler } = await send(method, { "Sec-Fetch-Site": site });
+
+        expect(response.status).toBe(403);
+        expect(await response.json()).toEqual(forbidden);
+        expect(handler).not.toHaveBeenCalled();
+      },
+    );
+
+    it(`lets ${method} with Sec-Fetch-Site same-origin through`, async () => {
+      const { response, handler } = await send(method, { "Sec-Fetch-Site": "same-origin" });
+
+      expect(response.status).toBe(200);
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it(`answers ${method} without Sec-Fetch-Site and with another Origin with 403`, async () => {
+      const { response, handler } = await send(method, { Origin: "https://evil.example" });
+
+      expect(response.status).toBe(403);
+      expect(await response.json()).toEqual(forbidden);
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it(`lets ${method} without Sec-Fetch-Site and with the app's Origin through`, async () => {
+      const { response, handler } = await send(method, { Origin: "http://localhost:3000" });
+
+      expect(response.status).toBe(200);
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it(`lets ${method} with neither Sec-Fetch-Site nor Origin through`, async () => {
+      const { response, handler } = await send(method, {});
+
+      expect(response.status).toBe(200);
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+  }
+
+  it("lets GET with Sec-Fetch-Site cross-site through", async () => {
+    const { response, handler } = await send("GET", { "Sec-Fetch-Site": "cross-site" });
+
+    expect(response.status).toBe(200);
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it("still writes the request log line for a refused request", async () => {
+    await send("POST", { "Sec-Fetch-Site": "cross-site" });
+
+    const lines = loggedLines();
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatchObject({ method: "POST", path: "/api/things", status: 403 });
+  });
+});

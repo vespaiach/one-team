@@ -43,6 +43,9 @@ afterEach(async () => {
 });
 
 afterAll(async () => {
+  await sql`drop schema if exists public cascade`;
+  await sql`create schema public`;
+  await applyMigrations(sql, path.resolve("migrations"));
   await sql.end();
 });
 
