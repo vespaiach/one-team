@@ -1,0 +1,11 @@
+[Unit]
+Description=Start the live Tracklite release
+After=postgresql.service
+ConditionPathExists=/srv/tracklite/current
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'exec /usr/bin/systemctl start "tracklite@$$(basename "$$(readlink /srv/tracklite/current)").service"'
+
+[Install]
+WantedBy=multi-user.target

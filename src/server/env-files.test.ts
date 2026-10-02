@@ -15,4 +15,14 @@ describe("settings files", () => {
   it("does not git-ignore .env.example", () => {
     expect(checkIgnoreStatus(".env.example")).toBe(1);
   });
+
+  it("commits no settings file other than .env.example", () => {
+    const committed = spawnSync("git", ["ls-files"], { encoding: "utf8" })
+      .stdout.split("\n")
+      .filter((path) => {
+        const name = path.split("/").pop() ?? "";
+        return name === ".env" || name.startsWith(".env.") || name.endsWith(".env");
+      });
+    expect(committed).toEqual([".env.example"]);
+  });
 });

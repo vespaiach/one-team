@@ -1,0 +1,10 @@
+[Unit]
+Description=Tracklite daily backup at 03:00 UTC
+
+[Timer]
+OnCalendar=*-*-* 03:00:00 UTC
+Persistent=false
+Unit=tracklite-backup.service
+
+[Install]
+WantedBy=timers.target
