@@ -19,7 +19,7 @@ Do task M1.3 from docs/build-plan.md.
 The agent then:
 1. Reads the ground rules, this section and the task's entry, and nothing else of this file.
 2. Reads only what **Reads** lists. Find a spec rule with `grep -n "REQ-047" docs/tracklite-spec.md` and read the rule with its examples; find a design section by its heading. Open other sections only when a cited one points there.
-3. Checks that every task in **Needs** is ticked. If one isn't, it stops and says so.
+3. Checks that every task in **Needs** is ticked. If one isn't, it stops and says so. Tasks listed after "API description:" don't need to be ticked (see below).
 4. Writes the tests for **Done** first, then the code.
 5. Stops when **Done** passes and the three checks are green. It doesn't start the next task.
 6. Ticks the task's box and commits as `M1.3: sign-in and sign-out API`.
@@ -34,6 +34,14 @@ Each milestone starts with a **Run order** line. `→` means "after"; tasks join
 - Parallel tasks are chosen so they write different files, apart from the shared files a **Run order** line names. Merge them one at a time in the order listed; the later one rebases and resolves any conflict.
 - Every task ticks its own box in this file, so merges conflict here trivially. Keep both ticks.
 - "Ticked" in step 3 means ticked on the branch the task starts from. Don't start a task whose **Needs** are only done in another unmerged worktree.
+
+
+## Pages built from the API description
+
+A page task's **Needs** names its API tasks after "API description:". The page doesn't wait for them; it works from their endpoints in design §3.3.
+- The page task writes the RTK Query endpoints it uses, with request and response types taken from §3.3, in the client code. It tests against mocked responses of those types.
+- The API task doesn't touch those files. Its tests check the response shape against §3.3.
+- **Wire-up:** whichever of the pair merges second runs the page against the real API, fixes any mismatch, and makes each handler's return value `satisfies` the page's response type, so `npm run typecheck` keeps them in step from then on. If §3.3 is too vague to type a response, the page task fixes §3.3 first.
 
 ---
 
@@ -70,7 +78,7 @@ Each milestone starts with a **Run order** line. `→` means "after"; tasks join
 
 ## M1 Sign-in and account
 
-**Run order:** **M1.1 ∥ M1.4** → M1.2 → M1.3 → **M1.5 ∥ M1.6** → M1.7 → M1.8. M1.4 needs only M0.2, so it can also run alongside M1.2 and M1.3. Shared file: M1.5 and M1.6 both add to the SEC-001 limits module from M1.3.
+**Run order:** API: **M1.1 ∥ M1.4** → M1.2 → M1.3 → **M1.5 ∥ M1.6**. Pages: **M1.7 ∥ M1.8**, alongside any of the API tasks. M1.4 needs only M0.2, so it can also run alongside M1.2 and M1.3. Shared file: M1.5 and M1.6 both add to the SEC-001 limits module from M1.3.
 
 - [ ] **M1.1 Passwords and tokens.** Argon2id hashing, the password rules, token creation and hashing.
   - Reads: design §4.1, §4.2 · spec REQ-048, SEC-003, SEC-008
@@ -98,18 +106,18 @@ Each milestone starts with a **Run order** line. `→` means "after"; tasks join
   - Done: REQ-003.*, REQ-049.*, OPS-001's auto examples
 - [ ] **M1.7 Sign-in pages.** Sign in, forgot password and reset password pages; sign out; return after sign-in limited to this app's pages.
   - Reads: design §1.7, §6.1, §6.3 · spec REQ-047, REQ-050, SEC-009
-  - Needs: M0.5, M1.5
+  - Needs: M0.5 · API description: M1.3, M1.5
   - Done: SEC-009.*; component tests for each page's error and expired states
 - [ ] **M1.8 Profile page.** Full name, the read-only fields and the Change password form with its success message.
   - Reads: design §6.3 (Profile) · spec REQ-003, REQ-049
-  - Needs: M1.6, M1.7
+  - Needs: M0.5 · API description: M1.6
   - Done: component tests for save, change password and the REQ-049 message
 
 **Done when:** the first admin can be created, sign in, reset their password through Mailpit, and change it from the profile.
 
 ## M2 Members and invitations
 
-**Run order:** **M2.1 ∥ M2.3** → **M2.2 ∥ M2.5** → M2.4.
+**Run order:** API: **M2.1 ∥ M2.3** → M2.2. Pages: **M2.4 ∥ M2.5**, alongside any of the API tasks.
 
 - [ ] **M2.1 Invitation API.** Create (a resend if one is open), resend, revoke, list, look up; the invitation email template; a failed send saves nothing.
   - Reads: design §2.2, §3.3, §4.6, §5.3 · spec REQ-001, REQ-051, §9 "Email content"
@@ -125,18 +133,18 @@ Each milestone starts with a **Run order** line. `→` means "after"; tasks join
   - Done: REQ-007.*, REQ-008.*, REQ-052.*, including two admins demoting each other at once
 - [ ] **M2.4 Accept-invitation page.**
   - Reads: design §3.4 (invitation bullet), §6.3 (Accept invitation) · spec REQ-002
-  - Needs: M2.2, M1.7
+  - Needs: M1.7 · API description: M2.2
   - Done: component tests for the form, expired and no-longer-valid states
 - [ ] **M2.5 Members page.** Invite form, invitations table with Resend and Revoke, members table with the **⋯** menu and the deactivate confirmation.
   - Reads: design §6.3 (Members) · spec REQ-051, REQ-007, REQ-001
-  - Needs: M2.1, M2.3, M1.7
+  - Needs: M1.7 · API description: M2.1, M2.3
   - Done: REQ-051.*; component tests for the confirmations
 
 **Done when:** the admin invites a second person, who joins through the Mailpit link; the admin can then deactivate and reactivate them.
 
 ## M3 Projects and labels
 
-**Run order:** **M3.1 ∥ M3.2** → **M3.3 ∥ M3.4 ∥ M3.5** → **M3.6 ∥ M3.7**. M3.1 needs only M0.2, so it can start during M1.
+**Run order:** API: **M3.1 ∥ M3.2** → **M3.3 ∥ M3.4**. Pages: M3.5 → **M3.6 ∥ M3.7**, alongside the API tasks (M3.6 also waits for M3.1). M3.1 needs only M0.2, so it can start during M1.
 
 - [ ] **M3.1 Markdown module.** Rendering, HTML shown as text, the link filter, mention parsing, text extraction.
   - Reads: design §4.7 · spec SEC-002, DATA-001
@@ -156,22 +164,22 @@ Each milestone starts with a **Run order** line. `→` means "after"; tasks join
   - Done: REQ-021.*
 - [ ] **M3.5 Project navigation pages.** Sidebar, New project dialog, project header, project settings, archived list.
   - Reads: design §6.2, §6.3 (Project settings, Archived projects) · spec REQ-009, REQ-011, REQ-013, REQ-014, REQ-015
-  - Needs: M3.2, M0.5
+  - Needs: M0.5 · API description: M3.2
   - Done: component tests for the typed-key delete and the empty archived list
 - [ ] **M3.6 Project details page.** Formatted description with Edit, Save and Cancel, the `409` message, and the unsaved-description prompt.
   - Reads: design §6.4 (description and unsaved-text bullets) · spec REQ-012, REQ-035, REQ-046, STD-8
-  - Needs: M3.3, M3.5
+  - Needs: M3.5, M3.1 · API description: M3.3
   - Done: component tests for save, conflict and the leave prompt
 - [ ] **M3.7 Labels page.** List, create, rename, recolour, delete with the issue-count confirmation.
   - Reads: design §6.6 · spec REQ-021
-  - Needs: M3.4, M3.5
+  - Needs: M3.5 · API description: M3.4
   - Done: component tests for create and delete confirmation
 
 **Done when:** an admin can create, rename, archive, unarchive and delete a project; any member can edit its description and manage its labels.
 
 ## M4 Issues
 
-**Run order:** Run in order: M4.1 → M4.2 → M4.3 → M4.4 → M4.5. Each task builds on the one before.
+**Run order:** API: M4.1 → M4.2 → M4.3. Pages: M4.4 → M4.5, alongside the API tasks.
 
 - [ ] **M4.1 Issue create API.** Numbering by project row lock, and `requestId`.
   - Reads: design §2.4, §3.3 · spec REQ-016, STD-5
@@ -187,18 +195,18 @@ Each milestone starts with a **Run order** line. `→` means "after"; tasks join
   - Done: REQ-022.*, REQ-023.*, DATA-002's issue examples
 - [ ] **M4.4 Issue page.** Header with in-place title, side panel pickers (status, priority, assignee), delete, New issue dialog, canonical addresses.
   - Reads: design §6.1, §6.3 (New issue), §6.4 · spec REQ-016…019, REQ-023
-  - Needs: M4.3, M3.5
+  - Needs: M3.5, M3.1 · API description: M4.1, M4.2, M4.3
   - Done: component tests for title edit, each picker and delete
 - [ ] **M4.5 Label picker and description editor.** The label picker that creates new labels; the description editor with the `@` suggestion list (built to be reused by comments).
   - Reads: design §6.4 (mention suggestions), §6.6 · spec REQ-020, REQ-022, DATA-001
-  - Needs: M4.4
+  - Needs: M4.4 · API description: M4.2, M4.3
   - Done: component tests for creating a label from the picker, the 10-label limit, and inserting `@username`
 
 **Done when:** a member can create, edit and delete issues from the issue page, and two members creating at once get different numbers.
 
 ## M5 Board
 
-**Run order:** **M5.1 ∥ M5.2** → M5.3 → M5.4 → M5.5. M5.1 needs only M0.4, so the spike can run as early as M1, which settles the drag-and-drop risk before any board code exists.
+**Run order:** API: M5.2 → M5.3. Pages: M5.4 → M5.5, alongside the API tasks (M5.5 also waits for M5.1). M5.1 needs only M0.4, so the spike can run as early as M1, which settles the drag-and-drop risk before any board code exists.
 
 - [ ] **M5.1 Drag-and-drop spike.** A throwaway page: React Aria `GridList` drag and drop across 5 columns, including automatic scrolling near a column's edges. Record the result as a decision in design §7; if it falls short, record the fallback.
   - Reads: design §6.5 · spec REQ-024, REQ-026 · React Aria docs for `GridList` and `useDragAndDrop`
@@ -214,7 +222,7 @@ Each milestone starts with a **Run order** line. `→` means "after"; tasks join
   - Done: REQ-026.*, REQ-027.*, REQ-036.5
 - [ ] **M5.4 Board page.** Columns that scroll on their own, cards, the **⋯** menu (move by menu), the column **+** buttons.
   - Reads: design §6.5 · spec REQ-024, REQ-025, REQ-029, REQ-030
-  - Needs: M5.3, M4.4
+  - Needs: M4.4 · API description: M5.2, M5.3
   - Done: REQ-029.*, REQ-030.* (auto); component tests for the card layout
 - [ ] **M5.5 Drag and drop.** Mouse and keyboard moves using the spike's result; optimistic moves with rollback and a toast.
   - Reads: design §1.7 (optimistic moves), §6.5, the M5.1 decision · spec REQ-026, NFR-005
@@ -225,7 +233,7 @@ Each milestone starts with a **Run order** line. `→` means "after"; tasks join
 
 ## M6 List view
 
-**Run order:** Run in order: M6.1 → M6.2. M6.1 needs only M4.2, so it can run alongside M4.3–M4.5 and M5.
+**Run order:** **M6.1 ∥ M6.2**. M6.1 needs only M4.2, so it can run alongside M4.3–M4.5 and M5.
 
 - [ ] **M6.1 List API.** `pg_trgm` indexes; the search query (every typed word must match, `%` and `_` treated as plain characters); filters, sort, `offset` paging; unknown values ignored.
   - Reads: design §2.4, §3.3, §3.4 (paging) · spec REQ-036…039, NFR-004
@@ -233,14 +241,14 @@ Each milestone starts with a **Run order** line. `→` means "after"; tasks join
   - Done: REQ-036.*…REQ-039.*
 - [ ] **M6.2 List page.** Filters and sort kept in the URL, search after a 300 ms pause, more rows loaded on scroll.
   - Reads: design §1.7 · spec REQ-037…040
-  - Needs: M6.1, M4.4
+  - Needs: M4.4 · API description: M6.1
   - Done: REQ-040.*; component tests for URL round-trip and the search pause
 
 **Done when:** every REQ-036…040 example passes, and a copied link reopens the same view.
 
 ## M7 Comments
 
-**Run order:** Run in order: M7.1 → M7.2 → M7.3.
+**Run order:** **M7.1 ∥ M7.2** → M7.3.
 
 - [ ] **M7.1 Comments API.** List, post (with `requestId`), edit (with a version check), delete, for issues and projects; mentions written as `mentions` rows.
   - Reads: design §2.5, §3.3 (comments table) · spec REQ-031…034, REQ-046.1, DATA-001
@@ -248,7 +256,7 @@ Each milestone starts with a **Run order** line. `→` means "after"; tasks join
   - Done: REQ-031.*…REQ-034.*, REQ-046.1
 - [ ] **M7.2 Comment thread.** Thread and comment box on the issue page and project details page; edit, delete, "(edited)", highlighted mentions; reuses the M4.5 suggestion list.
   - Reads: design §6.4 · spec REQ-031…034, DATA-001
-  - Needs: M7.1, M4.5, M3.6
+  - Needs: M4.5, M3.6 · API description: M7.1
   - Done: component tests for post, edit and delete
 - [ ] **M7.3 Comment extras.** The unsent-comment guard (`useBlocker` and `beforeunload`); time formatting; scrolling to `#comment-{id}`.
   - Reads: design §6.4 (unsaved text), §6.7 · spec REQ-035, DATA-003
@@ -259,7 +267,7 @@ Each milestone starts with a **Run order** line. `→` means "after"; tasks join
 
 ## M8 My issues
 
-**Run order:** Run in order: M8.1 → M8.2. M8.1 needs only M4.2, so it can run alongside M5–M7.
+**Run order:** **M8.1 ∥ M8.2**. M8.1 needs only M4.2, so it can run alongside M5–M7.
 
 - [ ] **M8.1 My issues API.** `GET /api/my-issues`: grouped by status, sorted, with the 14-day window.
   - Reads: design §3.3 · spec REQ-041
@@ -267,7 +275,7 @@ Each milestone starts with a **Run order** line. `→` means "after"; tasks join
   - Done: REQ-041.* (API side)
 - [ ] **M8.2 My issues page.** The page, and sign-in landing there.
   - Reads: design §6.1 · spec REQ-041, REQ-042
-  - Needs: M8.1, M1.7
+  - Needs: M1.7 · API description: M8.1
   - Done: REQ-042.* (auto); component tests for the groups
 
 **Done when:** sign-in lands on a correct My issues page.
