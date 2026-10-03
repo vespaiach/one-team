@@ -13,7 +13,13 @@ export default defineConfig({
   },
   test: {
     globalSetup: ["scripts/prepare-test-db.ts"],
-    env: testDatabaseUrl ? { DATABASE_URL: testDatabaseUrl } : {},
+    env: {
+      ...(testDatabaseUrl ? { DATABASE_URL: testDatabaseUrl } : {}),
+      APP_URL: "http://localhost:3000",
+      EMAIL_FROM: "tracklite@localhost",
+      MAILPIT_HOST: "localhost",
+      MAILPIT_PORT: "8025",
+    },
     projects: [
       {
         extends: true,
@@ -21,6 +27,7 @@ export default defineConfig({
           name: "unit",
           include: ["src/**/*.test.ts"],
           environment: "node",
+          fileParallelism: false,
         },
       },
       {

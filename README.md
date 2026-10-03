@@ -20,6 +20,14 @@ Next.js 16, React 19, React Aria Components, Tailwind CSS 4, PostgreSQL 18, Vite
   brew services start postgresql@18
   ```
 
+- Mailpit, which catches the sign-in emails sent in local development. On macOS:
+
+  ```sh
+  brew install mailpit && mailpit
+  ```
+
+  Its web UI and the HTTP send API the app calls are on http://localhost:8025. Its SMTP port is not used.
+
 ### Setup
 
 ```sh
@@ -33,6 +41,13 @@ In `.env.local`, fill in your PostgreSQL user and password:
 - `DATABASE_URL`: the development database.
 - `TEST_DATABASE_URL`: the test database. It must be different from `DATABASE_URL`.
 
+And the settings the app server checks when it starts:
+
+- `APP_URL`: the address sign-in links point to, such as `http://localhost:3000`.
+- `EMAIL_FROM`: the sender address of sign-in emails, such as `tracklite@localhost`.
+- `MAILPIT_HOST` and `MAILPIT_PORT`: where Mailpit runs locally, such as `localhost` and `8025`.
+- `RESEND_API_KEY`: production only, where email is sent through Resend instead of Mailpit. Leave it empty locally.
+
 `.env.local` is git-ignored. Never commit it.
 
 ### Run
@@ -40,10 +55,15 @@ In `.env.local`, fill in your PostgreSQL user and password:
 ```sh
 npm ci
 npm run db:migrate
+npm run setup -- --email you@example.com --name "Your Name" --username you
 npm run dev
 ```
 
-Open http://localhost:3000.
+`npm run db:migrate` must run before `npm run setup`. `setup` creates the first admin and works only while no members exist.
+
+Open http://localhost:3000, enter the admin's email, and open the sign-in link from Mailpit at http://localhost:8025.
+
+To fill the development database with sample members instead, run `npm run db:seed` after `npm run db:migrate`, and sign in as the seeded admin `owner@example.com`. It can be run again.
 
 ## Scripts
 
@@ -56,6 +76,8 @@ Open http://localhost:3000.
 | `npm run lint` | Checks code with Biome |
 | `npm run typecheck` | Checks types with TypeScript |
 | `npm run db:migrate` | Applies pending migrations |
+| `npm run setup` | Creates the first admin |
+| `npm run db:seed` | Adds sample data to the development database |
 
 ## Project structure
 

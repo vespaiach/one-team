@@ -1,6 +1,6 @@
 ---
 product: "Tracklite"
-version: "0.6"
+version: "0.7"
 release: "R1"
 status: Ready to build
 updated: "2026-10-01"
@@ -113,12 +113,13 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
 - **REQ-002** When a person who isn't signed in opens a valid invitation link, the system shall ask for their profile, create them as a member, and sign them in. If a signed-in member opens an invitation link, the system shall ask them to sign out first. If the invitation expires or is revoked before the profile is submitted, no member is created.
   - REQ-002.1: Sam opens the link on day 3 and enters "Sam Lee" and `sam` → member created, signed in, lands on My issues. (Verify: auto)
   - REQ-002.2: Sam opens the link on day 8, or after already accepting it → "This invitation has expired. Ask an admin for a new one." (Verify: auto)
-  - REQ-002.3: Alex, signed in, opens Sam's invitation link → "You're signed in as Alex. Sign out to accept this invitation." (Verify: auto)
+  - REQ-002.3: Alex, signed in, opens Sam's invitation link → "You're signed in as Alex. Sign out to accept this invitation." (Alex's full name is shown) (Verify: auto)
   - REQ-002.4: The admin revokes the invitation while Sam is filling in the profile → on submit: "This invitation is no longer valid.", no member created. (Verify: auto)
-- **REQ-003** The system shall store each profile as a full name (1 to 60 characters), a unique username (2 to 20 characters: lowercase letters, digits, hyphens; used for @mentions) and the invited email. The avatar is the member's initials. Username and email can't be changed in R1.
+- **REQ-003** The system shall store each profile as a full name (1 to 60 characters; whitespace at either end is trimmed; a name that is empty or only whitespace gets the field error "Name required", and one over 60 characters after trimming gets "Too long (max 60)" (STD-3)), a unique username (2 to 20 characters: lowercase letters, digits, hyphens; used for @mentions) and the invited email. The avatar is the member's initials. Username and email can't be changed in R1.
   - REQ-003.1: Sam enters username `Sam` → saved as `sam`. (Verify: auto)
   - REQ-003.2: Username `sam` is already taken → field error "Username taken" (STD-3). (Verify: auto)
   - REQ-003.3: Sam opens their profile → the full name can be edited; username and email are shown but can't be edited, and an API request that changes them is refused. (Verify: auto)
+  - REQ-003.4: The initials are the first character of the first word and the first character of the last word of the full name, whatever that character is (a letter in any script, a digit or punctuation), uppercased where uppercasing applies: "Alexandria Catherine Montgomery-Fitzwilliam van der Bergholt" → "AB"; a one-word name such as "Sam" → "S"; "(Contractor) Lee" → "(L"; "3M Team" → "3T"; "李 小龙" → "李小". (Verify: auto)
 - **REQ-004** When someone enters an email on the sign-in page, the system shall email a single-use magic link that expires after 15 minutes, only if the email belongs to an active member. The page shows the same message either way. Each link works on its own until it's used or expires, and requests are limited by SEC-001.
   - REQ-004.1: `sam@acme.com` (active member) → email sent; the page shows "Check your email". (Verify: auto)
   - REQ-004.2: `stranger@x.com` → no email; the page shows the same "Check your email". (Verify: auto)
@@ -128,6 +129,7 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
   - REQ-005.2: The button is clicked after 16 minutes, or the link was already used → "This link has expired" with a button to request a new one. (Verify: auto)
   - REQ-005.3: A mail scanner opens the link, then Sam clicks Sign in → Sam is signed in. (Verify: auto)
   - REQ-005.4: Sam requests the link on a laptop and opens it on another computer → signed in there. (Verify: auto)
+  - REQ-005.5: Alex, signed in, opens a magic link that isn't Alex's own (Sam's link, or an unknown or malformed one) → "You're signed in as Alex. Sign out to use this sign-in link." (Alex's full name is shown) with a Sign out button, so the page reveals nothing about the link; Alex stays signed in, the link isn't used, and a valid link still works after Alex signs out. If Alex clicks Sign in in a tab opened before Alex signed in, the link isn't used, Alex's session isn't replaced, and the page switches to that same message and Sign out button, with no toast. After Alex signs out, the browser returns to the same link, which now shows the Sign in button; this is the same, with no error, when Alex's session had already ended elsewhere (for example signed out in another tab) before Sign out was clicked. If the link is unknown, malformed, expired or used, "This link has expired" shows only after Sign in is clicked. (Verify: auto)
 - **REQ-006** A session shall last 30 days from the member's last activity. Signing out ends the session on that browser only.
   - REQ-006.1: Sam uses the app every day → stays signed in. (Verify: auto)
   - REQ-006.2: Sam returns after 31 days away → sign-in page (STD-1). (Verify: auto)
@@ -509,7 +511,7 @@ There are no private projects. The first admin is created by the setup command (
   - DATA-002.1: `WEB` is deleted, with 120 issues, 8 labels and 300 comments → all of them are gone from the database, and a new project can't use the key `WEB`. (Verify: auto)
 - **DATA-003** The system shall store all times in UTC and show them in each member's browser time zone.
   - DATA-003.1: A comment saved at 02:00 UTC → a member whose browser is on UTC+7 sees 09:00. (Verify: auto)
-- **DATA-004** The system shall delete, 30 days after they stop being useful: invitations that are accepted, revoked or expired; magic links that are used or expired; sessions that have ended; and notifications that are sent, dropped or bounced.
+- **DATA-004** The system shall delete, 30 days after they stop being useful: invitations that are accepted, revoked or expired; magic links that are used or expired; sessions that have ended; notifications that are sent, dropped or bounced; sign-in limit records (sign_in_attempts), which stop being useful an hour after they're made; and sign-in request records (sign_in_requests), which stop being useful a day after they're made.
   - DATA-004.1: A magic link expired 31 days ago → it's no longer in the database. (Verify: auto)
   - DATA-004.2: A notification was sent 10 days ago → still stored. (Verify: auto)
 
@@ -520,11 +522,11 @@ There are no private projects. The first admin is created by the setup command (
 | API-001 | The app's own HTTP API, under `/api/…`, used only by its own web front end | Every feature. It isn't public or documented for outside use. Errors follow STD-1 to STD-4 (`401`, `403`, `422`, `404`). The exact list of endpoints is the agent's choice (DEC-002). |
 | API-002 | Outgoing email service (a transactional email provider, DEC-003) | Invitations (REQ-001), magic links (REQ-004) and notifications (F-008). If it fails, see STD-6: sign-in shows "We couldn't send the email", and notifications are retried 3 times. |
 | API-003 | `POST /webhooks/email` (bounce reports from the email service) | Marking notifications as Bounced (REQ-045.6). It accepts only requests signed by the email service; anything else gets `401`. |
-| API-004 | Page addresses: `/sign-in`, `/my-issues`, `/project/{KEY}` (board), `/project/{KEY}/list`, `/project/{KEY}/detail`, `/project/{KEY}/labels`, `/issue/{ID}`, `/settings/members` | Links in emails and between members. Keys and IDs are matched ignoring capitals (REQ-016.5). The list view's filters go in the query string (REQ-040). |
+| API-004 | Page addresses: `/sign-in`, `/sign-in?token=…`, `/my-issues`, `/project/{KEY}` (board), `/project/{KEY}/list`, `/project/{KEY}/detail`, `/project/{KEY}/labels`, `/issue/{ID}`, `/settings/members` | Links in emails and between members. Keys and IDs are matched ignoring capitals (REQ-016.5). The list view's filters go in the query string (REQ-040). |
 
 ### 10. Security and privacy
 
-- **SEC-001** The system shall allow at most 5 magic-link requests per email address, and 20 per IP address, per hour. Past the limit, it shows "Too many sign-in requests. Try again later." and sends nothing, whether or not the email belongs to a member.
+- **SEC-001** The system shall allow at most 5 magic-link requests per email address, and 20 per IP address, per hour. Past the limit, it shows the inline message "Too many sign-in requests. Try again later." and sends nothing, whether or not the email belongs to a member.
   - SEC-001.1: Sam requests a 6th link within an hour → the limit message is shown, and no email is sent. (Verify: auto)
   - SEC-001.2: `stranger@x.com` is requested 6 times → the same limit message, so nobody can tell whether the email exists. (Verify: auto)
 - **SEC-002** When showing Markdown, the system shall show raw HTML as text and never run scripts. Links may only use `http`, `https` or `mailto`, and open in a new tab without access to the app's page.
@@ -532,7 +534,7 @@ There are no private projects. The first admin is created by the setup command (
   - SEC-002.2: `[click](javascript:alert(1))` → shown as plain text, not a link. (Verify: auto)
 - **SEC-003** The system shall create invitation, magic-link and session tokens from at least 128 random bits, and store only a hash of each.
   - SEC-003.1: Someone reads the database → none of the stored values works as a link or session. (Verify: auto)
-- **SEC-004** The system shall keep the session in a cookie that page scripts can't read, that's sent only over HTTPS, and that isn't sent on requests from other sites. It shall reject requests that change data if they come from another site.
+- **SEC-004** The system shall keep the session in a cookie that page scripts can't read, that's sent only over HTTPS outside local development (local development is any run whose `NODE_ENV` isn't `production`), and that's sent on top-level link clicks from other sites but never on cross-site form posts or background requests. It shall reject requests that change data if they come from another site.
   - SEC-004.1: A page on another site submits a form to delete `WEB-42` → rejected with `403`; nothing changes. (Verify: auto)
 - **SEC-005** The system shall serve everything over HTTPS, redirecting plain HTTP to HTTPS and telling browsers to use HTTPS only.
   - SEC-005.1: A member opens `http://…/my-issues` → redirected to `https://…/my-issues`. (Verify: ops)
@@ -546,6 +548,14 @@ There are no private projects. The first admin is created by the setup command (
 - The personal data stored is limited to members' names and work emails.
 - Notification emails include up to 500 characters of comment or description text (REQ-044), so the email provider sees that text.
 - There's no encryption at rest beyond what the host provides.
+
+**Accepted limitations**
+
+These are accepted for a small invite-only team. The sign-in page's messages stay the same for members and non-members (REQ-004.2, SEC-001.2).
+
+- The time to answer a sign-in request may differ between member and non-member emails, so it can hint at which emails are members. No minimum response time is required.
+- During an email-service outage, only a member's email gets "We couldn't send the email. Try again." (STD-6), so that message can reveal which emails are members.
+- SEC-001's per-IP limit uses the rightmost `X-Forwarded-For` entry. Until the app runs behind a reverse proxy that appends or overwrites that header, a client can set the value; nothing is publicly deployed before then.
 
 ### 11. Quality targets
 
@@ -565,7 +575,7 @@ There's no uptime target: one server has no redundancy (section 3). Section 13 c
 
 ### 12. Stack and constraints
 
-- **Stack:** Next.js (TypeScript), PostgreSQL, Drizzle ORM, all on a single VPS. Email goes through a transactional email service (API-002). Automated tests are unit and component tests only, using Vitest with React Testing Library on jsdom, run through npm scripts; there are no browser end-to-end tests (DEC-005). Lint uses Biome. UI uses the Hairline Design System, styled with Tailwind CSS v4 and built on React Aria Components.
+- **Stack:** Next.js (TypeScript), PostgreSQL, postgres.js (tagged SQL), all on a single VPS. Email goes through a transactional email service (API-002). Automated tests are unit and component tests only, using Vitest with React Testing Library on jsdom, run through npm scripts; there are no browser end-to-end tests (DEC-005). Lint uses Biome. UI uses the Hairline Design System, styled with Tailwind CSS v4 and built on React Aria Components.
 - **Commands:** build, test and lint commands live in the npm scripts in `package.json`. AGENTS.md tells agents to use them and doesn't copy them.
 - **Boundaries:**
   - This spec is the source of truth for product behavior.
@@ -576,7 +586,7 @@ There's no uptime target: one server has no redundancy (section 3). Section 13 c
   - There are no real-time updates; pages show current data when they load.
   - There are two environments: local development and the production VPS. No feature flags.
 - **Agent's choices:**
-  - DEC-002 (API endpoints): JSON over HTTPS, resource-style paths such as `/api/issues/WEB-42`, the STD-1 to STD-4 status codes, and a request ID on creates (STD-5). Every endpoint needs a session except sign-in, invitation acceptance and the webhook (API-003).
+  - DEC-002 (API endpoints): JSON over HTTPS, resource-style paths such as `/api/issues/WEB-42`, the STD-1 to STD-4 status codes (requesting a sign-in link may also answer `429` when a SEC-001 limit is reached and `503` when the email couldn't be sent, STD-6), and a request ID on creates (STD-5). Every endpoint needs a session except sign-in, sign-out (which succeeds with or without a session), invitation acceptance and the webhook (API-003). Requesting a sign-in link (`POST /api/sign-in-links`) is exempt from NFR-003's 500 ms write limit, because it includes the call to the email service and STD-6 needs the send result before answering.
   - DEC-003 (email provider): it must have an HTTP API and bounce webhooks (API-003), fit within NFR-009's budget, send from the team's domain with SPF and DKIM, and keep its API key only in server config (OPS-006). If no provider fits, stop and ask.
   - DEC-004 (background jobs): run on the same VPS with no paid queue service, and survive a restart without losing pending notifications.
 
@@ -610,6 +620,7 @@ There's no uptime target: one server has no redundancy (section 3). Section 13 c
 
 **Changelog**
 
+- **0.7 (2026-10-01):** Sign-in details settled while specifying magic-link sign-in. A signed-in member opening someone else's invitation or magic link is asked to sign out, with their full name shown (REQ-002.3, new REQ-005.5). Full names are trimmed, can't be blank and are refused with "Too long (max 60)" past 60 characters, and initials are defined (REQ-003, new REQ-003.4). The magic-link page address is listed (API-004). The SEC-001 limit message shows inline. The session cookie is sent on top-level link clicks from other sites but never on cross-site form posts or background requests, and its HTTPS-only rule applies outside local development (`NODE_ENV` other than `production`) (SEC-004). Section 12 names postgres.js instead of Drizzle ORM. Requesting a sign-in link may answer `429` and `503`, sign-out works with or without a session (DEC-002), and requesting a sign-in link is exempt from NFR-003's write limit. DATA-004 also deletes sign-in limit records and sign-in request records. Accepted limitations recorded in section 10.
 - **0.6 (2026-10-01):** UI stack named in section 12: Hairline Design System on Tailwind CSS v4 and React Aria Components.
 - **0.5 (2026-10-01):** Lint tool named in section 12: Biome.
 - **0.4 (2026-09-29):** Test tools decided: Vitest with React Testing Library on jsdom, and no browser end-to-end tests (DEC-005; section 12 updated).

@@ -1,3 +1,7 @@
+import { readAppSettings } from "./config.ts";
+import { writeLogLine } from "./log.ts";
+import { clearSessionCookie, readSessionToken } from "./session.ts";
+
 export class ApiError extends Error {
   readonly status: number;
   readonly fields?: Record<string, string>;
@@ -10,12 +14,22 @@ export class ApiError extends Error {
   }
 }
 
-function writeLine(entry: Record<string, string | number>): void {
-  process.stdout.write(`${JSON.stringify(entry)}\n`);
-}
-
 function errorResponse(status: number, message: string, fields?: Record<string, string>): Response {
   return Response.json({ error: fields ? { message, fields } : { message } }, { status });
+}
+
+const writeMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+function isCrossSiteWrite(request: Request): boolean {
+  if (!writeMethods.has(request.method)) {
+    return false;
+  }
+  const site = request.headers.get("sec-fetch-site");
+  if (site !== null) {
+    return site !== "same-origin";
+  }
+  const origin = request.headers.get("origin");
+  return origin !== null && origin !== new URL(readAppSettings().appUrl).origin;
 }
 
 export function apiRoute<Context>(
@@ -27,13 +41,19 @@ export function apiRoute<Context>(
     const path = new URL(request.url).pathname;
     let response: Response;
     try {
+      if (isCrossSiteWrite(request)) {
+        throw new ApiError(403, "You don't have permission to do that.");
+      }
       response = await handler(request, context);
     } catch (error) {
       if (error instanceof ApiError) {
         response = errorResponse(error.status, error.message, error.fields);
+        if (error.status === 401 && readSessionToken(request) !== null) {
+          response.headers.append("Set-Cookie", clearSessionCookie());
+        }
       } else {
         response = errorResponse(500, "Something went wrong.");
-        writeLine({
+        writeLogLine({
           time: new Date().toISOString(),
           level: "error",
           method,
@@ -42,7 +62,7 @@ export function apiRoute<Context>(
         });
       }
     }
-    writeLine({
+    writeLogLine({
       time: new Date().toISOString(),
       method,
       path,

@@ -1,5 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from "vitest";
+import { db } from "../../../server/db.ts";
+import { hashToken, newToken } from "../../../server/tokens.ts";
 import * as route from "./route.ts";
+
+const sql = db();
 
 let writeSpy: MockInstance<typeof process.stdout.write>;
 
@@ -12,13 +16,59 @@ function loggedLines(): Record<string, unknown>[] {
     .map((line) => JSON.parse(line) as Record<string, unknown>);
 }
 
+async function insertSignedInMember(): Promise<string> {
+  const suffix = crypto.randomUUID().slice(0, 8);
+  const [row] = await sql<{ id: string }[]>`
+    insert into members (email, full_name, username, role)
+    values (${`catchall-${suffix}@acme.com`}, ${`Catch All ${suffix}`}, ${`catchall-${suffix}`}, 'member')
+    returning id::text as id
+  `;
+  const token = newToken();
+  await sql`
+    insert into sessions (member_id, token_hash, request_id)
+    values (${row.id}, ${hashToken(token)}, ${crypto.randomUUID()})
+  `;
+  return token;
+}
+
+function sessionCookies(response: Response): string[] {
+  return response.headers.getSetCookie().filter((value) => value.startsWith("session="));
+}
+
+function expectClearingCookie(response: Response): void {
+  const cookies = sessionCookies(response);
+  expect(cookies).toHaveLength(1);
+  const parts = cookies[0].split("; ");
+  expect(parts[0]).toBe("session=");
+  expect(parts).toContain("Path=/");
+  expect(parts).toContain("Max-Age=0");
+}
+
 const methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"] as const;
 
 const paths = [
+  { path: "/api/anything", segments: ["anything"] },
   { path: "/api/nope/deeper", segments: ["nope", "deeper"] },
   { path: "/api", segments: undefined },
   { path: "/api/", segments: undefined },
 ];
+
+const sameOrigin = { "Sec-Fetch-Site": "same-origin", Origin: "http://localhost:3000" };
+
+function call(
+  method: (typeof methods)[number],
+  path: string,
+  segments: string[] | undefined,
+  headers: Record<string, string> = {},
+): Promise<Response> {
+  return route[method](new Request(`http://localhost:3000${path}`, { method, headers }), {
+    params: Promise.resolve({ path: segments }),
+  });
+}
+
+afterAll(async () => {
+  await sql.end();
+});
 
 describe("api catch-all", () => {
   beforeEach(() => {
@@ -31,16 +81,44 @@ describe("api catch-all", () => {
 
   for (const method of methods) {
     for (const { path, segments } of paths) {
-      it(`${method} ${path} answers a JSON 404 and logs one timing line`, async () => {
-        const handler = route[method];
+      it(`${method} ${path} answers 401 Not signed in as JSON when signed out and logs one timing line`, async () => {
+        const response = await call(method, path, segments);
 
-        const response = await handler(new Request(`http://localhost${path}`, { method }), {
-          params: Promise.resolve({ path: segments }),
+        expect(response.status).toBe(401);
+        expect(response.headers.get("content-type")).toContain("application/json");
+        if (method !== "HEAD") {
+          expect(await response.json()).toEqual({ error: { message: "Not signed in" } });
+        }
+        expect(sessionCookies(response)).toHaveLength(0);
+        const lines = loggedLines();
+        expect(lines).toHaveLength(1);
+        expect(lines[0]).toMatchObject({ method, path, status: 401 });
+      });
+
+      it(`${method} ${path} answers 401 and clears an invalid session cookie`, async () => {
+        const response = await call(method, path, segments, {
+          ...sameOrigin,
+          Cookie: `session=${newToken()}`,
         });
+
+        expect(response.status).toBe(401);
+        if (method !== "HEAD") {
+          expect(await response.json()).toEqual({ error: { message: "Not signed in" } });
+        }
+        expectClearingCookie(response);
+      });
+
+      it(`${method} ${path} answers a JSON 404 when signed in and logs one timing line`, async () => {
+        const token = await insertSignedInMember();
+
+        const response = await call(method, path, segments, { ...sameOrigin, Cookie: `session=${token}` });
 
         expect(response.status).toBe(404);
         expect(response.headers.get("content-type")).toContain("application/json");
-        expect(await response.json()).toEqual({ error: { message: "Not found" } });
+        if (method !== "HEAD") {
+          expect(await response.json()).toEqual({ error: { message: "Not found" } });
+        }
+        expect(sessionCookies(response)).toHaveLength(0);
         const lines = loggedLines();
         expect(lines).toHaveLength(1);
         expect(lines[0]).toMatchObject({ method, path, status: 404 });

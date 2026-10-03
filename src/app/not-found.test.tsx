@@ -1,7 +1,15 @@
 import { render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { AppShell } from "../components/layout/AppShell.tsx";
 import NotFound from "./not-found.tsx";
+
+vi.mock("../server/session.ts", () => ({
+  requireCurrentMember: vi.fn(async () => ({
+    id: "1",
+    fullName: "Owner Name",
+    username: "owner",
+    role: "admin",
+  })),
+}));
 
 const hadGetEntriesByType = typeof performance.getEntriesByType === "function";
 
@@ -19,12 +27,8 @@ function stubNavigationEntryName(name: string) {
   }
 }
 
-function renderNotFound() {
-  render(
-    <AppShell>
-      <NotFound />
-    </AppShell>,
-  );
+async function renderNotFound() {
+  render(await NotFound());
   return within(screen.getByRole("main"));
 }
 
@@ -36,22 +40,22 @@ afterEach(() => {
 });
 
 describe("Not found page", () => {
-  it("shows the heading and a link to My issues inside the shell", () => {
+  it("shows the heading and a link to My issues inside the shell", async () => {
     stubNavigationEntryName(window.location.href);
-    const main = renderNotFound();
+    const main = await renderNotFound();
     expect(main.getByRole("heading", { name: "Not found" })).toBeTruthy();
     expect(main.getByRole("link", { name: "My issues" }).getAttribute("href")).toBe("/my-issues");
   });
 
-  it("focuses the heading after a client-side navigation", () => {
+  it("focuses the heading after a client-side navigation", async () => {
     stubNavigationEntryName(new URL("/some-earlier-page", window.location.href).href);
-    const main = renderNotFound();
+    const main = await renderNotFound();
     expect(document.activeElement).toBe(main.getByRole("heading", { name: "Not found" }));
   });
 
-  it("leaves focus at the browser default on a full page load", () => {
+  it("leaves focus at the browser default on a full page load", async () => {
     stubNavigationEntryName(window.location.href);
-    const main = renderNotFound();
+    const main = await renderNotFound();
     expect(document.activeElement).not.toBe(main.getByRole("heading", { name: "Not found" }));
     expect(document.activeElement).toBe(document.body);
   });
