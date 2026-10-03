@@ -27,9 +27,10 @@ Milestones in build order for R1. Each milestone lists what to build, the spec I
   - [ ] the `toast` slice
   - [ ] the 300 ms loading hook
   - [ ] the Not found page
+  - [ ] `src/proxy.ts` setting the nonce-based Content Security Policy (§4.9)
   - [ ] the app shell with an empty sidebar
 
-**Spec:** STD-1…4 mapping, STD-7, STD-9, SEC-004.1, SEC-006 (mechanism), SEC-007 (logger), OPS-005 (`/health`)
+**Spec:** STD-1…4 mapping, STD-7, STD-9, SEC-004.1, SEC-006 (mechanism), SEC-007 (logger), SEC-010 (CSP), OPS-005 (`/health`)
 **Done when:** `/health` returns `200`; `GET /api/anything` returns `401`; any page address loads the shell and shows sign-in.
 
 ## M1 Sign-in and account
@@ -39,32 +40,34 @@ Milestones in build order for R1. Each milestone lists what to build, the spec I
 - [ ] `POST /api/sessions`, `DELETE /api/sessions/current`, `GET /api/me`, plus the redirects in the browser
 - [ ] SEC-001 limits for sign-in and reset requests (§4.5)
 - [ ] `sendEmail()` with three implementations: Mailpit, in-memory and Resend (§1.5, §5.2); the reset email template
-- [ ] Reset flow: `POST /api/password-reset-links` and `POST /api/password-resets` (§4.6)
+- [ ] Reset flow: `POST /api/password-reset-links`, `POST /api/password-reset-lookups` and `POST /api/password-resets` (§4.6)
+- [ ] Return after sign-in limited to this app's pages (§1.7)
 - [ ] Profile: `PATCH /api/me` and `PUT /api/me/password`
 - [ ] Pages: sign in, forgot password, reset password, profile (§6.3)
 - [ ] Setup command for the first admin (OPS-001)
 
-**Spec:** REQ-003.3–4, REQ-006, REQ-047, REQ-048, REQ-049, REQ-050, SEC-001, SEC-003, SEC-008, STD-6 (reset), OPS-001
+**Spec:** REQ-003.3–4, REQ-006, REQ-047, REQ-048, REQ-049, REQ-050, SEC-001, SEC-003, SEC-008, SEC-009, STD-6 (reset), OPS-001
 **Done when:** the first admin can be created, sign in, reset their password through Mailpit, and change it from the profile.
 
 ## M2 Members and invitations
 
 - [ ] Invitation endpoints: create, resend, revoke, list, look up (§3.3); the invitation email template
 - [ ] `POST /api/members` to accept an invitation, and the accept-invitation page (§6.3)
-- [ ] `GET /api/members` and `PATCH /api/members/{username}`: role changes, deactivate and reactivate, and the last-admin guard
+- [ ] `GET /api/members` and `PATCH /api/members/{username}`: role changes, deactivate and reactivate, and the last-admin guard with its row lock (§2.2)
 - [ ] Members page (§6.3)
 
-**Spec:** REQ-001, REQ-002, REQ-003, REQ-007, REQ-008, STD-2
+**Spec:** REQ-001, REQ-002, REQ-003, REQ-007, REQ-008, REQ-051, REQ-052, STD-2
 **Done when:** the admin invites a second person, who joins through the Mailpit link; the admin can then deactivate and reactivate them.
 
 ## M3 Projects and labels
 
 - [ ] Shared Markdown module: rendering, HTML shown as text, the link filter, mention parsing, text extraction (§4.7)
 - [ ] Project endpoints, including the reserved-key table and the project delete cascade (§2.3, §2.7)
-- [ ] Description saves with a version check, answering `409` on conflict (STD-8)
+- [ ] Description saves with a version check, answering `409` on conflict (STD-8); project-description mentions written as `mentions` rows (§2.5)
+- [ ] Unsaved-description prompt (REQ-035)
 - [ ] The "This project is archived" check on every write inside an archived project
 - [ ] Sidebar, New project dialog, project header, project details (description only for now), project settings, archived list (§6.2, §6.3)
-- [ ] Label endpoints and the Labels page; the 8 colours (§6.6)
+- [ ] Label endpoints and the Labels page; the 8 colours and delete confirmation (§6.6)
 
 **Spec:** REQ-009…015, REQ-012, REQ-021, REQ-046.2, DATA-002 (projects), SEC-002, DEC-001
 **Done when:** an admin can create, rename, archive, unarchive and delete a project; any member can edit its description and manage its labels.
@@ -124,7 +127,7 @@ Milestones in build order for R1. Each milestone lists what to build, the spec I
 - [ ] Creating notifications in the same transaction as assignments and new mentions, joining an existing email or creating one (§2.6)
 - [ ] Worker process: the polling loop, the drop checks, retries, shutting down cleanly on `SIGTERM` (§1.4)
 - [ ] Notification templates, single and combined; excerpts (§5.3, spec §9)
-- [ ] `POST /webhooks/email` with the signature check (§5.4)
+- [ ] `POST /webhooks/email` with the signature check, marking notifications and invitations as bounced (§5.4)
 - [ ] Cleanup job (DATA-004)
 
 **Spec:** REQ-043, REQ-044, REQ-045, API-003, STD-6 (notifications), DATA-004
@@ -132,7 +135,7 @@ Milestones in build order for R1. Each milestone lists what to build, the spec I
 
 ## M10 Operations
 
-- [ ] VPS: PostgreSQL, Caddy (TLS, HSTS, security headers, `X-Forwarded-For`), systemd units for web and worker, journald set to keep 14 days (§1.1, §4.9)
+- [ ] VPS: PostgreSQL, Caddy (TLS, HSTS, security headers, `X-Forwarded-For`, access log without `token`), systemd units for web and worker, journald set to keep 14 days (§1.1, §4.9)
 - [ ] `/etc/tracklite/env` with secrets (OPS-006)
 - [ ] Deploy command: migrate, then switch, keeping the previous release (OPS-002); rollback command (OPS-004)
 - [ ] Daily backup at 03:00 UTC to storage off the VPS, keeping 14 copies (OPS-003)

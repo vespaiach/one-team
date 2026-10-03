@@ -93,7 +93,7 @@ Strict single-page app, as the Next.js docs define it: the app is served by one 
 - `src/app/layout.tsx` holds `<html>`, `<body>`, fonts and the Hairline styles.
 - One optional catch-all page, `src/app/[[...path]]/page.tsx`, renders `<ClientApp />` through `next/dynamic` with `ssr: false`. It's the same document for every address.
 - `/api`, `/health` and `/webhooks` are more specific routes, so they're never caught by it.
-- There's no `src/proxy.ts`: the server doesn't redirect pages, the browser app does.
+- `src/proxy.ts` only sets the Content Security Policy (4.9). It doesn't redirect pages; the browser app does.
 
 **Routing.** React Router in data mode (`createBrowserRouter`), with routes lazy-loaded so each screen's code is downloaded on first visit.
 - The route table is the API-004 list plus the routes added in section 6.
@@ -105,6 +105,7 @@ Strict single-page app, as the Next.js docs define it: the app is served by one 
   - `401` → go to `/sign-in?next={current address}`;
   - success → the member is kept in the RTK Query cache and the requested route renders.
 - `/sign-in` and `/` send a signed-in member to `/my-issues`.
+- **Return after sign-in (SEC-009).** `next` is used only if it starts with `/` but not `//` or `/\`; anything else goes to `/my-issues`. So `?next=https://evil.example` can't send anyone off-site.
 - Any `401` later, such as an expired session or a deactivated member mid-edit (REQ-007.4), does the same redirect from the shared `baseQuery`.
 
 **Redux Toolkit.** One store, created once in `ClientApp`.
@@ -146,9 +147,12 @@ PostgreSQL via Drizzle ORM. Every table has `id uuid primary key default gen_ran
 - Unique indexes on `lower(email)` and `username`. Usernames are lowercased before saving (REQ-003.1), so a plain unique index on `username` is enough.
 - Check that `username` matches `^[a-z0-9-]{2,20}$`.
 - Never deleted (section 8 of the spec), so foreign keys pointing at members use the default `restrict`.
+- **Keeping the last admin (REQ-007.3, REQ-052.3).** Removing admin or deactivating first locks every active admin row (`select id from members where role = 'admin' and deactivated_at is null for update`), then refuses if the target is the only one. Two admins demoting each other at once are serialised by the lock, so the second sees one admin left and is refused.
+- **Role changes apply on the next request (REQ-052).** `requireMember` reads the role from the database on every request; nothing caches it in the session.
 
-**`invitations`**: `email`, `invited_by` (FK → members), `token_hash` (unique), `expires_at`, `accepted_at`, `revoked_at`, `created_at`.
-- The spec's state is derived, not stored: Accepted if `accepted_at` is set, Revoked if `revoked_at` is set, Expired if `expires_at < now()`, otherwise Pending.
+**`invitations`**: `email`, `invited_by` (FK → members), `token_hash` (unique), `expires_at`, `accepted_at`, `revoked_at`, `bounced_at`, `provider_message_id`, `created_at`.
+- The spec's state is derived, not stored: Accepted if `accepted_at` is set, Revoked if `revoked_at` is set, Bounced if `bounced_at` is set, Expired if `expires_at < now()`, otherwise Pending.
+- `provider_message_id` is the Resend ID of the latest email, so the bounce webhook can find the invitation (5.4). A resend replaces it and clears `bounced_at`.
 - Partial unique index on `lower(email)` where `accepted_at is null and revoked_at is null`, so an email has at most one open invitation. Inviting an email again replaces that row's `token_hash` and `expires_at`, which is how a resend works (REQ-001.3). The old link stops working because its hash no longer matches.
 
 **`password_reset_tokens`**: `member_id` (FK → members), `token_hash` (unique), `expires_at`, `used_at`, `created_at`.
@@ -158,7 +162,7 @@ PostgreSQL via Drizzle ORM. Every table has `id uuid primary key default gen_ran
 - A session ends by deleting its row: on sign-out, deactivation (REQ-007), a password change for the member's other sessions (REQ-049), or a reset (REQ-050). DATA-004's 30-day limit is a maximum, so deleting at once complies.
 - A session is valid while `last_active_at > now() - 30 days` (REQ-006). To avoid a database write on every request, `last_active_at` is only rewritten when it's more than 1 hour old. At most 1 hour of the 30 days is lost, which is acceptable.
 
-**`sign_in_attempts`** (failed sign-ins) and **`password_reset_requests`**: `email` (lowercased), `ip` (`inet`), `created_at`, with no `id` column.
+**`sign_in_attempts`** (failed sign-ins and wrong current passwords, REQ-049.3) and **`password_reset_requests`**: `email` (lowercased), `ip` (`inet`), `created_at`, with no `id` column.
 - SEC-001 checks count the rows from the last hour, so each table has indexes on `(email, created_at)` and `(ip, created_at)`.
 - They're deleted after the retention in DATA-004 (1 hour and 1 day respectively, plus 30 days).
 
@@ -206,10 +210,10 @@ Indexes:
 - Check `num_nonnulls(issue_id, project_id) = 1`: each comment belongs to exactly one issue or one project.
 - Indexes on `(issue_id, created_at)` and `(project_id, created_at)`.
 
-**`mentions`**: `member_id` (FK → members), `issue_id` (FK → issues, cascade, null), `comment_id` (FK → comments, cascade, null).
-- The `issue_id` column is used for a mention in an issue's description.
-- Check `num_nonnulls(issue_id, comment_id) = 1`, plus unique indexes on `(member_id, issue_id)` and `(member_id, comment_id)`.
-- The rows always mirror the **current** text. Each save parses the mentions (DATA-001), inserts the new ones and deletes the removed ones. "Mentioned for the first time" (REQ-044) means "not in the text before this save". So if a mention is removed and later added back, that member is emailed again. I accepted that edge case to keep the model simple.
+**`mentions`**: `member_id` (FK → members), `issue_id` (FK → issues, cascade, null), `project_id` (FK → projects, cascade, null), `comment_id` (FK → comments, cascade, null).
+- `issue_id` is used for a mention in an issue's description, and `project_id` for one in a project's description (REQ-044).
+- Check `num_nonnulls(issue_id, project_id, comment_id) = 1`, plus unique indexes on `(member_id, issue_id)`, `(member_id, project_id)` and `(member_id, comment_id)`.
+- The rows always mirror the **current** text. Each save parses the mentions (DATA-001), inserts the new ones and deletes the removed ones. "Mentioned for the first time" (REQ-044) means "not in the text before this save". So if a mention is removed and later added back, that member is emailed again, as the spec requires (REQ-044).
 
 ### 2.6 Notifications
 
@@ -282,6 +286,7 @@ Changing a field that can't be changed (username, email, project key) gets `422`
 | `POST /api/sessions` | `{ email, password }` → `204`, sets the cookie | Anyone | REQ-047, SEC-001 |
 | `DELETE /api/sessions/current` | → `204`, with or without a session | Anyone | REQ-006 |
 | `POST /api/password-reset-links` | `{ email }` → `204` whether or not the email belongs to a member | Anyone | REQ-050, SEC-001 |
+| `POST /api/password-reset-lookups` | `{ token }` → `204`, or `410` "This link has expired". Doesn't use up the link | Anyone | REQ-050.5, REQ-050.9 |
 | `POST /api/password-resets` | `{ token, password }` → `204`. Ends all the member's sessions, then sets a new cookie | Anyone | REQ-050 |
 | `POST /api/invitation-lookups` | `{ token }` → `{ email }`, or `410` with the same messages as accepting | Anyone | REQ-002 |
 | `POST /api/members` | `{ token, fullName, username, password }` → `201`, sets the cookie (accepting an invitation) | Anyone | REQ-002, REQ-003 |
@@ -294,8 +299,8 @@ Changing a field that can't be changed (username, email, project key) gets `422`
 | Method and path | Body → result | Who | Spec |
 |---|---|---|---|
 | `GET /api/members` | → all members, active and deactivated. Used for the assignee picker, the @mention suggestions and the members page. With about 15 people, the browser filters the list itself. | Member (emails only for admins) | DATA-001, REQ-037 |
-| `PATCH /api/members/{username}` | `{ role?, deactivated? }` | Admin | REQ-007, REQ-008 |
-| `GET /api/invitations` | → invitations that haven't been accepted or revoked, with their state | Admin | REQ-001 |
+| `PATCH /api/members/{username}` | `{ role?, deactivated? }` | Admin | REQ-007, REQ-008, REQ-052 |
+| `GET /api/invitations` | → invitations that are Pending, Bounced or Expired | Admin | REQ-001, REQ-051 |
 | `POST /api/invitations` | `{ email }` → `201`. If an open invitation for that email exists, this works as a resend | Admin | REQ-001 |
 | `POST /api/invitations/{id}/resend` | → `200`, new link | Admin | REQ-001.3 |
 | `DELETE /api/invitations/{id}` | → `204`, revoked | Admin | REQ-001.4 |
@@ -348,7 +353,7 @@ Changing a field that can't be changed (username, email, project key) gets `422`
 - **Moving a card.** `place: { after: "WEB-5" }` names one neighbour. The server computes a key between WEB-5 and whatever card follows WEB-5 *right now*, so a board that's out of date still lands the card next to the card the member chose (REQ-026.4). If WEB-5 is no longer in that column, the card goes to the top. The `PUT` changes `status` and `status_changed_at` only when the status actually changes, and it never touches `updated_at` for a move within one column (REQ-036.5).
 - **A status change from anywhere else** (`PATCH { status }`) also puts the card at the top of its new column (REQ-027.4).
 - **List paging uses `offset`**, not keyset cursors. With no live updates (spec §3), rows only shift if someone else edits mid-scroll, and that's accepted.
-- **The invitation page** (`/invite?token=…`) calls `POST /api/invitation-lookups` with the token in the body when it opens. It needs to show "expired" straight away (REQ-002.2), and the email to greet the person with. The reset page needs no such call: its expired state appears on submit (REQ-050.4).
+- **The invitation page** (`/invite?token=…`) calls `POST /api/invitation-lookups` with the token in the body when it opens. It needs to show "expired" straight away (REQ-002.2), and the email to greet the person with. The reset page does the same with `POST /api/password-reset-lookups`, so an expired or malformed link shows "This link has expired" with no form (REQ-050.9). Neither lookup uses up the link.
 - **Wrong email or password** returns `422` with no `fields`, not `401`. A `401` would make the browser treat it as an ended session.
 
 ## 4. Auth and security
@@ -402,6 +407,8 @@ Anything else gets `403`. `SameSite=Lax` is a second layer of protection. The on
 4. If either step fails, insert a `sign_in_attempts` row and answer `422` "Incorrect email or password.". Unknown and deactivated emails count the same way (SEC-001.3).
 5. On success, create the session. Earlier failures stay counted until they're an hour old; a success doesn't reset them.
 
+**Changing a password** (`PUT /api/me/password`) uses the same per-email count: a wrong current password inserts a `sign_in_attempts` row, and past the limit even the right one gets `429` (REQ-049.3).
+
 **Reset request** (`POST /api/password-reset-links`): the same count against `password_reset_requests` (5 per email, 20 per IP), but **every** request is recorded, not just failures. The email is sent only if the address belongs to an active member.
 
 **Details:**
@@ -426,7 +433,7 @@ If the request arrives with a valid session, it's refused with `403` "You're sig
 3. Validate the new password (`422`).
 4. Set the hash, set `used_at` on **all** the member's unused tokens (REQ-050.6), delete the member's sessions, and create a new one.
 
-**Opening a reset link** shows the form without checking the token. That's why a mail scanner opening the link changes nothing (REQ-050.5). If a valid session exists, the page shows "You're signed in as {name}. Sign out to reset a password." and never looks at the token (REQ-050.8).
+**Opening a reset link** checks the token with `POST /api/password-reset-lookups`, which only reads it. A usable link shows the form; anything else shows "This link has expired" (REQ-050.9). Because the check never uses the link up, a mail scanner opening it changes nothing (REQ-050.5). If a valid session exists, the page shows "You're signed in as {name}. Sign out to reset a password." and never looks at the token (REQ-050.8).
 
 ### 4.7 Markdown (SEC-002, DATA-001)
 
@@ -435,7 +442,7 @@ One module, `src/lib/markdown/`, used for both **rendering** in the browser and 
 - **Parser:** `react-markdown` with `remark-gfm` (checklists, tables, strikethrough). `rehype-raw` is never used.
 - **Raw HTML.** A small remark plugin turns every `html` node into a `text` node. `<script>` and `<img onerror>` then show as literal text (REQ-012.3, SEC-002.1), rather than depending on a library default.
 - **Links.** A `urlTransform` allows only `http:`, `https:` and `mailto:`. A link with any other scheme renders as its plain text, not an `<a>` (SEC-002.2). Allowed links get `target="_blank" rel="noopener noreferrer"`.
-- **Mentions.** A remark plugin walks text nodes outside `code` and `inlineCode` and matches `@([a-z0-9-]{2,20})`.
+- **Mentions.** A remark plugin walks text nodes outside `code` and `inlineCode` and matches `(?<![A-Za-z0-9._%+@-])@([a-z0-9-]{2,20})(?![a-z0-9-])`. The look-behind skips email addresses and `foo@sam`; the look-ahead stops at punctuation, so `(@sam)` and `@sam, thanks` both match (DATA-001.5, DATA-001.6). Mentions are found in issue descriptions, project descriptions and comments.
   - On the server, the matches become the `mentions` rows: active members only (2.5).
   - In the browser, a match is shown highlighted, with the full name on hover, only if the username is in the `mentions` list from the API (1.2). Mentions aren't links (DATA-001).
 
@@ -451,10 +458,18 @@ One module, `src/lib/markdown/`, used for both **rendering** in the browser and 
 Caddy adds these to every response:
 - `Strict-Transport-Security: max-age=31536000` (SEC-005)
 - `X-Content-Type-Options: nosniff`
-- `Referrer-Policy: same-origin`, so a page address containing a token (the reset page) never leaks to an outside site through the `Referer` header
-- `Content-Security-Policy: frame-ancestors 'none'`
+- `Referrer-Policy: same-origin`, so no referrer goes to other sites (SEC-010) and a page address containing a token never leaks through the `Referer` header
 
-A full script CSP isn't required by the spec, and Next.js's inline scripts would need nonces, so it's left out of R1.
+**Content Security Policy (SEC-010).** Next.js puts small inline scripts in every page, so the policy needs a fresh nonce per request. `src/proxy.ts` generates it and sets, on page requests only:
+
+```
+default-src 'self'; script-src 'self' 'nonce-{n}' 'strict-dynamic'; style-src 'self' 'unsafe-inline';
+img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+```
+
+Next.js reads the nonce from the request and adds it to its own scripts. A nonce makes the shell render per request instead of being cached, which costs nothing here because there's one small shell.
+
+**Access logs (SEC-007).** Caddy's access log uses a `query` filter that deletes the `token` parameter, so `/invite` and `/reset-password` addresses are logged without it.
 
 ## 5. Notifications and email
 
@@ -505,7 +520,10 @@ The wording of every email is in the spec (§9, "Email content"). That's where t
 
    Otherwise answer `401`. This is about 20 lines with `node:crypto`, with no `svix` dependency.
 3. Handle the event:
-   - `email.bounced` → find `notification_emails` by `provider_message_id`. If found, set `bounced` and log `email bounced, notification {id}` (REQ-045.6). If not found, the bounced email was an invitation or reset; log `email bounced, untracked`.
+   - `email.bounced` → look up `provider_message_id`:
+     - in `notification_emails`: set `bounced` and log `email bounced, notification {id}` (REQ-045.6);
+     - in `invitations`: set `bounced_at`, so the members page shows Bounced (REQ-051), and log `email bounced, invitation {id}`;
+     - in neither (a reset email): log `email bounced, untracked`.
    - any other event type → ignore.
 4. Answer `200` whenever the signature is valid, even for ignored events. Otherwise Resend keeps retrying.
 
@@ -597,7 +615,7 @@ An archived project's header shows an "Archived" badge, and no create or edit co
 
 **Members** (admin).
 - **Invite:** an email field and **Send invitation**.
-- **Invitations:** a table of email, invited by and state (Pending, or Expired with its date), with **Resend** and **Revoke** actions. Revoke asks for confirmation.
+- **Invitations:** a table of email, invited by and state (Pending, Bounced, or Expired with its date), with **Resend** and **Revoke** actions (REQ-051). Revoke asks for confirmation.
 - **Members:** a table with initials and name, username, email, role and status, sorted by name. Each row has a **⋯** menu with **Make admin** / **Remove admin** and **Deactivate** / **Reactivate**. Deactivate asks for confirmation ("Sam Lee will be signed out and can't sign in until reactivated.").
 - Deactivated members stay in the table, marked "(deactivated)".
 
@@ -622,7 +640,7 @@ An archived project's header shows an "Archived" badge, and no create or edit co
   - the comments below it (REQ-032), then the comment box.
 - **Side panel:** Status, Priority, Assignee and Labels pickers, each saving as soon as a value is chosen. Then "Created by {name}, {date}", and **Delete issue** for the creator or an admin.
 - **Mention suggestions (DATA-001):** typing `@` in the description editor or comment box opens a list of active members, filtered by username or name as the member types. Choosing one inserts `@username`.
-- **Unsent comments (REQ-035):** a comment box holding text blocks in-app navigation with `useBlocker`, and closing or reloading the tab with `beforeunload`.
+- **Unsaved text (REQ-035):** a comment box holding text, or a description editor (issue or project) with unsaved changes, blocks in-app navigation with `useBlocker` and its REQ-035 message, and closing or reloading the tab with `beforeunload`.
 
 ### 6.5 Board details
 
@@ -631,7 +649,7 @@ An archived project's header shows an "Archived" badge, and no create or edit co
 
 ### 6.6 Label colours
 
-Eight fixed colours (REQ-021): `gray`, `red`, `orange`, `yellow`, `green`, `teal`, `blue`, `purple`. Each maps to a Hairline colour token pair (background and text) that meets WCAG AA contrast (NFR-007). New labels default to `gray`.
+The spec's eight colours (REQ-021): `gray`, `red`, `orange`, `yellow`, `green`, `blue`, `purple`, `pink`. Each maps to a Hairline colour token pair (background and text) that meets WCAG AA contrast (NFR-007). Labels created from the picker are `gray` (REQ-020). Deleting a label asks for confirmation, naming how many issues have it (REQ-021.5).
 
 ### 6.7 Times
 
@@ -649,7 +667,7 @@ Eight fixed colours (REQ-021): `gray`, `red`, `orange`, `yellow`, `green`, `teal
 | D-4 | Separate version counters for descriptions | One version per row | A field change by a teammate shouldn't cause a description conflict. |
 | D-5 | `pg_trgm` + `ILIKE` per word | Postgres full-text search | The spec asks for substring matching (`"42"` → `WEB-42`, `"100%"`), which full-text search doesn't do. |
 | D-6 | Notification snapshots with no FKs | FKs to issues/projects | Emails must survive their target being deleted (REQ-045.7). |
-| D-7 | Mentions mirror the current text | Keeping every mention ever made | Simpler. Removing and re-adding a mention emails again. |
+| D-7 | Mentions mirror the current text | Keeping every mention ever made | Simpler, and matches REQ-044: removing and re-adding a mention emails again. |
 | D-8 | Sessions deleted when they end | Keeping them 30 days with an ended flag | Simpler and safer. DATA-004 sets a maximum, not a minimum. |
 | D-9 | Separate worker process polling Postgres with `skip locked` (DEC-004) | A timer inside the Next.js server; pg-boss or similar | A web restart can't interrupt sends, there's no new dependency, and the queue is just a table. |
 | D-10 | Strict single-page app: one HTML shell, all page data loaded through the API | Server-rendered pages | Owner's choice. Also gives one code path for permissions and tests. |
@@ -668,9 +686,9 @@ Eight fixed colours (REQ-021): `gray`, `red`, `orange`, `yellow`, `green`, `teal
 | D-23 | `Origin` check plus `SameSite=Lax` | CSRF tokens | Covers SEC-004 with no token stored in forms or state. |
 | D-24 | HTML nodes turned into text by our own plugin | Relying on react-markdown's default for HTML | The spec requires "shown as text", so we enforce it ourselves rather than depend on a library default. |
 | D-25 | One Markdown module for rendering and mention extraction | Separate regex for mentions on the server | `@sam` in code is treated the same everywhere (DATA-001.4). |
-| D-26 | No script CSP in R1 | Nonce-based CSP | Not required by the spec, and Markdown is already sanitised. Can be revisited later. |
+| D-26 | Nonce-based CSP set in `src/proxy.ts` (SEC-010) | A CSP without script rules | SEC-010 requires that only the app's own scripts run, and Next.js's inline scripts need a nonce for that. |
 | D-27 | React Router (data mode) inside the shell | Next.js routing; hand-rolled `pushState` | One HTML document for every route, plus `useBlocker` for REQ-035. |
-| D-28 | Signed-out redirect done in the browser after `GET /api/me` | Redirecting in `src/proxy.ts` | The server returns the same shell for every address, so one redirect mechanism (in the browser) covers both the first load and a later `401`. |
+| D-28 | Signed-out redirect done in the browser after `GET /api/me` | Redirecting in `src/proxy.ts` (which only sets the CSP) | The server returns the same shell for every address, so one redirect mechanism (in the browser) covers both the first load and a later `401`. |
 | D-29 | RTK Query for server data; a `toast` slice for UI | Hand-written slices and thunks | Caching, tags and optimistic updates are built in (REQ-026, NFR-005). |
 | D-30 | Refetch on every screen visit, no polling | Long-lived cache | Matches "pages show current data when they load" with no live updates. |
 | D-31 | List filters live in the URL, not Redux | Mirroring them in a slice | REQ-040 already makes the URL the source of truth. |

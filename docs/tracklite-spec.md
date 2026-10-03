@@ -542,11 +542,11 @@ There are no private projects. Nobody, including admins, can see or set another 
 | Issue | Project, number, title, Markdown description, status, priority, assignee, labels (0 to 10), board position, created by, created at, last updated, status changed at | Number unique within its project and never reused (REQ-016). Board position is per status column (REQ-027). "Status changed at" drives the 14-day window (REQ-028). |
 | Comment | Either an issue or a project, author, Markdown body, created at, edited at | Belongs to exactly one issue or one project. |
 | Mention | The text it's in (an issue description, a project description or a comment), the member mentioned | Lets an edit email only new mentions (REQ-044). |
-| Notification | Recipient, kind (Assigned or Mentioned), issue or project, who caused it, the issue ID or project key, its title or name, the text excerpt (up to 500 characters), send after, state (Pending, Sent, Dropped, Failed, Bounced) | "Send after" is 2 minutes after the recipient's first pending notification about that issue or project (REQ-045). The ID, title and excerpt are saved when it's created, and the excerpt is updated if the text is edited during the wait. Not deleted with its issue or project (REQ-045). |
+| Notification | Recipient, kind (Assigned or Mentioned), issue or project, who caused it, the issue ID or project key, its title or name, the text excerpt (up to 500 characters), send after, state (Pending, Sent, Dropped, Failed, Bounced) | "Send after" is 2 minutes after the recipient's first pending notification about that issue or project (REQ-045). The ID, title and excerpt are saved when it's created, and later edits don't change them (section 9, Email content). Not deleted with its issue or project (REQ-045). |
 | Sign-in attempt | Email, IP address, attempted at | Records failed sign-ins and wrong current passwords (REQ-049) for SEC-001. |
 | Password reset request | Email, IP address, requested at | Records reset requests for SEC-001. |
 
-- **DATA-001** When a member types `@` in an issue description or a comment, the system shall suggest active members. A saved `@username` outside code that matches an active member becomes a mention, shown highlighted (not a link, since there are no member pages) with the member's full name on hover, and triggers F-008.
+- **DATA-001** When a member types `@` in an issue description, a project description or a comment, the system shall suggest active members. A saved `@username` outside code that matches an active member becomes a mention, shown highlighted (not a link, since there are no member pages) with the member's full name on hover, and triggers F-008.
   - DATA-001.1: Description contains `@sam` → shown highlighted, with "Sam Lee" on hover; Sam is mentioned. (Verify: auto)
   - DATA-001.2: `@nobody` (no such member) → shown as plain text; no mention. (Verify: auto)
   - DATA-001.3: `@jo`, where Jo is deactivated → plain text; no mention (REQ-007). (Verify: auto)
@@ -721,7 +721,36 @@ There's no uptime target: one server has no redundancy (section 3). Section 13 c
 
 **Changelog**
 
-- **0.9 (2026-10-03):** Section 12 names Drizzle ORM instead of postgres.js, reversing the 0.7 change. Reordering a card within its column doesn't change "last updated" (REQ-036, new REQ-036.5). The notification wait is fixed from the first notification, not restarted by later ones (REQ-045, new REQ-045.8). A failed invitation email saves nothing and shows "We couldn't send the email. Try again." (REQ-001, new REQ-001.7, STD-6, STD-9). Mentions are shown highlighted with the full name on hover, not as links (DATA-001, DATA-001.1, REQ-031.1). The wording of every email is defined (section 9, Email content). API-004 lists the invitation, project settings, archived projects and profile pages. Copy added for a password change (REQ-049), the deactivate confirmation (REQ-007) and an empty Archived list (REQ-013). The front end is a single-page app with React Router and Redux Toolkit (section 12).
+- **0.9 (2026-10-03):** Review fixes before build, plus the technical-design pass.
+  - **From the technical-design pass:** Section 12 names Drizzle ORM instead of postgres.js, reversing the 0.7 change. Reordering a card within its column doesn't change "last updated" (REQ-036, new REQ-036.5). The notification wait is fixed from the first notification, not restarted by later ones (REQ-045, new REQ-045.8). A failed invitation email saves nothing and shows "We couldn't send the email. Try again." (REQ-001, new REQ-001.7, STD-6, STD-9). Mentions are shown highlighted with the full name on hover, not as links (DATA-001, DATA-001.1, REQ-031.1). The wording of every email is defined (section 9, Email content). API-004 lists the invitation, project settings, archived projects and profile pages. Copy added for a password change (REQ-049), the deactivate confirmation (REQ-007) and an empty Archived list (REQ-013). The front end is a single-page app with React Router and Redux Toolkit (section 12).
+  - **Contradictions resolved:**
+    - Pending notifications survive deletion of their issue or project, including mentions in comments deleted along with it. They carry their own saved title and excerpt (REQ-045, DATA-002, section 8).
+    - Deactivation stops outstanding password reset links (REQ-007, REQ-007.5, REQ-050).
+    - Section 12 names Drizzle ORM on postgres.js, matching the code. Server tests against a real test database are allowed (DEC-005).
+    - DATA-004 uses section 8's entity names and also deletes failed notifications. Sign-in attempts and password reset requests are added to section 8.
+  - **New:**
+    - Members page (REQ-051) and admin role changes, with the last-admin rule safe against simultaneous changes (REQ-052).
+    - Inviting an email with a pending invitation resends it. Invitation email failures and bounces are handled (REQ-001.7 to REQ-001.9, STD-6, API-003).
+    - Mentions work in project descriptions (REQ-012, REQ-044.6), and DATA-001 defines where a mention starts and ends.
+    - REQ-045 fixes the 2-minute wait from the first notification and defines the combined email's subject. A re-added mention emails again (REQ-044.7).
+    - Unsaved description edits prompt before leaving (REQ-035).
+  - **Routes:** invitation, profile, project settings and Archived projects pages, and comment links (API-004).
+  - **Labels:** the 8 colors are named, the picker reuses existing names, labels it creates are Gray, and deleting asks for confirmation (REQ-020, REQ-021).
+  - **"Last updated":** defined (REQ-036).
+  - **Security:**
+    - Return after sign-in is limited to this app (new SEC-009).
+    - Security headers (new SEC-010).
+    - Tokens are kept out of access logs (SEC-007).
+    - Argon2id settings (SEC-008).
+    - Wrong current passwords count toward SEC-001.
+  - **Backups:** encrypted, with failure emails (OPS-003).
+  - **Out of scope:** activity history, cross-project search, changing email and data export (section 3).
+  - **Smaller fixes:**
+    - Trimming for project and label names.
+    - Years on old comment dates (REQ-031).
+    - The Markdown flavour (DEC-001).
+    - STD-8 when the other editor was you.
+    - Unknown or malformed reset links (REQ-050.9).
 - **0.8 (2026-10-03):** Sign-in moves from magic links to email and password. Members choose a password when accepting an invitation (REQ-002) and sign in with email and password (new REQ-047). Passwords are 12 to 128 characters with no character-type rules (new REQ-048), can be changed from the profile (new REQ-049, REQ-003.3), and are reset through an emailed link valid for 30 minutes (new REQ-050). REQ-004 and REQ-005 are superseded. SEC-001 limits failed sign-ins and reset requests; passwords are stored as Argon2id hashes and never logged (new SEC-008, SEC-007). The Magic link entity becomes Password reset link (section 8, DATA-004). Two-factor authentication, passkeys and outside identity providers are out of scope (section 3). The setup command asks for the first admin's password (OPS-001). Updated to match: glossary, REQ-007.1, REQ-008.1, STD-6, STD-9, section 7, API-002, API-004, NFR-008, DEC-002 and the accepted limitations.
 - **0.7 (2026-10-01):** Sign-in details settled while specifying magic-link sign-in. A signed-in member opening someone else's invitation or magic link is asked to sign out, with their full name shown (REQ-002.3, new REQ-005.5). Full names are trimmed, can't be blank and are refused with "Too long (max 60)" past 60 characters, and initials are defined (REQ-003, new REQ-003.4). The magic-link page address is listed (API-004). The SEC-001 limit message shows inline. The session cookie is sent on top-level link clicks from other sites but never on cross-site form posts or background requests, and its HTTPS-only rule applies outside local development (`NODE_ENV` other than `production`) (SEC-004). Section 12 names postgres.js instead of Drizzle ORM. Requesting a sign-in link may answer `429` and `503`, sign-out works with or without a session (DEC-002), and requesting a sign-in link is exempt from NFR-003's write limit. DATA-004 also deletes sign-in limit records and sign-in request records. Accepted limitations recorded in section 10.
 - **0.6 (2026-10-01):** UI stack named in section 12: Hairline Design System on Tailwind CSS v4 and React Aria Components.
