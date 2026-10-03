@@ -1,4 +1,5 @@
 import { randomInt, randomUUID } from "node:crypto";
+import { eq } from "drizzle-orm";
 import {
   afterAll,
   afterEach,
@@ -11,6 +12,7 @@ import {
   type MockInstance,
 } from "vitest";
 import { db } from "../../../server/db.ts";
+import { magicLinks, members, sessions, signInAttempts, signInRequests } from "../../../server/schema.ts";
 import { hashToken, newToken } from "../../../server/tokens.ts";
 import * as route from "./route.ts";
 
@@ -41,35 +43,31 @@ function uniqueEmail(): string {
   return `${randomUUID()}@acme.com`;
 }
 
-async function insertMember(): Promise<{ id: string; email: string }> {
+async function insertMember(): Promise<{ id: number; email: string }> {
   const email = uniqueEmail();
   const username = `m-${randomUUID().slice(0, 12)}`;
-  const [row] = await db()<{ id: string }[]>`
-    insert into members (email, full_name, username, role)
-    values (${email}, ${"Sam Lee"}, ${username}, ${"member"})
-    returning id::text as id
-  `;
+  const [row] = await db()
+    .insert(members)
+    .values({ email, fullName: "Sam Lee", username, role: "member" })
+    .returning({ id: members.id });
   return { id: row.id, email };
 }
 
 async function liveSessionCookie(): Promise<string> {
   const member = await insertMember();
   const token = newToken();
-  await db()`
-    insert into sessions (member_id, token_hash, request_id)
-    values (${member.id}, ${hashToken(token)}, ${randomUUID()})
-  `;
+  await db()
+    .insert(sessions)
+    .values({ memberId: member.id, tokenHash: hashToken(token), requestId: randomUUID() });
   return `session=${token}`;
 }
 
 async function rowCounts(): Promise<Record<string, number>> {
-  const [row] = await db()<{ links: number; requests: number; attempts: number }[]>`
-    select
-      (select count(*)::int from magic_links) as links,
-      (select count(*)::int from sign_in_requests) as requests,
-      (select count(*)::int from sign_in_attempts) as attempts
-  `;
-  return { ...row };
+  return {
+    links: await db().$count(magicLinks),
+    requests: await db().$count(signInRequests),
+    attempts: await db().$count(signInAttempts),
+  };
 }
 
 function post(body: string, headers: Record<string, string> = { "x-forwarded-for": uniqueIp() }): Request {
@@ -85,10 +83,7 @@ function postJson(body: unknown, headers?: Record<string, string>): Request {
 }
 
 async function unknownIpAttempts(): Promise<number> {
-  const [row] = await db()<{ count: number }[]>`
-    select count(*)::int as count from sign_in_attempts where ip = 'unknown'
-  `;
-  return row.count;
+  return db().$count(signInAttempts, eq(signInAttempts.ip, "unknown"));
 }
 
 beforeEach(() => {
@@ -103,7 +98,7 @@ afterEach(() => {
 });
 
 afterAll(async () => {
-  await db().end();
+  await db().$client.end();
 });
 
 describe("POST /api/sign-in-links", () => {
@@ -183,13 +178,11 @@ describe("POST /api/sign-in-links", () => {
     expect(response.status).toBe(403);
     expect(await response.json()).toEqual({ error: { message: "You don't have permission to do that." } });
     expect(fetchMock).not.toHaveBeenCalled();
-    const [row] = await db()<{ links: number; requests: number; attempts: number }[]>`
-      select
-        (select count(*)::int from magic_links where member_id = ${member.id}) as links,
-        (select count(*)::int from sign_in_requests where request_id = ${requestId}) as requests,
-        (select count(*)::int from sign_in_attempts where ip = ${ip}) as attempts
-    `;
-    expect(row).toEqual({ links: 0, requests: 0, attempts: 0 });
+    expect({
+      links: await db().$count(magicLinks, eq(magicLinks.memberId, member.id)),
+      requests: await db().$count(signInRequests, eq(signInRequests.requestId, requestId)),
+      attempts: await db().$count(signInAttempts, eq(signInAttempts.ip, ip)),
+    }).toEqual({ links: 0, requests: 0, attempts: 0 });
   });
 
   it("answers 429 with the limit message once an email is past its limit", async () => {
@@ -219,7 +212,7 @@ describe("POST /api/sign-in-links", () => {
 
   describe("without a usable X-Forwarded-For entry", () => {
     beforeEach(async () => {
-      await db()`delete from sign_in_attempts where ip = 'unknown'`;
+      await db().delete(signInAttempts).where(eq(signInAttempts.ip, "unknown"));
     });
 
     it("answers checkEmail when the header is missing", async () => {

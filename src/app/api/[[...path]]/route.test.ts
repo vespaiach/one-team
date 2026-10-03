@@ -1,9 +1,10 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from "vitest";
 import { db } from "../../../server/db.ts";
+import { members, sessions } from "../../../server/schema.ts";
 import { hashToken, newToken } from "../../../server/tokens.ts";
 import * as route from "./route.ts";
 
-const sql = db();
+const database = db();
 
 let writeSpy: MockInstance<typeof process.stdout.write>;
 
@@ -18,16 +19,19 @@ function loggedLines(): Record<string, unknown>[] {
 
 async function insertSignedInMember(): Promise<string> {
   const suffix = crypto.randomUUID().slice(0, 8);
-  const [row] = await sql<{ id: string }[]>`
-    insert into members (email, full_name, username, role)
-    values (${`catchall-${suffix}@acme.com`}, ${`Catch All ${suffix}`}, ${`catchall-${suffix}`}, 'member')
-    returning id::text as id
-  `;
+  const [row] = await database
+    .insert(members)
+    .values({
+      email: `catchall-${suffix}@acme.com`,
+      fullName: `Catch All ${suffix}`,
+      username: `catchall-${suffix}`,
+      role: "member",
+    })
+    .returning({ id: members.id });
   const token = newToken();
-  await sql`
-    insert into sessions (member_id, token_hash, request_id)
-    values (${row.id}, ${hashToken(token)}, ${crypto.randomUUID()})
-  `;
+  await database
+    .insert(sessions)
+    .values({ memberId: row.id, tokenHash: hashToken(token), requestId: crypto.randomUUID() });
   return token;
 }
 
@@ -67,7 +71,7 @@ function call(
 }
 
 afterAll(async () => {
-  await sql.end();
+  await database.$client.end();
 });
 
 describe("api catch-all", () => {

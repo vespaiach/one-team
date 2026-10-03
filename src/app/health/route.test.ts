@@ -25,7 +25,7 @@ describe("GET /health", () => {
   });
 
   afterAll(async () => {
-    await db().end();
+    await db().$client.end();
   });
 
   it("answers 200 ok against the test database and logs one line", async () => {

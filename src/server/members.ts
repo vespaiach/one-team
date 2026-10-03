@@ -1,8 +1,10 @@
-import type { Sql } from "postgres";
+import { and, eq, sql } from "drizzle-orm";
+import type { Database } from "./db.ts";
 import { isValidEmail } from "./emailAddress.ts";
+import { members } from "./schema.ts";
 
 export type Member = {
-  id: string;
+  id: number;
   fullName: string;
   username: string;
   role: "admin" | "member";
@@ -45,32 +47,37 @@ function validateProfile(
   return { ok: true, profile: { email, fullName, username } };
 }
 
-export async function createFirstAdmin(sql: Sql, input: ProfileInput): Promise<CreateFirstAdminResult> {
+export const memberColumns = {
+  id: members.id,
+  fullName: members.fullName,
+  username: members.username,
+  role: members.role,
+};
+
+export async function createFirstAdmin(db: Database, input: ProfileInput): Promise<CreateFirstAdminResult> {
   const validated = validateProfile(input);
   if (!validated.ok) {
     return validated;
   }
   const { email, fullName, username } = validated.profile;
-  return sql.begin(async (tx): Promise<CreateFirstAdminResult> => {
-    await tx`lock table members in share row exclusive mode`;
-    const existing = await tx`select 1 from members limit 1`;
+  return db.transaction(async (tx): Promise<CreateFirstAdminResult> => {
+    await tx.execute(sql`lock table ${members} in share row exclusive mode`);
+    const existing = await tx.select({ id: members.id }).from(members).limit(1);
     if (existing.length > 0) {
       return { ok: false, error: "Setup already done" };
     }
-    const [member] = await tx<Member[]>`
-      insert into members (email, full_name, username, role)
-      values (${email}, ${fullName}, ${username}, 'admin')
-      returning id::text as id, full_name as "fullName", username, role
-    `;
+    const [member] = await tx
+      .insert(members)
+      .values({ email, fullName, username, role: "admin" })
+      .returning(memberColumns);
     return { ok: true, member };
   });
 }
 
-export async function findActiveMemberByEmail(sql: Sql, email: string): Promise<Member | null> {
-  const [member] = await sql<Member[]>`
-    select id::text as id, full_name as "fullName", username, role
-    from members
-    where lower(email) = ${email.trim().toLowerCase()} and active
-  `;
+export async function findActiveMemberByEmail(db: Database, email: string): Promise<Member | null> {
+  const [member] = await db
+    .select(memberColumns)
+    .from(members)
+    .where(and(eq(sql`lower(${members.email})`, email.trim().toLowerCase()), eq(members.active, true)));
   return member ?? null;
 }

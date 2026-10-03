@@ -1,5 +1,7 @@
-import postgres from "postgres";
+import { eq, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from "vitest";
+import { connect } from "../../../server/db.ts";
+import { magicLinks, members, sessions } from "../../../server/schema.ts";
 import { hashToken, newToken } from "../../../server/tokens.ts";
 import * as route from "./route.ts";
 
@@ -11,7 +13,7 @@ function testDatabaseUrl(): string {
   return url;
 }
 
-const sql = postgres(testDatabaseUrl(), { onnotice: () => {} });
+const database = connect(testDatabaseUrl());
 
 const run = crypto.randomUUID().slice(0, 8);
 let counter = 0;
@@ -27,54 +29,55 @@ function loggedLines(): Record<string, unknown>[] {
     .map((line) => JSON.parse(line) as Record<string, unknown>);
 }
 
-async function insertMember(fullName: string): Promise<string> {
+async function insertMember(fullName: string): Promise<number> {
   counter += 1;
-  const [row] = await sql<{ id: string }[]>`
-    insert into members (email, full_name, username, role)
-    values (${`m${counter}-${run}@acme.com`}, ${fullName}, ${`m${counter}-${run}`}, 'member')
-    returning id::text as id
-  `;
+  const [row] = await database
+    .insert(members)
+    .values({
+      email: `m${counter}-${run}@acme.com`,
+      fullName: fullName,
+      username: `m${counter}-${run}`,
+      role: "member",
+    })
+    .returning({ id: members.id });
   return row.id;
 }
 
 async function insertLink(
-  memberId: string,
+  memberId: number,
   options: { destination?: string; used?: boolean } = {},
 ): Promise<string> {
   const token = newToken();
-  await sql`
-    insert into magic_links (member_id, token_hash, destination, expires_at, used_at)
-    values (
-      ${memberId},
-      ${hashToken(token)},
-      ${options.destination ?? null},
-      now() + interval '15 minutes',
-      case when ${options.used === true} then now() end
-    )
-  `;
+  await database.insert(magicLinks).values({
+    memberId,
+    tokenHash: hashToken(token),
+    destination: options.destination ?? null,
+    expiresAt: sql`now() + interval '15 minutes'`,
+    usedAt: options.used === true ? sql`now()` : null,
+  });
   return token;
 }
 
-async function insertSession(memberId: string): Promise<string> {
+async function insertSession(memberId: number): Promise<string> {
   const token = newToken();
-  await sql`
-    insert into sessions (member_id, token_hash, request_id)
-    values (${memberId}, ${hashToken(token)}, ${crypto.randomUUID()})
-  `;
+  await database
+    .insert(sessions)
+    .values({ memberId, tokenHash: hashToken(token), requestId: crypto.randomUUID() });
   return token;
 }
 
 async function linkUsedAt(token: string): Promise<Date | null> {
-  const [row] = await sql<{ used_at: Date | null }[]>`
-    select used_at from magic_links where token_hash = ${hashToken(token)}
-  `;
-  return row.used_at;
+  const [row] = await database
+    .select({ usedAt: magicLinks.usedAt })
+    .from(magicLinks)
+    .where(eq(magicLinks.tokenHash, hashToken(token)));
+  return row.usedAt;
 }
 
 const context = { params: Promise.resolve({}) };
 
 afterAll(async () => {
-  await sql.end();
+  await database.$client.end();
 });
 
 function post(body: string, cookie?: string): Promise<Response> {
@@ -120,9 +123,10 @@ describe("POST /api/sessions", () => {
       cookies[0],
     );
     expect(match).not.toBeNull();
-    const [session] = await sql<{ member_id: string; ended_at: Date | null }[]>`
-      select member_id::text as member_id, ended_at from sessions where token_hash = ${hashToken(match?.[1] ?? "")}
-    `;
+    const [session] = await database
+      .select({ member_id: sessions.memberId, ended_at: sessions.endedAt })
+      .from(sessions)
+      .where(eq(sessions.tokenHash, hashToken(match?.[1] ?? "")));
     expect(session).toEqual({ member_id: samId, ended_at: null });
     expect(await linkUsedAt(token)).not.toBeNull();
   });
@@ -169,10 +173,7 @@ describe("POST /api/sessions", () => {
     expect(await response.json()).toEqual({ error: { message: "You don't have permission to do that." } });
     expect(sessionCookies(response)).toEqual([]);
     expect(await linkUsedAt(token)).toBeNull();
-    const [row] = await sql<{ count: number }[]>`
-      select count(*)::int as count from sessions where member_id = ${samId}
-    `;
-    expect(row.count).toBe(0);
+    expect(await database.$count(sessions, eq(sessions.memberId, samId))).toBe(0);
   });
 
   const oddTokens: [string, Record<string, unknown>][] = [

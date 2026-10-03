@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { parseArgs } from "node:util";
-import postgres from "postgres";
 import { readSettings } from "../src/server/config.ts";
+import { connect } from "../src/server/db.ts";
 import { createFirstAdmin } from "../src/server/members.ts";
 
 if (existsSync(".env.local")) {
@@ -16,9 +16,9 @@ try {
       username: { type: "string" },
     },
   });
-  const sql = postgres(readSettings().databaseUrl, { onnotice: () => {} });
+  const db = connect(readSettings().databaseUrl);
   try {
-    const result = await createFirstAdmin(sql, {
+    const result = await createFirstAdmin(db, {
       email: values.email ?? "",
       fullName: values.name ?? "",
       username: values.username ?? "",
@@ -35,7 +35,7 @@ try {
       process.exitCode = 1;
     }
   } finally {
-    await sql.end();
+    await db.$client.end();
   }
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
