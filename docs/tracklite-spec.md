@@ -1,9 +1,9 @@
 ---
 product: "Tracklite"
-version: "0.7"
+version: "0.8"
 release: "R1"
 status: Ready to build
-updated: "2026-10-01"
+updated: "2026-10-03"
 ---
 
 # Tracklite: Spec
@@ -36,6 +36,7 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
   - Keyboard shortcuts and a command palette
   - Integrations such as GitHub, Slack or outgoing webhooks, and a public API
   - Public sign-up, multiple workspaces, and serving other teams
+  - Two-factor authentication, passkeys, and sign-in with Google or other identity providers
   - Custom statuses or per-project workflows: one fixed set of statuses for everyone
   - Sub-issues, and links or dependencies between issues
   - File attachments and images, in descriptions or comments
@@ -46,7 +47,7 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
   - Moving an issue to another project, since it would change the issue's ID
 - **Assumptions:**
   - The team has fewer than about 15 people, so one small server is enough. Confirm against the team's headcount before launch.
-  - Everyone reads their work email reliably, since sign-in depends on it.
+  - Everyone reads their work email reliably, since invitations and password resets depend on it.
   - The interface is English only.
 - **Known limitations in R1:**
   - No live updates: members see teammates' changes after a reload.
@@ -66,7 +67,8 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
 - **Member:** a person with an account.
 - **Admin:** a member who can invite people and manage members and projects (section 7).
 - **Invitation:** an admin's email invite, the only way to join.
-- **Magic link:** a one-time sign-in link sent by email.
+- **Password:** a secret the member chooses and uses, with their email, to sign in.
+- **Password reset link:** a one-time link sent by email to choose a new password.
 - **Session:** a member's signed-in state in one browser.
 - **Project:** a named container for issues.
 - **Project key:** a short uppercase code such as `WEB`, fixed when the project is created.
@@ -89,17 +91,17 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
 
 **Release:** R1 · **Priority:** Must
 
-**What and why:** Members sign in with a one-time link sent to their email, so nobody manages passwords, and only people an admin invites can join. Each member has a simple profile so teammates can recognise and @mention them.
+**What and why:** Members sign in with their email and a password they choose, and only people an admin invites can join. A forgotten password is reset through a link sent by email. Each member has a simple profile so teammates can recognise and @mention them.
 
 **Flow**
 
 1. An admin enters a person's email and sends an invitation.
 2. The system emails that person an invitation link.
-3. The person opens the link, fills in their profile, and is signed in as a member.
-4. Later, the member enters their email on the sign-in page.
-5. The system emails them a magic link.
-6. The member opens the link and is signed in, landing on My issues.
-7. The member can edit their full name at any time. Username and email are fixed.
+3. The person opens the link, fills in their profile, chooses a password, and is signed in as a member.
+4. Later, the member enters their email and password on the sign-in page.
+5. The member is signed in, landing on My issues, or on the page they were trying to reach (STD-1).
+6. A member who forgets their password clicks **Forgot password?**, enters their email, opens the reset link the system emails them, and chooses a new password.
+7. The member can edit their full name and change their password at any time. Username and email are fixed.
 
 **Rules and examples**
 
@@ -110,40 +112,53 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
   - REQ-001.4: Admin revokes Sam's invitation → the link stops working. (Verify: auto)
   - REQ-001.5: Admin invites `Sam@Acme.com` while `sam@acme.com` is a member → "Already a member". (Verify: auto)
   - REQ-001.6: Admin invites the email of deactivated member Jo → "This person is deactivated. Reactivate them instead.", no email. (Verify: auto)
-- **REQ-002** When a person who isn't signed in opens a valid invitation link, the system shall ask for their profile, create them as a member, and sign them in. If a signed-in member opens an invitation link, the system shall ask them to sign out first. If the invitation expires or is revoked before the profile is submitted, no member is created.
-  - REQ-002.1: Sam opens the link on day 3 and enters "Sam Lee" and `sam` → member created, signed in, lands on My issues. (Verify: auto)
+- **REQ-002** When a person who isn't signed in opens a valid invitation link, the system shall ask for their profile and a password (REQ-048), create them as a member, and sign them in. If a signed-in member opens an invitation link, the system shall ask them to sign out first. If the invitation expires or is revoked before the profile is submitted, no member is created.
+  - REQ-002.1: Sam opens the link on day 3 and enters "Sam Lee", `sam` and a valid password → member created, signed in, lands on My issues. (Verify: auto)
   - REQ-002.2: Sam opens the link on day 8, or after already accepting it → "This invitation has expired. Ask an admin for a new one." (Verify: auto)
   - REQ-002.3: Alex, signed in, opens Sam's invitation link → "You're signed in as Alex. Sign out to accept this invitation." (Alex's full name is shown) (Verify: auto)
   - REQ-002.4: The admin revokes the invitation while Sam is filling in the profile → on submit: "This invitation is no longer valid.", no member created. (Verify: auto)
 - **REQ-003** The system shall store each profile as a full name (1 to 60 characters; whitespace at either end is trimmed; a name that is empty or only whitespace gets the field error "Name required", and one over 60 characters after trimming gets "Too long (max 60)" (STD-3)), a unique username (2 to 20 characters: lowercase letters, digits, hyphens; used for @mentions) and the invited email. The avatar is the member's initials. Username and email can't be changed in R1.
   - REQ-003.1: Sam enters username `Sam` → saved as `sam`. (Verify: auto)
   - REQ-003.2: Username `sam` is already taken → field error "Username taken" (STD-3). (Verify: auto)
-  - REQ-003.3: Sam opens their profile → the full name can be edited; username and email are shown but can't be edited, and an API request that changes them is refused. (Verify: auto)
+  - REQ-003.3: Sam opens their profile → the full name can be edited and the password changed (REQ-049); username and email are shown but can't be edited, and an API request that changes them is refused. (Verify: auto)
   - REQ-003.4: The initials are the first character of the first word and the first character of the last word of the full name, whatever that character is (a letter in any script, a digit or punctuation), uppercased where uppercasing applies: "Alexandria Catherine Montgomery-Fitzwilliam van der Bergholt" → "AB"; a one-word name such as "Sam" → "S"; "(Contractor) Lee" → "(L"; "3M Team" → "3T"; "李 小龙" → "李小". (Verify: auto)
-- **REQ-004** When someone enters an email on the sign-in page, the system shall email a single-use magic link that expires after 15 minutes, only if the email belongs to an active member. The page shows the same message either way. Each link works on its own until it's used or expires, and requests are limited by SEC-001.
-  - REQ-004.1: `sam@acme.com` (active member) → email sent; the page shows "Check your email". (Verify: auto)
-  - REQ-004.2: `stranger@x.com` → no email; the page shows the same "Check your email". (Verify: auto)
-  - REQ-004.3: Sam requests two links a minute apart, then clicks the first → signed in. (Verify: auto)
-- **REQ-005** When a magic link is opened, the system shall show a **Sign in** button without using up the link. Clicking the button uses the link, signs the member in, and sends them to the page they were trying to reach (STD-1), or to My issues. The link works in any browser.
-  - REQ-005.1: Sam clicks Sign in 10 minutes after the link was sent → signed in. (Verify: auto)
-  - REQ-005.2: The button is clicked after 16 minutes, or the link was already used → "This link has expired" with a button to request a new one. (Verify: auto)
-  - REQ-005.3: A mail scanner opens the link, then Sam clicks Sign in → Sam is signed in. (Verify: auto)
-  - REQ-005.4: Sam requests the link on a laptop and opens it on another computer → signed in there. (Verify: auto)
-  - REQ-005.5: Alex, signed in, opens a magic link that isn't Alex's own (Sam's link, or an unknown or malformed one) → "You're signed in as Alex. Sign out to use this sign-in link." (Alex's full name is shown) with a Sign out button, so the page reveals nothing about the link; Alex stays signed in, the link isn't used, and a valid link still works after Alex signs out. If Alex clicks Sign in in a tab opened before Alex signed in, the link isn't used, Alex's session isn't replaced, and the page switches to that same message and Sign out button, with no toast. After Alex signs out, the browser returns to the same link, which now shows the Sign in button; this is the same, with no error, when Alex's session had already ended elsewhere (for example signed out in another tab) before Sign out was clicked. If the link is unknown, malformed, expired or used, "This link has expired" shows only after Sign in is clicked. (Verify: auto)
+- **REQ-047** When someone enters an email and password on the sign-in page, the system shall sign them in only if the email, compared ignoring capitals, belongs to an active member and the password matches. It then sends them to the page they were trying to reach (STD-1), or to My issues. Otherwise it shows "Incorrect email or password." beside the form, the same for an unknown email, a wrong password and a deactivated member; the email stays filled in and the password field is cleared. Attempts are limited by SEC-001.
+  - REQ-047.1: `sam@acme.com` (active member) with the right password → signed in, lands on My issues. (Verify: auto)
+  - REQ-047.2: `sam@acme.com` with a wrong password → "Incorrect email or password."; the email is kept and the password cleared. (Verify: auto)
+  - REQ-047.3: `stranger@x.com` with any password → the same "Incorrect email or password.". (Verify: auto)
+  - REQ-047.4: `Sam@Acme.com` with Sam's password → signed in as Sam. (Verify: auto)
+  - REQ-047.5: Sam, signed out, opens `/issue/WEB-42`, is sent to sign-in and signs in → lands on `WEB-42`. (Verify: auto)
+- **REQ-048** A password shall be 12 to 128 characters. Any characters are allowed, including spaces; nothing is trimmed, and there are no rules about character types. Too short gets the field error "At least 12 characters", too long gets "Too long (max 128)" (STD-3). These rules apply wherever a password is set: accepting an invitation (REQ-002), changing it (REQ-049) and resetting it (REQ-050). Passwords are stored as SEC-008 requires.
+  - REQ-048.1: `correct horse battery` (21 characters, with spaces) → accepted. (Verify: auto)
+  - REQ-048.2: `Sh0rt!pass` (10 characters) → field error "At least 12 characters". (Verify: auto)
+  - REQ-048.3: A 129-character password → field error "Too long (max 128)". (Verify: auto)
+  - REQ-048.4: A password chosen as ` secret phrase 1 ` (leading and trailing spaces) → only that exact text, spaces included, signs in. (Verify: auto)
+- **REQ-049** When a member changes their password from their profile, the system shall require their current password and a new one (REQ-048). A wrong current password gets the field error "Incorrect password" and nothing changes. On success, the member stays signed in on this browser and all their other sessions end.
+  - REQ-049.1: Sam enters the right current password and a valid new one → saved; Sam stays signed in here and is signed out on their other computer. (Verify: auto)
+  - REQ-049.2: Sam enters a wrong current password → field error "Incorrect password"; the old password still works. (Verify: auto)
+- **REQ-050** When someone clicks **Forgot password?** on the sign-in page and enters an email, the system shall email a single-use password reset link that expires after 30 minutes, only if the email belongs to an active member. The page shows "Check your email" either way, and requests are limited by SEC-001. Opening the link shows a form for a new password without using up the link. Submitting a valid new password (REQ-048) uses the link, sets the password, ends all of that member's sessions, signs them in on this browser and sends them to My issues. A successful reset also stops the member's other outstanding reset links from working. The link works in any browser.
+  - REQ-050.1: `sam@acme.com` (active member) → email sent; the page shows "Check your email". (Verify: auto)
+  - REQ-050.2: `stranger@x.com` → no email; the page shows the same "Check your email". (Verify: auto)
+  - REQ-050.3: Sam opens the link 10 minutes after it was sent and enters a valid new password → the new password is set, Sam is signed in and lands on My issues, and the old password no longer works. (Verify: auto)
+  - REQ-050.4: The form is submitted after 31 minutes, or the link was already used → "This link has expired" with a button to request a new one; the password is unchanged. (Verify: auto)
+  - REQ-050.5: A mail scanner opens the link, then Sam submits a new password → the password is set. (Verify: auto)
+  - REQ-050.6: Sam requests two links a minute apart and resets with the second → the first link shows "This link has expired". (Verify: auto)
+  - REQ-050.7: Sam is signed in on another computer and resets the password → that other session ends. (Verify: auto)
+  - REQ-050.8: Alex, signed in, opens a reset link (anyone's, or an unknown or malformed one) → "You're signed in as Alex. Sign out to reset a password." (Alex's full name is shown) with a Sign out button, revealing nothing about the link; the link isn't used, and a valid link still works after Alex signs out. (Verify: auto)
 - **REQ-006** A session shall last 30 days from the member's last activity. Signing out ends the session on that browser only.
   - REQ-006.1: Sam uses the app every day → stays signed in. (Verify: auto)
   - REQ-006.2: Sam returns after 31 days away → sign-in page (STD-1). (Verify: auto)
 - **REQ-007** When an admin deactivates a member, the system shall end all of that member's sessions immediately and block their sign-in. Their name stays on past work, marked "(deactivated)", and they can't be assigned or mentioned. The last admin can't be deactivated or lose the admin role.
-  - REQ-007.1: Admin deactivates Sam → Sam's next page load goes to sign-in, and a magic-link request sends nothing. (Verify: auto)
+  - REQ-007.1: Admin deactivates Sam → Sam's next page load goes to sign-in; signing in with Sam's correct password shows "Incorrect email or password.", and a password reset request sends nothing. (Verify: auto)
   - REQ-007.2: `WEB-42` was assigned to Sam → it still shows "Sam Lee (deactivated)", and Sam isn't in the assignee picker. (Verify: auto)
   - REQ-007.3: The only admin tries to deactivate themselves, or remove their own admin role → blocked with "There must be at least one admin." (Verify: auto)
   - REQ-007.4: Sam is deactivated while editing the description of `WEB-42` → Sam's save fails and goes to sign-in, and nothing is saved. (Verify: auto)
 - **REQ-008** When an admin reactivates a deactivated member, the system shall let them sign in again with their existing profile. They can be assigned and mentioned again.
-  - REQ-008.1: Admin reactivates Sam, then Sam requests a magic link → email sent; Sam signs in with the same username and profile. (Verify: auto)
+  - REQ-008.1: Admin reactivates Sam, then Sam signs in with their existing password → signed in with the same username and profile. (Verify: auto)
   - REQ-008.2: `WEB-42` is still assigned to Sam → "(deactivated)" disappears from Sam's name, and Sam is back in the assignee picker. (Verify: auto)
 
 **Exceptions to standard behaviors:** None.
-**Uses:** Member, Invitation, Magic link, Session · SEC-001 (sign-in request limit), SEC-003 (tokens), OPS-001 (first-admin setup)
+**Uses:** Member, Invitation, Password reset link, Session · SEC-001 (sign-in limits), SEC-003 (tokens), SEC-008 (password storage), OPS-001 (first-admin setup)
 
 ### F-002 Projects
 
@@ -460,10 +475,10 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
 | STD-3 | Invalid input | The error shows next to the field, the form keeps everything typed, and nothing is saved. API: `422` with an error per field. |
 | STD-4 | Item not found | A "Not found" page with a link to My issues. This also covers a project key or issue ID that doesn't exist, such as `WEB-999`. API: `404`. |
 | STD-5 | Same action sent twice | The submit button is disabled while saving. Creating an issue or comment carries a request ID, so a retry or double-click never creates two. |
-| STD-6 | A service we depend on fails | The only outside service is email. If a magic-link email fails, the member sees "We couldn't send the email. Try again." If a notification email fails, the app retries 3 times over about 15 minutes, then logs the failure; the action that caused it still succeeds. |
+| STD-6 | A service we depend on fails | The only outside service is email. If a password reset email fails, the member sees "We couldn't send the email. Try again." If a notification email fails, the app retries 3 times over about 15 minutes, then logs the failure; the action that caused it still succeeds. |
 | STD-7 | Every screen | A loading indicator shows if loading takes more than 300 ms. Empty states name the next action ("No issues yet. Create one."). An error state shows "Couldn't load this." beside a Retry button (DEC-006). Speed targets are in section 11. |
 | STD-8 | Two members edit the same thing | Single fields such as status, assignee, priority and labels: the last save wins. Descriptions: if someone else saved since you opened the editor, nothing is saved. You see "This was changed by [name]. Copy your text and reload.", and your text stays in the editor. |
-| STD-9 | A form submission fails | A toast error appears, disappears after 5 seconds with no dismiss or pause control, and the form keeps everything typed (DEC-006). This covers failures not tied to one field, such as a network error, a server error, a `403` (STD-2) or a failed magic-link email (STD-6). Validation errors stay next to their fields (STD-3), and the STD-8 conflict message stays in the editor. For a network error or a server error, the toast reads "Couldn't save. Try again." |
+| STD-9 | A form submission fails | A toast error appears, disappears after 5 seconds with no dismiss or pause control, and the form keeps everything typed (DEC-006). This covers failures not tied to one field, such as a network error, a server error, a `403` (STD-2) or a failed password reset email (STD-6). Validation errors stay next to their fields (STD-3), and the STD-8 conflict message stays in the editor. For a network error or a server error, the toast reads "Couldn't save. Try again." |
 
 ### 7. Roles and permissions
 
@@ -471,6 +486,7 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
 |---|---|---|
 | See all projects, issues and comments | Yes | Yes |
 | Edit own profile | Yes | Yes |
+| Change own password | Yes | Yes |
 | Invite, resend or revoke an invitation | Yes | No |
 | Deactivate or reactivate a member | Yes | No |
 | Make a member an admin, or remove admin | Yes (the last admin can't be removed) | No |
@@ -485,15 +501,15 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
 | Edit a comment | Own only | Own only |
 | Delete a comment | Any | Own only |
 
-There are no private projects. The first admin is created by the setup command (OPS-001).
+There are no private projects. Nobody, including admins, can see or set another member's password. The first admin is created by the setup command (OPS-001).
 
 ### 8. Data
 
 | Entity | What it holds | Notes |
 |---|---|---|
-| Member | Email, full name, username, role (Admin or Member), active or deactivated, created at | Created by accepting an invitation (REQ-002) or by the setup command (OPS-001). Email and username are unique, ignoring capitals. Never deleted, only deactivated. |
+| Member | Email, full name, username, password hash, role (Admin or Member), active or deactivated, created at | Created by accepting an invitation (REQ-002) or by the setup command (OPS-001). Email and username are unique, ignoring capitals. Never deleted, only deactivated. |
 | Invitation | Email, invited by, secret token, expires at, state (Pending, Accepted, Revoked, Expired) | Expires 7 days after sending (REQ-001). |
-| Magic link | Member, secret token, expires at, used at | Expires 15 minutes after sending (REQ-004). |
+| Password reset link | Member, secret token, expires at, used at | Expires 30 minutes after sending (REQ-050). |
 | Session | Member, secret token, last active at | Ends 30 days after last activity (REQ-006). |
 | Project | Name, key, Markdown description, archived at, next issue number, created at | The key is unique forever, including deleted projects (REQ-009). |
 | Label | Project, name, color | Name unique within its project, ignoring capitals. One of 8 preset colors. |
@@ -511,8 +527,8 @@ There are no private projects. The first admin is created by the setup command (
   - DATA-002.1: `WEB` is deleted, with 120 issues, 8 labels and 300 comments → all of them are gone from the database, and a new project can't use the key `WEB`. (Verify: auto)
 - **DATA-003** The system shall store all times in UTC and show them in each member's browser time zone.
   - DATA-003.1: A comment saved at 02:00 UTC → a member whose browser is on UTC+7 sees 09:00. (Verify: auto)
-- **DATA-004** The system shall delete, 30 days after they stop being useful: invitations that are accepted, revoked or expired; magic links that are used or expired; sessions that have ended; notifications that are sent, dropped or bounced; sign-in limit records (sign_in_attempts), which stop being useful an hour after they're made; and sign-in request records (sign_in_requests), which stop being useful a day after they're made.
-  - DATA-004.1: A magic link expired 31 days ago → it's no longer in the database. (Verify: auto)
+- **DATA-004** The system shall delete, 30 days after they stop being useful: invitations that are accepted, revoked or expired; password reset links that are used or expired; sessions that have ended; notifications that are sent, dropped or bounced; sign-in limit records (sign_in_attempts), which stop being useful an hour after they're made; and password reset request records, which stop being useful a day after they're made.
+  - DATA-004.1: A password reset link expired 31 days ago → it's no longer in the database. (Verify: auto)
   - DATA-004.2: A notification was sent 10 days ago → still stored. (Verify: auto)
 
 ### 9. Interfaces and integrations
@@ -520,28 +536,32 @@ There are no private projects. The first admin is created by the setup command (
 | ID | Call or system | Used for |
 |---|---|---|
 | API-001 | The app's own HTTP API, under `/api/…`, used only by its own web front end | Every feature. It isn't public or documented for outside use. Errors follow STD-1 to STD-4 (`401`, `403`, `422`, `404`). The exact list of endpoints is the agent's choice (DEC-002). |
-| API-002 | Outgoing email service (a transactional email provider, DEC-003) | Invitations (REQ-001), magic links (REQ-004) and notifications (F-008). If it fails, see STD-6: sign-in shows "We couldn't send the email", and notifications are retried 3 times. |
+| API-002 | Outgoing email service (a transactional email provider, DEC-003) | Invitations (REQ-001), password reset links (REQ-050) and notifications (F-008). If it fails, see STD-6: a password reset request shows "We couldn't send the email", and notifications are retried 3 times. |
 | API-003 | `POST /webhooks/email` (bounce reports from the email service) | Marking notifications as Bounced (REQ-045.6). It accepts only requests signed by the email service; anything else gets `401`. |
-| API-004 | Page addresses: `/sign-in`, `/sign-in?token=…`, `/my-issues`, `/project/{KEY}` (board), `/project/{KEY}/list`, `/project/{KEY}/detail`, `/project/{KEY}/labels`, `/issue/{ID}`, `/settings/members` | Links in emails and between members. Keys and IDs are matched ignoring capitals (REQ-016.5). The list view's filters go in the query string (REQ-040). |
+| API-004 | Page addresses: `/sign-in`, `/forgot-password`, `/reset-password?token=…`, `/my-issues`, `/project/{KEY}` (board), `/project/{KEY}/list`, `/project/{KEY}/detail`, `/project/{KEY}/labels`, `/issue/{ID}`, `/settings/members` | Links in emails and between members. Keys and IDs are matched ignoring capitals (REQ-016.5). The list view's filters go in the query string (REQ-040). |
 
 ### 10. Security and privacy
 
-- **SEC-001** The system shall allow at most 5 magic-link requests per email address, and 20 per IP address, per hour. Past the limit, it shows the inline message "Too many sign-in requests. Try again later." and sends nothing, whether or not the email belongs to a member.
-  - SEC-001.1: Sam requests a 6th link within an hour → the limit message is shown, and no email is sent. (Verify: auto)
-  - SEC-001.2: `stranger@x.com` is requested 6 times → the same limit message, so nobody can tell whether the email exists. (Verify: auto)
+- **SEC-001** The system shall allow, per hour, at most 10 failed sign-in attempts per email address and 30 per IP address, and at most 5 password reset requests per email address and 20 per IP address. Past a limit, it shows the inline message "Too many attempts. Try again later.", doesn't sign anyone in even with the right password, and sends nothing, whether or not the email belongs to a member.
+  - SEC-001.1: Sam's password is entered wrongly 10 times within an hour, then correctly → the limit message is shown, and Sam isn't signed in. (Verify: auto)
+  - SEC-001.2: Sam requests a 6th reset link within an hour → the limit message is shown, and no email is sent. (Verify: auto)
+  - SEC-001.3: `stranger@x.com` is tried 11 times, or requested for a reset 6 times → the same limit message, so nobody can tell whether the email exists. (Verify: auto)
 - **SEC-002** When showing Markdown, the system shall show raw HTML as text and never run scripts. Links may only use `http`, `https` or `mailto`, and open in a new tab without access to the app's page.
   - SEC-002.1: `<img src=x onerror=alert(1)>` → shown as text; nothing runs. (Verify: auto)
   - SEC-002.2: `[click](javascript:alert(1))` → shown as plain text, not a link. (Verify: auto)
-- **SEC-003** The system shall create invitation, magic-link and session tokens from at least 128 random bits, and store only a hash of each.
-  - SEC-003.1: Someone reads the database → none of the stored values works as a link or session. (Verify: auto)
+- **SEC-003** The system shall create invitation, password reset and session tokens from at least 128 random bits, and store only a hash of each.
+  - SEC-003.1: Someone reads the database → none of the stored values works as a link or session, and none reveals a password (SEC-008). (Verify: auto)
 - **SEC-004** The system shall keep the session in a cookie that page scripts can't read, that's sent only over HTTPS outside local development (local development is any run whose `NODE_ENV` isn't `production`), and that's sent on top-level link clicks from other sites but never on cross-site form posts or background requests. It shall reject requests that change data if they come from another site.
   - SEC-004.1: A page on another site submits a form to delete `WEB-42` → rejected with `403`; nothing changes. (Verify: auto)
 - **SEC-005** The system shall serve everything over HTTPS, redirecting plain HTTP to HTTPS and telling browsers to use HTTPS only.
   - SEC-005.1: A member opens `http://…/my-issues` → redirected to `https://…/my-issues`. (Verify: ops)
 - **SEC-006** The system shall check permissions on the server for every request, not only by hiding buttons (STD-2, section 7).
   - SEC-006.1: A member sends the API request that deletes project `WEB` → `403`; nothing changes. (Verify: auto)
-- **SEC-007** The system shall never write tokens, magic links or the text of descriptions and comments into logs.
-  - SEC-007.1: Sam signs in → the log records "sign-in, member sam", with no token or link. (Verify: auto)
+- **SEC-007** The system shall never write passwords, tokens, invitation or password reset links, or the text of descriptions and comments into logs.
+  - SEC-007.1: Sam signs in → the log records "sign-in, member sam", with no password or token. (Verify: auto)
+- **SEC-008** The system shall store each password only as a salted hash from a slow, memory-hard algorithm (Argon2id). A password is never logged, emailed, returned by the API or put in a URL. Password fields hide what's typed and work with password managers.
+  - SEC-008.1: Sam and Alex choose the same password → their stored hashes differ, and neither contains the password. (Verify: auto)
+  - SEC-008.2: Any API response about a member → no password or password hash in it. (Verify: auto)
 
 **Privacy notes**
 
@@ -551,10 +571,11 @@ There are no private projects. The first admin is created by the setup command (
 
 **Accepted limitations**
 
-These are accepted for a small invite-only team. The sign-in page's messages stay the same for members and non-members (REQ-004.2, SEC-001.2).
+These are accepted for a small invite-only team. The sign-in and password reset pages' messages stay the same for members and non-members (REQ-047.3, REQ-050.2, SEC-001.3).
 
-- The time to answer a sign-in request may differ between member and non-member emails, so it can hint at which emails are members. No minimum response time is required.
+- The time to answer a sign-in or password reset request may differ between member and non-member emails, so it can hint at which emails are members. No minimum response time is required.
 - During an email-service outage, only a member's email gets "We couldn't send the email. Try again." (STD-6), so that message can reveal which emails are members.
+- Someone who knows a member's email can block that member's sign-in for up to an hour by using up SEC-001's per-email limit with wrong passwords. The member waits, or an admin investigates; there's no permanent lockout.
 - SEC-001's per-IP limit uses the rightmost `X-Forwarded-For` entry. Until the app runs behind a reverse proxy that appends or overwrites that header, a client can set the value; nothing is publicly deployed before then.
 
 ### 11. Quality targets
@@ -568,7 +589,7 @@ These are accepted for a small invite-only team. The sign-in page's messages sta
 | NFR-005 | A dropped card shows in its new place within 100 ms, before the save finishes; REQ-026 rolls it back if the save fails. | Manual check |
 | NFR-006 | Browsers: the latest two versions of desktop Chrome, Firefox, Safari and Edge. Phones work but aren't polished (section 3). | Manual check in each browser |
 | NFR-007 | Accessibility: every action can be done by keyboard (REQ-030 for the board), focus is always visible, and text contrast meets WCAG 2.2 AA. | Manual keyboard pass; an automated contrast checker such as axe |
-| NFR-008 | 95% of magic-link emails arrive within 1 minute. | Email provider's delivery logs |
+| NFR-008 | 95% of password reset emails arrive within 1 minute. | Email provider's delivery logs |
 | NFR-009 | Running cost, including hosting, email and domain, stays under $20 per month for the team. | Monthly bills |
 
 There's no uptime target: one server has no redundancy (section 3). Section 13 covers backups instead.
@@ -586,14 +607,14 @@ There's no uptime target: one server has no redundancy (section 3). Section 13 c
   - There are no real-time updates; pages show current data when they load.
   - There are two environments: local development and the production VPS. No feature flags.
 - **Agent's choices:**
-  - DEC-002 (API endpoints): JSON over HTTPS, resource-style paths such as `/api/issues/WEB-42`, the STD-1 to STD-4 status codes (requesting a sign-in link may also answer `429` when a SEC-001 limit is reached and `503` when the email couldn't be sent, STD-6), and a request ID on creates (STD-5). Every endpoint needs a session except sign-in, sign-out (which succeeds with or without a session), invitation acceptance and the webhook (API-003). Requesting a sign-in link (`POST /api/sign-in-links`) is exempt from NFR-003's 500 ms write limit, because it includes the call to the email service and STD-6 needs the send result before answering.
+  - DEC-002 (API endpoints): JSON over HTTPS, resource-style paths such as `/api/issues/WEB-42`, the STD-1 to STD-4 status codes (signing in, `POST /api/sessions` with email and password, may also answer `429` when a SEC-001 limit is reached; requesting a password reset link may answer `429`, and `503` when the email couldn't be sent, STD-6), and a request ID on creates (STD-5). Every endpoint needs a session except sign-in, sign-out (which succeeds with or without a session), requesting and using a password reset link, invitation acceptance and the webhook (API-003). Requesting a password reset link is exempt from NFR-003's 500 ms write limit, because it includes the call to the email service and STD-6 needs the send result before answering.
   - DEC-003 (email provider): it must have an HTTP API and bounce webhooks (API-003), fit within NFR-009's budget, send from the team's domain with SPF and DKIM, and keep its API key only in server config (OPS-006). If no provider fits, stop and ask.
   - DEC-004 (background jobs): run on the same VPS with no paid queue service, and survive a restart without losing pending notifications.
 
 ### 13. Release and operations
 
-- **OPS-001** The system shall provide a setup command that creates the first admin from an email, full name and username, only when no members exist.
-  - OPS-001.1: Run on a fresh install → admin created, who can then request a magic link. (Verify: ops)
+- **OPS-001** The system shall provide a setup command that creates the first admin from an email, full name, username and password, only when no members exist. The command asks for the password twice without showing it (REQ-048) and never takes it as an argument, so it doesn't end up in shell history.
+  - OPS-001.1: Run on a fresh install → admin created, who can then sign in with that email and password. (Verify: ops)
   - OPS-001.2: Run when members already exist → refuses with "Setup already done", nothing changed. (Verify: ops)
 - **OPS-002** A deploy shall be one command run from `main`. It runs the database migrations first and switches to the new version only if they succeed.
   - OPS-002.1: The migrations succeed → the new version serves traffic, with no manual steps. (Verify: ops)
@@ -620,6 +641,7 @@ There's no uptime target: one server has no redundancy (section 3). Section 13 c
 
 **Changelog**
 
+- **0.8 (2026-10-03):** Sign-in moves from magic links to email and password. Members choose a password when accepting an invitation (REQ-002) and sign in with email and password (new REQ-047). Passwords are 12 to 128 characters with no character-type rules (new REQ-048), can be changed from the profile (new REQ-049, REQ-003.3), and are reset through an emailed link valid for 30 minutes (new REQ-050). REQ-004 and REQ-005 are superseded. SEC-001 limits failed sign-ins and reset requests; passwords are stored as Argon2id hashes and never logged (new SEC-008, SEC-007). The Magic link entity becomes Password reset link (section 8, DATA-004). Two-factor authentication, passkeys and outside identity providers are out of scope (section 3). The setup command asks for the first admin's password (OPS-001). Updated to match: glossary, REQ-007.1, REQ-008.1, STD-6, STD-9, section 7, API-002, API-004, NFR-008, DEC-002 and the accepted limitations.
 - **0.7 (2026-10-01):** Sign-in details settled while specifying magic-link sign-in. A signed-in member opening someone else's invitation or magic link is asked to sign out, with their full name shown (REQ-002.3, new REQ-005.5). Full names are trimmed, can't be blank and are refused with "Too long (max 60)" past 60 characters, and initials are defined (REQ-003, new REQ-003.4). The magic-link page address is listed (API-004). The SEC-001 limit message shows inline. The session cookie is sent on top-level link clicks from other sites but never on cross-site form posts or background requests, and its HTTPS-only rule applies outside local development (`NODE_ENV` other than `production`) (SEC-004). Section 12 names postgres.js instead of Drizzle ORM. Requesting a sign-in link may answer `429` and `503`, sign-out works with or without a session (DEC-002), and requesting a sign-in link is exempt from NFR-003's write limit. DATA-004 also deletes sign-in limit records and sign-in request records. Accepted limitations recorded in section 10.
 - **0.6 (2026-10-01):** UI stack named in section 12: Hairline Design System on Tailwind CSS v4 and React Aria Components.
 - **0.5 (2026-10-01):** Lint tool named in section 12: Biome.
@@ -629,4 +651,6 @@ There's no uptime target: one server has no redundancy (section 3). Section 13 c
 
 **Superseded items**
 
-- None.
+- **REQ-004** (requesting a magic link by email, 15-minute single-use link) and its examples REQ-004.1 to REQ-004.3: superseded in 0.8 by REQ-047 (password sign-in) and REQ-050 (password reset link).
+- **REQ-005** (the magic-link landing page and Sign in button) and its examples REQ-005.1 to REQ-005.5: superseded in 0.8 by REQ-047 and REQ-050.
+- **Magic link** (glossary term and section 8 entity): superseded in 0.8 by Password reset link.
