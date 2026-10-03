@@ -79,6 +79,7 @@ To fill the development database with sample members instead, run `npm run db:se
 | `npm run typecheck` | Checks types with TypeScript |
 | `npm run db:generate` | Generates a migration from changes to `src/server/schema.ts` |
 | `npm run db:migrate` | Applies pending migrations |
+| `npm run db:studio` | Opens Drizzle Studio on the development database |
 | `npm run setup` | Creates the first admin |
 | `npm run db:seed` | Adds sample data to the development database |
 
