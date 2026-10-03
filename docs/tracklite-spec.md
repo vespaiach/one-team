@@ -45,6 +45,10 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
   - Real-time collaborative editing
   - Importing from Linear or anything else
   - Moving an issue to another project, since it would change the issue's ID
+  - Issue activity history: a log of who changed which field and when
+  - Searching or jumping to issues across projects: the list view searches one project, and any issue opens by its address (API-004)
+  - Changing a member's email address, by the member or an admin
+  - Exporting data: the daily backups (OPS-003) are the only copy outside the app
 - **Assumptions:**
   - The team has fewer than about 15 people, so one small server is enough. Confirm against the team's headcount before launch.
   - Everyone reads their work email reliably, since invitations and password resets depend on it.
@@ -74,7 +78,7 @@ DEC-002, DEC-003 and DEC-004 are settled in `docs/tech-design.md` (sections 3, 5
 - **Session:** a member's signed-in state in one browser.
 - **Project:** a named container for issues.
 - **Project key:** a short uppercase code such as `WEB`, fixed when the project is created.
-- **Archived project:** a project an admin has made read-only and removed from the sidebar.
+- **Archived project:** a project an admin has made read-only and moved from the sidebar to the Archived projects page.
 - **Project details:** a project's page for its description and comments, opened from a link next to the project name.
 - **Issue:** a unit of work.
 - **Issue ID:** the project key plus a number, such as `WEB-42`.
@@ -84,7 +88,7 @@ DEC-002, DEC-003 and DEC-004 are settled in `docs/tech-design.md` (sections 3, 5
 - **Assignee:** the member responsible for an issue.
 - **Board:** a project's issues shown as cards in one column per status.
 - **Comment:** a message on an issue or a project.
-- **Mention:** an `@username` that notifies that member.
+- **Mention:** an `@username` in an issue description, a project description or a comment that notifies that member (DATA-001).
 - **Notification:** an email telling a member they were assigned or mentioned.
 
 ## Features
@@ -104,6 +108,7 @@ DEC-002, DEC-003 and DEC-004 are settled in `docs/tech-design.md` (sections 3, 5
 5. The member is signed in, landing on My issues, or on the page they were trying to reach (STD-1).
 6. A member who forgets their password clicks **Forgot password?**, enters their email, opens the reset link the system emails them, and chooses a new password.
 7. The member can edit their full name and change their password at any time. Username and email are fixed.
+8. Admins manage members, roles and invitations on the members page.
 
 **Rules and examples**
 
@@ -139,7 +144,8 @@ DEC-002, DEC-003 and DEC-004 are settled in `docs/tech-design.md` (sections 3, 5
 - **REQ-049** When a member changes their password from their profile, the system shall require their current password and a new one (REQ-048). A wrong current password gets the field error "Incorrect password" and nothing changes. On success, the member stays signed in on this browser and all their other sessions end, and the profile shows "Password changed. You've been signed out everywhere else."
   - REQ-049.1: Sam enters the right current password and a valid new one → saved; Sam stays signed in here and is signed out on their other computer. (Verify: auto)
   - REQ-049.2: Sam enters a wrong current password → field error "Incorrect password"; the old password still works. (Verify: auto)
-- **REQ-050** When someone clicks **Forgot password?** on the sign-in page and enters an email, the system shall email a single-use password reset link that expires after 30 minutes, only if the email belongs to an active member. The page shows "Check your email" either way, and requests are limited by SEC-001. Opening the link shows a form for a new password without using up the link. Submitting a valid new password (REQ-048) uses the link, sets the password, ends all of that member's sessions, signs them in on this browser and sends them to My issues. A successful reset also stops the member's other outstanding reset links from working. The link works in any browser.
+  - REQ-049.3: Someone using Sam's session enters 10 wrong current passwords within an hour → the 11th try shows "Too many attempts. Try again later." even with the right password (SEC-001). (Verify: auto)
+- **REQ-050** When someone clicks **Forgot password?** on the sign-in page and enters an email, the system shall email a single-use password reset link that expires after 30 minutes, only if the email belongs to an active member. The page shows "Check your email" either way, and requests are limited by SEC-001. Opening a valid link shows a form for a new password without using up the link. An expired, used, unknown or malformed link shows "This link has expired" with a button to request a new one, straight away and without the form. Submitting fails the same way if the link expired meanwhile or the member has been deactivated since (REQ-007). Submitting a valid new password (REQ-048) uses the link, sets the password, ends all of that member's sessions, signs them in on this browser and sends them to My issues. A successful reset also stops the member's other outstanding reset links from working. The link works in any browser.
   - REQ-050.1: `sam@acme.com` (active member) → email sent; the page shows "Check your email". (Verify: auto)
   - REQ-050.2: `stranger@x.com` → no email; the page shows the same "Check your email". (Verify: auto)
   - REQ-050.3: Sam opens the link 10 minutes after it was sent and enters a valid new password → the new password is set, Sam is signed in and lands on My issues, and the old password no longer works. (Verify: auto)
@@ -148,6 +154,7 @@ DEC-002, DEC-003 and DEC-004 are settled in `docs/tech-design.md` (sections 3, 5
   - REQ-050.6: Sam requests two links a minute apart and resets with the second → the first link shows "This link has expired". (Verify: auto)
   - REQ-050.7: Sam is signed in on another computer and resets the password → that other session ends. (Verify: auto)
   - REQ-050.8: Alex, signed in, opens a reset link (anyone's, or an unknown or malformed one) → "You're signed in as Alex. Sign out to reset a password." (Alex's full name is shown) with a Sign out button, revealing nothing about the link; the link isn't used, and a valid link still works after Alex signs out. (Verify: auto)
+  - REQ-050.9: Someone who isn't signed in opens a malformed link, or a link 31 minutes after it was sent → "This link has expired" with a button to request a new one; no password form. (Verify: auto)
 - **REQ-006** A session shall last 30 days from the member's last activity. Signing out ends the session on that browser only.
   - REQ-006.1: Sam uses the app every day → stays signed in. (Verify: auto)
   - REQ-006.2: Sam returns after 31 days away → sign-in page (STD-1). (Verify: auto)
@@ -156,12 +163,21 @@ DEC-002, DEC-003 and DEC-004 are settled in `docs/tech-design.md` (sections 3, 5
   - REQ-007.2: `WEB-42` was assigned to Sam → it still shows "Sam Lee (deactivated)", and Sam isn't in the assignee picker. (Verify: auto)
   - REQ-007.3: The only admin tries to deactivate themselves, or remove their own admin role → blocked with "There must be at least one admin." (Verify: auto)
   - REQ-007.4: Sam is deactivated while editing the description of `WEB-42` → Sam's save fails and goes to sign-in, and nothing is saved. (Verify: auto)
+  - REQ-007.5: Sam requests a password reset link, is deactivated, then submits a new password through the link → "This link has expired"; the password is unchanged and Sam isn't signed in. (Verify: auto)
 - **REQ-008** When an admin reactivates a deactivated member, the system shall let them sign in again with their existing profile. They can be assigned and mentioned again.
   - REQ-008.1: Admin reactivates Sam, then Sam signs in with their existing password → signed in with the same username and profile. (Verify: auto)
   - REQ-008.2: `WEB-42` is still assigned to Sam → "(deactivated)" disappears from Sam's name, and Sam is back in the assignee picker. (Verify: auto)
+- **REQ-051** The system shall give admins a members page, `/settings/members`, listing members and invitations. Each member row shows the full name, username, email, role and whether they're deactivated, with actions to deactivate or reactivate (REQ-007, REQ-008) and to make admin or remove admin (REQ-052). Each invitation that's Pending, Bounced or Expired shows the email, who sent it and when it expires or expired, with Resend and Revoke (REQ-001); accepted and revoked invitations aren't listed. Members who aren't admins can't open the page (STD-2).
+  - REQ-051.1: An admin opens `/settings/members` → every member with their role, and Sam's pending invitation with Resend and Revoke. (Verify: auto)
+  - REQ-051.2: Alex, a member, opens `/settings/members` → "You don't have permission to do that." (Verify: auto)
+  - REQ-051.3: An admin resends Sam's expired invitation → a new link valid for 7 days is sent, and the row shows Pending. (Verify: auto)
+- **REQ-052** When an admin makes a member an admin, or removes a member's admin role, the system shall apply it from that member's next request, without signing them out. The last admin keeps the role (REQ-007), even when two admins act at the same moment.
+  - REQ-052.1: An admin makes Sam an admin → on Sam's next page load, admin controls such as **New project** appear. (Verify: auto)
+  - REQ-052.2: An admin removes Jo's admin role while Jo has project settings open → Jo's next save is refused with "You don't have permission to do that." (STD-2). (Verify: auto)
+  - REQ-052.3: Alex and Jo, the only two admins, remove each other's admin role at the same moment → one change succeeds and the other is refused, so one admin remains. (Verify: auto)
 
 **Exceptions to standard behaviors:** None.
-**Uses:** Member, Invitation, Password reset link, Session · SEC-001 (sign-in limits), SEC-003 (tokens), SEC-008 (password storage), OPS-001 (first-admin setup)
+**Uses:** Member, Invitation, Password reset link, Session · SEC-001 (sign-in limits), SEC-003 (tokens), SEC-008 (password storage), SEC-009 (return after sign-in), OPS-001 (first-admin setup)
 
 ### F-002 Projects
 
@@ -179,17 +195,17 @@ DEC-002, DEC-003 and DEC-004 are settled in `docs/tech-design.md` (sections 3, 5
 
 **Rules and examples**
 
-- **REQ-009** When an admin creates a project, the system shall require a name (1 to 50 characters; names may repeat) and a key (2 to 5 letters A to Z, stored in uppercase). The key can never have been used by another project, including archived and deleted ones. The new project appears for every member.
+- **REQ-009** When an admin creates a project, the system shall require a name (1 to 50 characters after whitespace at either end is trimmed; names may repeat) and a key (2 to 5 letters A to Z, stored in uppercase). The key can never have been used by another project, including archived and deleted ones. The new project appears for every member.
   - REQ-009.1: Admin creates "Website" with key `WEB` → project created, shown in every member's sidebar. (Verify: auto)
   - REQ-009.2: Admin enters key `web` → saved as `WEB`. (Verify: auto)
   - REQ-009.3: Key `WEB` was used by a project that has since been deleted → field error "Key already used" (STD-3). (Verify: auto)
   - REQ-009.4: Key `W`, `WEB1` or `ÉQ` → field error "Key must be 2 to 5 letters". (Verify: auto)
   - REQ-009.5: Admin creates a second project named "Website" with key `SITE` → created. (Verify: auto)
-- **REQ-010** The system shall not let anyone change a project's key after the project is created.
+- **REQ-010** The system shall not let anyone change a project's key after the project is created. Admins rename, archive and delete a project on its settings page, `/project/{KEY}/settings`.
   - REQ-010.1: Admin opens project settings → the key is shown but can't be edited; an API request that changes it is refused and the key stays `WEB`. (Verify: auto)
 - **REQ-011** When an admin renames a project, the system shall keep its key and every issue ID unchanged.
   - REQ-011.1: "Website" is renamed to "Marketing site" → `WEB-42` is still `WEB-42`, and old links still work. (Verify: auto)
-- **REQ-012** When any member edits a project description, the system shall save it as Markdown of up to 20,000 characters (empty allowed) and show it formatted (DEC-001, SEC-002). Two members editing at once is handled by STD-8.
+- **REQ-012** When any member edits a project description, the system shall save it as Markdown of up to 20,000 characters (empty allowed) and show it formatted (DEC-001, SEC-002). @mentions follow DATA-001, and two members editing at once is handled by STD-8.
   - REQ-012.1: Member saves a description with a heading and a bullet list → shown formatted. (Verify: auto)
   - REQ-012.2: Description of 20,001 characters → field error "Too long (max 20,000)". (Verify: auto)
   - REQ-012.3: Description contains `<script>alert(1)</script>` → shown as text; nothing runs. (Verify: auto)
@@ -214,7 +230,7 @@ DEC-002, DEC-003 and DEC-004 are settled in `docs/tech-design.md` (sections 3, 5
   - REQ-046.2: Sam opens the `WEB` board → no description or project comments on it. (Verify: auto)
 
 **Exceptions to standard behaviors:** None.
-**Uses:** Project, Issue, Comment · DEC-001 (Markdown) · DATA-002 (deletion) · SEC-002 (safe Markdown)
+**Uses:** Project, Issue, Comment · DEC-001 (Markdown) · DATA-001 (mentions), DATA-002 (deletion) · SEC-002 (safe Markdown)
 
 ### F-003 Issues
 
@@ -233,7 +249,7 @@ DEC-002, DEC-003 and DEC-004 are settled in `docs/tech-design.md` (sections 3, 5
 
 **Rules and examples**
 
-- **REQ-016** When a member creates an issue, or edits its title, the system shall require a title of 1 to 200 characters (spaces at either end are trimmed). A new issue gets the project's next number, starting at 1. No two issues in a project ever share a number, and numbers are never reused. A new issue starts as status Backlog, No priority, unassigned, and the system records who created it and when. The issue's ID is its address, matched ignoring capitals.
+- **REQ-016** When a member creates an issue, or edits its title, the system shall require a title of 1 to 200 characters (whitespace at either end is trimmed). A new issue gets the project's next number, starting at 1. No two issues in a project ever share a number, and numbers are never reused. A new issue starts as status Backlog, No priority, unassigned, and the system records who created it and when. The issue's ID is its address, matched ignoring capitals.
   - REQ-016.1: Sam creates "Fix login button" as the first issue in `WEB` → `WEB-1`, Backlog, No priority, unassigned, "Created by Sam Lee". (Verify: auto)
   - REQ-016.2: The latest issue is `WEB-41` and `WEB-40` was deleted → the next new issue is `WEB-42`. (Verify: auto)
   - REQ-016.3: The title is only spaces → field error "Title required" (STD-3). (Verify: auto)
@@ -246,16 +262,18 @@ DEC-002, DEC-003 and DEC-004 are settled in `docs/tech-design.md` (sections 3, 5
 - **REQ-019** An issue shall have no assignee or one active member as its assignee.
   - REQ-019.1: Sam assigns `WEB-42` to Alex → shows Alex. (Verify: auto)
   - REQ-019.2: Sam clears the assignee → shows Unassigned. (Verify: auto)
-- **REQ-020** An issue shall have 0 to 10 labels, chosen from its project's labels. Typing a new name in the label picker creates that label in the project.
+- **REQ-020** An issue shall have 0 to 10 labels, chosen from its project's labels. In the label picker, typing a name that matches an existing label, ignoring capitals, adds that label; any other name creates the label in the project, colored Gray, and adds it.
   - REQ-020.1: Sam adds `bug` and `frontend` to `WEB-42` → both shown. (Verify: auto)
   - REQ-020.2: Sam types `Design`, which doesn't exist in `WEB` yet → label `Design` created in `WEB` and added. (Verify: auto)
   - REQ-020.3: Sam tries to add an 11th label → "Maximum 10 labels". (Verify: auto)
   - REQ-020.4: Sam adds `frontend` just as another member deletes it → the toast "That label no longer exists" (STD-9); Sam's other changes are kept. (Verify: auto)
-- **REQ-021** Any member shall be able to create, rename, recolor and delete a project's labels on that project's Labels page. A label has a name of 1 to 30 characters, unique within its project ignoring capitals, and one of 8 preset colors. Renaming or deleting a label affects every issue in that project that has it.
+  - REQ-020.5: Sam types `design` while `Design` exists in `WEB` → `Design` is added; no new label is created. (Verify: auto)
+- **REQ-021** Any member shall be able to create, rename, recolor and delete a project's labels on that project's Labels page. A label has a name of 1 to 30 characters (whitespace at either end is trimmed), unique within its project ignoring capitals, and one of 8 preset colors: Gray, Red, Orange, Yellow, Green, Blue, Purple and Pink. Renaming or deleting a label affects every issue in that project that has it. Deleting a label asks for confirmation, naming how many issues have it.
   - REQ-021.1: `bug` is renamed to `defect` → every issue in the project that had `bug` now shows `defect`. (Verify: auto)
   - REQ-021.2: A member creates `BUG` while `bug` exists in the same project → field error "Label already exists". (Verify: auto)
   - REQ-021.3: `frontend` is deleted → it's removed from all of the project's issues, and the issues stay otherwise unchanged. (Verify: auto)
   - REQ-021.4: `bug` exists in `WEB`; a member creates `bug` in `API` → allowed; they're separate labels, and renaming one doesn't change the other. (Verify: auto)
+  - REQ-021.5: Sam deletes `frontend`, which 12 issues have → "Delete frontend? It will be removed from 12 issues."; on confirming, it's deleted. (Verify: auto)
 - **REQ-022** When a member edits an issue description, the system shall save it as Markdown of up to 20,000 characters (empty allowed) and show it formatted (DEC-001, SEC-002). @mentions follow DATA-001, and two members editing at once is handled by STD-8.
   - REQ-022.1: Sam saves a description with a checklist and a code block → shown formatted. (Verify: auto)
   - REQ-022.2: Description of 20,001 characters → field error "Too long (max 20,000)". (Verify: auto)
@@ -380,7 +398,7 @@ DEC-002, DEC-003 and DEC-004 are settled in `docs/tech-design.md` (sections 3, 5
   - REQ-031.1: Sam posts "Looks good. @alex can you review?" on `WEB-42` → shown with "Sam Lee · just now", and `@alex` is highlighted as a mention. (Verify: auto)
   - REQ-031.2: The comment box is empty or only spaces → the Post button is disabled. (Verify: auto)
   - REQ-031.3: A comment of 10,001 characters → field error "Too long (max 10,000)". (Verify: auto)
-  - REQ-031.4: A comment posted 9 days ago → shows its date, such as "Sep 20". (Verify: auto)
+  - REQ-031.4: A comment posted 9 days ago → shows its date, such as "Sep 20"; one from a previous year shows "Sep 20, 2025". (Verify: auto)
   - REQ-031.5: A comment has a 300-character line of code → the code block scrolls sideways; the page doesn't. (Verify: manual)
 - **REQ-032** The system shall show all of an issue's comments below its description, and all of a project's comments below its description on the project details page (REQ-046), with no paging. Each thread is flat (no replies), oldest first.
   - REQ-032.1: Comments posted on `WEB-42` at 09:00 and 09:05 → the 09:00 comment is above. (Verify: auto)
@@ -396,9 +414,11 @@ DEC-002, DEC-003 and DEC-004 are settled in `docs/tech-design.md` (sections 3, 5
   - REQ-034.2: An admin deletes Alex's comment → it's gone. (Verify: auto)
   - REQ-034.3: Alex, a member, views Sam's comment → no Delete option (STD-2). (Verify: auto)
   - REQ-034.4: Sam is deactivated → Sam's comments show "Sam Lee (deactivated)", and an admin can still delete them. (Verify: auto)
-- **REQ-035** If a member tries to leave a page while the comment box holds unsent text, the system shall ask "You have an unsent comment. Leave anyway?" before leaving.
+- **REQ-035** If a member tries to leave a page while the comment box holds unsent text, the system shall ask "You have an unsent comment. Leave anyway?" before leaving. If an issue or project description editor holds unsaved changes, it shall ask "You have unsaved changes. Leave anyway?". Closing the tab or reloading shows the browser's own prompt instead.
   - REQ-035.1: Sam types a comment on `WEB-42`, then clicks another project → the prompt appears; Cancel keeps Sam on `WEB-42` with the text intact. (Verify: auto)
   - REQ-035.2: The comment box is empty → Sam leaves with no prompt. (Verify: auto)
+  - REQ-035.3: Sam edits the `WEB` project description without saving, then clicks My issues → "You have unsaved changes. Leave anyway?". (Verify: auto)
+  - REQ-035.4: Sam edits `WEB-42`'s description without saving, then closes the tab → the browser asks before closing. (Verify: manual)
 
 **Exceptions to standard behaviors:** None.
 **Uses:** Comment, Issue, Project, Member · DEC-001 (Markdown) · DATA-001 (mentions) · SEC-002 (safe Markdown) · REQ-007, REQ-013
@@ -440,7 +460,7 @@ DEC-002, DEC-003 and DEC-004 are settled in `docs/tech-design.md` (sections 3, 5
 
 **Flow**
 
-1. A member assigns an issue to a teammate, or @mentions a teammate in an issue description or a comment.
+1. A member assigns an issue to a teammate, or @mentions a teammate in an issue description, a project description or a comment.
 2. The system emails that teammate, saying who did what and linking to the issue or project.
 3. The teammate clicks the link and lands on the issue or project, signing in first if needed (STD-1).
 
@@ -450,7 +470,7 @@ DEC-002, DEC-003 and DEC-004 are settled in `docs/tech-design.md` (sections 3, 5
   - REQ-043.1: Alex assigns `WEB-42` to Sam → Sam gets the email. (Verify: auto)
   - REQ-043.2: Sam assigns `WEB-42` to themselves → no email. (Verify: auto)
   - REQ-043.3: Alex reassigns `WEB-42` from Sam to Jo → Jo gets the email; Sam gets nothing. (Verify: auto)
-- **REQ-044** When a mention (DATA-001) is saved in an issue description or a comment, the system shall email each mentioned member other than the author. The subject is "[WEB-42] Fix login button: Alex Kim mentioned you", and the body holds the first 500 characters of the comment or description as plain text, plus a link to it. When text is edited, only members mentioned in it for the first time are emailed. A member mentioned several times in one text gets one email.
+- **REQ-044** When a mention (DATA-001) is saved in an issue description, a project description or a comment, the system shall email each mentioned member other than the author. The subject is "[WEB-42] Fix login button: Alex Kim mentioned you", or "[WEB] Website: Alex Kim mentioned you" for a project, and the body holds the first 500 characters of the comment or description as plain text, plus a link to it. When text is edited, only members who weren't mentioned in its previously saved version are emailed, so a mention that's removed and later added back emails again. A member mentioned several times in one text gets one email.
   - REQ-044.1: Alex comments "@sam can you check?" on `WEB-42` → Sam gets the email, with that text and a link to the comment. (Verify: auto)
   - REQ-044.2: Sam writes `@sam` in their own comment → no email. (Verify: auto)
   - REQ-044.3: Alex edits a comment that already mentions `@sam` and adds `@jo` → only Jo is emailed. (Verify: auto)
@@ -475,7 +495,7 @@ DEC-002, DEC-003 and DEC-004 are settled in `docs/tech-design.md` (sections 3, 5
 
 | ID | Situation | What happens |
 |---|---|---|
-| STD-1 | Not signed in | The page redirects to sign-in, then returns to the page the member asked for once they've signed in. API: `401`. |
+| STD-1 | Not signed in | The page redirects to sign-in, then returns to the page the member asked for once they've signed in, as long as it's a page in this app (SEC-009). API: `401`. |
 | STD-2 | Not allowed | Actions the member can't take are hidden. If reached anyway, the message is "You don't have permission to do that." API: `403`. |
 | STD-3 | Invalid input | The error shows next to the field, the form keeps everything typed, and nothing is saved. API: `422` with an error per field. |
 | STD-4 | Item not found | A "Not found" page with a link to My issues. This also covers a project key or issue ID that doesn't exist, such as `WEB-999`. API: `404`. |
@@ -492,6 +512,7 @@ DEC-002, DEC-003 and DEC-004 are settled in `docs/tech-design.md` (sections 3, 5
 | See all projects, issues and comments | Yes | Yes |
 | Edit own profile | Yes | Yes |
 | Change own password | Yes | Yes |
+| Open the members page (REQ-051) | Yes | No |
 | Invite, resend or revoke an invitation | Yes | No |
 | Deactivate or reactivate a member | Yes | No |
 | Make a member an admin, or remove admin | Yes (the last admin can't be removed) | No |
@@ -513,26 +534,30 @@ There are no private projects. Nobody, including admins, can see or set another 
 | Entity | What it holds | Notes |
 |---|---|---|
 | Member | Email, full name, username, password hash, role (Admin or Member), active or deactivated, created at | Created by accepting an invitation (REQ-002) or by the setup command (OPS-001). Email and username are unique, ignoring capitals. Never deleted, only deactivated. |
-| Invitation | Email, invited by, secret token, expires at, state (Pending, Accepted, Revoked, Expired) | Expires 7 days after sending (REQ-001). |
+| Invitation | Email, invited by, secret token, expires at, state (Pending, Accepted, Revoked, Expired, Bounced) | Expires 7 days after sending (REQ-001). At most one pending invitation per email. |
 | Password reset link | Member, secret token, expires at, used at | Expires 30 minutes after sending (REQ-050). |
 | Session | Member, secret token, last active at | Ends 30 days after last activity (REQ-006). |
 | Project | Name, key, Markdown description, archived at, next issue number, created at | The key is unique forever, including deleted projects (REQ-009). |
-| Label | Project, name, color | Name unique within its project, ignoring capitals. One of 8 preset colors. |
+| Label | Project, name, color | Name unique within its project, ignoring capitals. One of 8 preset colors (REQ-021). |
 | Issue | Project, number, title, Markdown description, status, priority, assignee, labels (0 to 10), board position, created by, created at, last updated, status changed at | Number unique within its project and never reused (REQ-016). Board position is per status column (REQ-027). "Status changed at" drives the 14-day window (REQ-028). |
 | Comment | Either an issue or a project, author, Markdown body, created at, edited at | Belongs to exactly one issue or one project. |
-| Mention | The text it's in (an issue description or a comment), the member mentioned | Lets an edit email only new mentions (REQ-044). |
-| Notification | Recipient, kind (Assigned or Mentioned), issue or project, who caused it, send after, state (Pending, Sent, Dropped, Failed, Bounced) | "Send after" is 2 minutes after creation (REQ-045). |
+| Mention | The text it's in (an issue description, a project description or a comment), the member mentioned | Lets an edit email only new mentions (REQ-044). |
+| Notification | Recipient, kind (Assigned or Mentioned), issue or project, who caused it, the issue ID or project key, its title or name, the text excerpt (up to 500 characters), send after, state (Pending, Sent, Dropped, Failed, Bounced) | "Send after" is 2 minutes after the recipient's first pending notification about that issue or project (REQ-045). The ID, title and excerpt are saved when it's created, and the excerpt is updated if the text is edited during the wait. Not deleted with its issue or project (REQ-045). |
+| Sign-in attempt | Email, IP address, attempted at | Records failed sign-ins and wrong current passwords (REQ-049) for SEC-001. |
+| Password reset request | Email, IP address, requested at | Records reset requests for SEC-001. |
 
 - **DATA-001** When a member types `@` in an issue description or a comment, the system shall suggest active members. A saved `@username` outside code that matches an active member becomes a mention, shown highlighted (not a link, since there are no member pages) with the member's full name on hover, and triggers F-008.
   - DATA-001.1: Description contains `@sam` → shown highlighted, with "Sam Lee" on hover; Sam is mentioned. (Verify: auto)
   - DATA-001.2: `@nobody` (no such member) → shown as plain text; no mention. (Verify: auto)
   - DATA-001.3: `@jo`, where Jo is deactivated → plain text; no mention (REQ-007). (Verify: auto)
   - DATA-001.4: `@sam` inside inline code or a code block → shown as code; no mention. (Verify: auto)
-- **DATA-002** When a project or issue is deleted, the system shall delete everything that belongs to it: a project takes its issues, labels, comments and mentions with it, and an issue takes its comments and mentions with it. A deleted project's key stays reserved (REQ-009).
+  - DATA-001.5: `sam@acme.com` or `foo@sam` → plain text; no mention. (Verify: auto)
+  - DATA-001.6: `(@sam)` and `@sam, thanks` → both mention Sam. (Verify: auto)
+- **DATA-002** When a project or issue is deleted, the system shall delete everything that belongs to it: a project takes its issues, labels, comments and mentions with it, and an issue takes its comments and mentions with it. Notifications are kept, so pending ones are still sent (REQ-045). A deleted project's key stays reserved (REQ-009).
   - DATA-002.1: `WEB` is deleted, with 120 issues, 8 labels and 300 comments → all of them are gone from the database, and a new project can't use the key `WEB`. (Verify: auto)
 - **DATA-003** The system shall store all times in UTC and show them in each member's browser time zone.
   - DATA-003.1: A comment saved at 02:00 UTC → a member whose browser is on UTC+7 sees 09:00. (Verify: auto)
-- **DATA-004** The system shall delete, 30 days after they stop being useful: invitations that are accepted, revoked or expired; password reset links that are used or expired; sessions that have ended; notifications that are sent, dropped or bounced; sign-in limit records (sign_in_attempts), which stop being useful an hour after they're made; and password reset request records, which stop being useful a day after they're made.
+- **DATA-004** The system shall delete, 30 days after they stop being useful: invitations that are accepted or revoked, or have passed their expiry; password reset links that are used or expired; sessions that have ended; notifications that are sent, dropped, failed or bounced; sign-in attempts, which stop being useful an hour after they're made; and password reset requests, which stop being useful a day after they're made.
   - DATA-004.1: A password reset link expired 31 days ago → it's no longer in the database. (Verify: auto)
   - DATA-004.2: A notification was sent 10 days ago → still stored. (Verify: auto)
 
@@ -589,7 +614,7 @@ All emails are plain text. `{…}` are filled in when the email is sent, `{APP_U
 
 ### 10. Security and privacy
 
-- **SEC-001** The system shall allow, per hour, at most 10 failed sign-in attempts per email address and 30 per IP address, and at most 5 password reset requests per email address and 20 per IP address. Past a limit, it shows the inline message "Too many attempts. Try again later.", doesn't sign anyone in even with the right password, and sends nothing, whether or not the email belongs to a member.
+- **SEC-001** The system shall allow, per hour, at most 10 failed sign-in attempts per email address and 30 per IP address, and at most 5 password reset requests per email address and 20 per IP address. Past a limit, it shows the inline message "Too many attempts. Try again later.", doesn't sign anyone in even with the right password, and sends nothing, whether or not the email belongs to a member. Wrong current passwords on the profile (REQ-049) count as failed sign-in attempts. Each limit counts the last 60 minutes, and a successful sign-in doesn't reset the count.
   - SEC-001.1: Sam's password is entered wrongly 10 times within an hour, then correctly → the limit message is shown, and Sam isn't signed in. (Verify: auto)
   - SEC-001.2: Sam requests a 6th reset link within an hour → the limit message is shown, and no email is sent. (Verify: auto)
   - SEC-001.3: `stranger@x.com` is tried 11 times, or requested for a reset 6 times → the same limit message, so nobody can tell whether the email exists. (Verify: auto)
@@ -604,11 +629,17 @@ All emails are plain text. `{…}` are filled in when the email is sent, `{APP_U
   - SEC-005.1: A member opens `http://…/my-issues` → redirected to `https://…/my-issues`. (Verify: ops)
 - **SEC-006** The system shall check permissions on the server for every request, not only by hiding buttons (STD-2, section 7).
   - SEC-006.1: A member sends the API request that deletes project `WEB` → `403`; nothing changes. (Verify: auto)
-- **SEC-007** The system shall never write passwords, tokens, invitation or password reset links, or the text of descriptions and comments into logs.
+- **SEC-007** The system shall never write passwords, tokens, invitation or password reset links, or the text of descriptions and comments into logs. This includes the web server's and reverse proxy's access logs, which leave out the query string of `/invite` and `/reset-password`.
   - SEC-007.1: Sam signs in → the log records "sign-in, member sam", with no password or token. (Verify: auto)
-- **SEC-008** The system shall store each password only as a salted hash from a slow, memory-hard algorithm (Argon2id). A password is never logged, emailed, returned by the API or put in a URL. Password fields hide what's typed and work with password managers.
+  - SEC-007.2: Sam opens a password reset link → the access log shows `/reset-password` with no token. (Verify: ops)
+- **SEC-008** The system shall store each password only as a salted hash from a slow, memory-hard algorithm: Argon2id with at least 19 MiB of memory, 2 iterations and a parallelism of 1 (the OWASP baseline). A password is never logged, emailed, returned by the API or put in a URL. Password fields hide what's typed and work with password managers.
   - SEC-008.1: Sam and Alex choose the same password → their stored hashes differ, and neither contains the password. (Verify: auto)
   - SEC-008.2: Any API response about a member → no password or password hash in it. (Verify: auto)
+- **SEC-009** After sign-in, the system shall return the member only to a page in this app. Any other return target, such as another site's address, sends them to My issues.
+  - SEC-009.1: A sign-in link whose return target is `https://evil.example` or `//evil.example` → after signing in, Sam lands on My issues. (Verify: auto)
+- **SEC-010** Every page shall be sent with headers that let only the app's own scripts run (a Content Security Policy), stop other sites from showing the app in a frame, and send no referrer to other sites.
+  - SEC-010.1: Any page response → includes those three headers. (Verify: auto)
+  - SEC-010.2: Another site puts `/my-issues` in a frame → the browser refuses to show it. (Verify: manual)
 
 **Privacy notes**
 
@@ -624,6 +655,7 @@ These are accepted for a small invite-only team. The sign-in and password reset 
 - During an email-service outage, only a member's email gets "We couldn't send the email. Try again." (STD-6), so that message can reveal which emails are members.
 - Someone who knows a member's email can block that member's sign-in for up to an hour by using up SEC-001's per-email limit with wrong passwords. The member waits, or an admin investigates; there's no permanent lockout.
 - SEC-001's per-IP limit uses the rightmost `X-Forwarded-For` entry. Until the app runs behind a reverse proxy that appends or overwrites that header, a client can set the value; nothing is publicly deployed before then.
+- Each password check uses about 19 MiB of memory (SEC-008), and SEC-001 only limits failures per hour, so a burst of sign-in requests at once can strain the small VPS.
 
 ### 11. Quality targets
 
@@ -654,7 +686,7 @@ There's no uptime target: one server has no redundancy (section 3). Section 13 c
   - There are no real-time updates; pages show current data when they load.
   - There are two environments: local development and the production VPS. No feature flags.
 - **Agent's choices:**
-  - DEC-002 (API endpoints): JSON over HTTPS, resource-style paths such as `/api/issues/WEB-42`, the STD-1 to STD-4 status codes (signing in, `POST /api/sessions` with email and password, may also answer `429` when a SEC-001 limit is reached; requesting a password reset link may answer `429`, and `503` when the email couldn't be sent, STD-6), and a request ID on creates (STD-5). Every endpoint needs a session except sign-in, sign-out (which succeeds with or without a session), requesting and using a password reset link, invitation acceptance and the webhook (API-003). Requesting a password reset link is exempt from NFR-003's 500 ms write limit, because it includes the call to the email service and STD-6 needs the send result before answering.
+  - DEC-002 (API endpoints): JSON over HTTPS, resource-style paths such as `/api/issues/WEB-42`, the STD-1 to STD-4 status codes (signing in, `POST /api/sessions` with email and password, may also answer `429` when a SEC-001 limit is reached; requesting a password reset link may answer `429`, and `503` when the email couldn't be sent, STD-6; sending or resending an invitation may also answer `503`), and a request ID on creates (STD-5). Every endpoint needs a session except sign-in, sign-out (which succeeds with or without a session), requesting and using a password reset link, invitation acceptance and the webhook (API-003). Requesting a password reset link and sending or resending an invitation are exempt from NFR-003's 500 ms write limit, because they include the call to the email service and STD-6 needs the send result before answering.
   - DEC-003 (email provider): it must have an HTTP API and bounce webhooks (API-003), fit within NFR-009's budget, send from the team's domain with SPF and DKIM, and keep its API key only in server config (OPS-006). If no provider fits, stop and ask.
   - DEC-004 (background jobs): run on the same VPS with no paid queue service, and survive a restart without losing pending notifications.
 
@@ -666,9 +698,10 @@ There's no uptime target: one server has no redundancy (section 3). Section 13 c
 - **OPS-002** A deploy shall be one command run from `main`. It runs the database migrations first and switches to the new version only if they succeed.
   - OPS-002.1: The migrations succeed → the new version serves traffic, with no manual steps. (Verify: ops)
   - OPS-002.2: A migration fails → the old version keeps running unchanged, and the command reports the error. (Verify: ops)
-- **OPS-003** The system shall back up the database daily at 03:00 UTC to storage off the VPS, keeping 14 daily backups. A restore is tested once before launch.
+- **OPS-003** The system shall back up the database daily at 03:00 UTC to storage off the VPS, keeping 14 daily backups. Backups are encrypted before they leave the VPS, and the storage fits within NFR-009. If a backup fails, the owner is emailed. A restore is tested once before launch.
   - OPS-003.1: The VPS disk is lost → the data is restored from the most recent backup, losing at most one day. (Verify: ops)
   - OPS-003.2: The 15th backup is taken → the oldest is deleted. (Verify: ops)
+  - OPS-003.3: The 03:00 backup fails → the owner gets an email about it. (Verify: ops)
 - **OPS-004** The previous release shall stay on the server, so one command switches back to it. Each release's migrations must also work with the previous release's code.
   - OPS-004.1: A deploy causes errors → the rollback command restores the previous version within 2 minutes, with no database restore needed. (Verify: ops)
 - **OPS-005** An external uptime check shall call `/health` every 5 minutes and email the owner when it fails twice in a row. `/health` answers `200` only when the database responds.
@@ -682,8 +715,8 @@ There's no uptime target: one server has no redundancy (section 3). Section 13 c
 
 | ID | Decision | Why |
 |---|---|---|
-| DEC-001 | R1 descriptions and comments use Markdown, shown formatted. | It's normal for the team and gives a clean path to rich text (F-010). |
-| DEC-005 | Test tools: Vitest with React Testing Library on jsdom, run through npm scripts, for all `Verify: auto` examples. There are no browser end-to-end tests; shared screen states are checked by component tests. | The owner chose one fast test setup with no browser end-to-end tool. |
+| DEC-001 | R1 descriptions and comments use GitHub-flavoured Markdown (tables, task lists, strikethrough and autolinks), shown formatted. Task-list checkboxes are shown but can't be ticked in the formatted view; members edit the text instead. | It's normal for the team and gives a clean path to rich text (F-010). |
+| DEC-005 | Test tools: Vitest with React Testing Library on jsdom, run through npm scripts, for all `Verify: auto` examples. Server tests run against a real test PostgreSQL database. There are no browser end-to-end tests; shared screen states are checked by component tests. | The owner chose one fast test setup with no browser end-to-end tool. |
 | DEC-006 | Generic error copy: a network or server error toast reads "Couldn't save. Try again." (STD-9), and an error state reads "Couldn't load this." beside Retry (STD-7). The STD-9 toast keeps its fixed 5 seconds with no dismiss or pause control. | The owner chose short, plain copy, and kept the fixed toast timing deliberately despite WCAG 2.2 timing guidance. |
 
 **Changelog**
