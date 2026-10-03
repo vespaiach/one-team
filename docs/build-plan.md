@@ -26,11 +26,20 @@ The agent then:
 
 If a task turns out too big for one session, the agent splits it here first (M1.3a, M1.3b, each with its own Reads, Needs and Done) and does only the first part.
 
-Tasks within a milestone run in the order listed unless **Needs** says otherwise. UI tasks test with component tests against a mocked API; the milestone's **Done when** is checked by hand in the browser.
+Each milestone starts with a **Run order** line. `→` means "after"; tasks joined by `∥` don't depend on each other and can run at the same time. UI tasks test with component tests against a mocked API; the milestone's **Done when** is checked by hand in the browser.
+
+## Running tasks in parallel
+
+- Run each parallel task in its own session and git worktree, branched from the commit where its **Needs** are all ticked.
+- Parallel tasks are chosen so they write different files, apart from the shared files a **Run order** line names. Merge them one at a time in the order listed; the later one rebases and resolves any conflict.
+- Every task ticks its own box in this file, so merges conflict here trivially. Keep both ticks.
+- "Ticked" in step 3 means ticked on the branch the task starts from. Don't start a task whose **Needs** are only done in another unmerged worktree.
 
 ---
 
 ## M0 Foundation
+
+**Run order:** M0.1 → M0.2 → **M0.3 ∥ M0.4** → **M0.5 ∥ M0.6**. M0.3 needs only M0.2, so it can also run alongside M0.5 and M0.6.
 
 - [ ] **M0.1 Schema and first migration.** Drizzle schema for every table and enum, and the first migration.
   - Reads: design §2 · spec §8
@@ -60,6 +69,8 @@ Tasks within a milestone run in the order listed unless **Needs** says otherwise
 **Done when:** `/health` returns `200`; `GET /api/anything` returns `401`; any page address loads the shell and shows sign-in.
 
 ## M1 Sign-in and account
+
+**Run order:** **M1.1 ∥ M1.4** → M1.2 → M1.3 → **M1.5 ∥ M1.6** → M1.7 → M1.8. M1.4 needs only M0.2, so it can also run alongside M1.2 and M1.3. Shared file: M1.5 and M1.6 both add to the SEC-001 limits module from M1.3.
 
 - [ ] **M1.1 Passwords and tokens.** Argon2id hashing, the password rules, token creation and hashing.
   - Reads: design §4.1, §4.2 · spec REQ-048, SEC-003, SEC-008
@@ -98,6 +109,8 @@ Tasks within a milestone run in the order listed unless **Needs** says otherwise
 
 ## M2 Members and invitations
 
+**Run order:** **M2.1 ∥ M2.3** → **M2.2 ∥ M2.5** → M2.4.
+
 - [ ] **M2.1 Invitation API.** Create (a resend if one is open), resend, revoke, list, look up; the invitation email template; a failed send saves nothing.
   - Reads: design §2.2, §3.3, §4.6, §5.3 · spec REQ-001, REQ-051, §9 "Email content"
   - Needs: M1.4, M1.2
@@ -122,6 +135,8 @@ Tasks within a milestone run in the order listed unless **Needs** says otherwise
 **Done when:** the admin invites a second person, who joins through the Mailpit link; the admin can then deactivate and reactivate them.
 
 ## M3 Projects and labels
+
+**Run order:** **M3.1 ∥ M3.2** → **M3.3 ∥ M3.4 ∥ M3.5** → **M3.6 ∥ M3.7**. M3.1 needs only M0.2, so it can start during M1.
 
 - [ ] **M3.1 Markdown module.** Rendering, HTML shown as text, the link filter, mention parsing, text extraction.
   - Reads: design §4.7 · spec SEC-002, DATA-001
@@ -156,6 +171,8 @@ Tasks within a milestone run in the order listed unless **Needs** says otherwise
 
 ## M4 Issues
 
+**Run order:** Run in order: M4.1 → M4.2 → M4.3 → M4.4 → M4.5. Each task builds on the one before.
+
 - [ ] **M4.1 Issue create API.** Numbering by project row lock, and `requestId`.
   - Reads: design §2.4, §3.3 · spec REQ-016, STD-5
   - Needs: M3.2
@@ -180,6 +197,8 @@ Tasks within a milestone run in the order listed unless **Needs** says otherwise
 **Done when:** a member can create, edit and delete issues from the issue page, and two members creating at once get different numbers.
 
 ## M5 Board
+
+**Run order:** **M5.1 ∥ M5.2** → M5.3 → M5.4 → M5.5. M5.1 needs only M0.4, so the spike can run as early as M1, which settles the drag-and-drop risk before any board code exists.
 
 - [ ] **M5.1 Drag-and-drop spike.** A throwaway page: React Aria `GridList` drag and drop across 5 columns, including automatic scrolling near a column's edges. Record the result as a decision in design §7; if it falls short, record the fallback.
   - Reads: design §6.5 · spec REQ-024, REQ-026 · React Aria docs for `GridList` and `useDragAndDrop`
@@ -206,6 +225,8 @@ Tasks within a milestone run in the order listed unless **Needs** says otherwise
 
 ## M6 List view
 
+**Run order:** Run in order: M6.1 → M6.2. M6.1 needs only M4.2, so it can run alongside M4.3–M4.5 and M5.
+
 - [ ] **M6.1 List API.** `pg_trgm` indexes; the search query (every typed word must match, `%` and `_` treated as plain characters); filters, sort, `offset` paging; unknown values ignored.
   - Reads: design §2.4, §3.3, §3.4 (paging) · spec REQ-036…039, NFR-004
   - Needs: M4.2
@@ -218,6 +239,8 @@ Tasks within a milestone run in the order listed unless **Needs** says otherwise
 **Done when:** every REQ-036…040 example passes, and a copied link reopens the same view.
 
 ## M7 Comments
+
+**Run order:** Run in order: M7.1 → M7.2 → M7.3.
 
 - [ ] **M7.1 Comments API.** List, post (with `requestId`), edit (with a version check), delete, for issues and projects; mentions written as `mentions` rows.
   - Reads: design §2.5, §3.3 (comments table) · spec REQ-031…034, REQ-046.1, DATA-001
@@ -236,6 +259,8 @@ Tasks within a milestone run in the order listed unless **Needs** says otherwise
 
 ## M8 My issues
 
+**Run order:** Run in order: M8.1 → M8.2. M8.1 needs only M4.2, so it can run alongside M5–M7.
+
 - [ ] **M8.1 My issues API.** `GET /api/my-issues`: grouped by status, sorted, with the 14-day window.
   - Reads: design §3.3 · spec REQ-041
   - Needs: M4.2
@@ -248,6 +273,8 @@ Tasks within a milestone run in the order listed unless **Needs** says otherwise
 **Done when:** sign-in lands on a correct My issues page.
 
 ## M9 Notifications
+
+**Run order:** M9.1 → M9.2 → **M9.3 ∥ M9.4 ∥ M9.5**. Shared file: M9.3 and M9.5 both hook into the worker loop from M9.2.
 
 - [ ] **M9.1 Creating notifications.** In the same transaction as assignments and new mentions, joining an existing email or creating one.
   - Reads: design §2.6 · spec REQ-043, REQ-044, REQ-045, §8 Notification
@@ -274,6 +301,8 @@ Tasks within a milestone run in the order listed unless **Needs** says otherwise
 
 ## M10 Operations
 
+**Run order:** M10.1 → **M10.2 ∥ M10.3 ∥ M10.4**. All three change the same VPS, so make each one's changes in its own script or config file.
+
 - [ ] **M10.1 Server.** PostgreSQL; Caddy with TLS, HSTS, security headers, `X-Forwarded-For` and an access log without `token`; systemd units for web and worker; journald keeping 14 days; `/etc/tracklite/env` with secrets.
   - Reads: design §1.1, §4.9 · spec SEC-005, OPS-006
   - Needs: M9.2
@@ -294,6 +323,8 @@ Tasks within a milestone run in the order listed unless **Needs** says otherwise
 **Done when:** a deploy from `main` and a rollback both work, and a backup has been restored into a scratch database.
 
 ## M11 Launch check
+
+**Run order:** **M11.1 ∥ M11.3 ∥ M11.4 ∥ M11.5** → M11.2. M11.3–M11.5 are hand checks, not agent tasks.
 
 - [ ] **M11.1 Seed data.** A script for the NFR-001 test data (50 projects, 10,000 issues, 50,000 comments).
   - Reads: spec NFR-001
