@@ -1,3 +1,4 @@
+import "server-only";
 import { readAppSettings } from "./config.ts";
 import { writeLogLine } from "./log.ts";
 import { clearSessionCookie, readSessionToken } from "./session.ts";

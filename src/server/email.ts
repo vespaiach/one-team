@@ -1,3 +1,4 @@
+import "server-only";
 import { readAppSettings } from "./config.ts";
 
 type EmailMessage = {

@@ -1,3 +1,4 @@
+import "server-only";
 import { and, eq, sql } from "drizzle-orm";
 import type { Database } from "./db.ts";
 import { isValidEmail } from "./emailAddress.ts";

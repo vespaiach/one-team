@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 if (existsSync(".env.local")) {
@@ -10,6 +11,13 @@ const testDatabaseUrl = process.env.TEST_DATABASE_URL;
 export default defineConfig({
   oxc: {
     jsx: { runtime: "automatic" },
+  },
+  resolve: {
+    alias: {
+      // Next resolves `server-only` to this no-op under its react-server
+      // condition; the package's default entry throws outside that bundle.
+      "server-only": fileURLToPath(new URL("node_modules/server-only/empty.js", import.meta.url)),
+    },
   },
   test: {
     globalSetup: ["scripts/prepare-test-db.ts"],

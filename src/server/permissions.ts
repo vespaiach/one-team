@@ -1,3 +1,4 @@
+import "server-only";
 import { ApiError, apiRoute } from "./api.ts";
 import { db } from "./db.ts";
 import type { Member } from "./members.ts";
