@@ -1,6 +1,6 @@
 ---
 product: "Tracklite"
-version: "0.8"
+version: "0.9"
 release: "R1"
 status: Ready to build
 updated: "2026-10-03"
@@ -62,6 +62,8 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
 | DEC-003 | Which transactional email provider to use | Agent's choice (limits in section 12) | API-002, API-003, NFR-008, NFR-009 |
 | DEC-004 | How background jobs run | Agent's choice (limits in section 12) | REQ-045, STD-6 |
 
+DEC-002, DEC-003 and DEC-004 are settled in `docs/tech-design.md` (sections 3, 5 and 1.4 respectively).
+
 ### 5. Glossary
 
 - **Member:** a person with an account.
@@ -105,13 +107,14 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
 
 **Rules and examples**
 
-- **REQ-001** When an admin invites an email address, the system shall email a single-use invitation link that expires after 7 days, and the admin can resend or revoke it. Emails are compared ignoring capitals. If the email belongs to an active member, the system shall refuse with "Already a member". If it belongs to a deactivated member, it shall refuse with "This person is deactivated. Reactivate them instead."
+- **REQ-001** When an admin invites an email address, the system shall email a single-use invitation link that expires after 7 days, and the admin can resend or revoke it. Emails are compared ignoring capitals. If the email belongs to an active member, the system shall refuse with "Already a member". If it belongs to a deactivated member, it shall refuse with "This person is deactivated. Reactivate them instead." If the email can't be sent, nothing is saved (a resent invitation keeps its previous link) and the admin sees "We couldn't send the email. Try again." (STD-6).
   - REQ-001.1: Admin invites `sam@acme.com` → email sent; the invitation shows as Pending. (Verify: auto)
   - REQ-001.2: Admin invites an existing member's email → "Already a member", no email. (Verify: auto)
   - REQ-001.3: Admin resends Sam's pending invitation → a new link is sent and the old link stops working. (Verify: auto)
   - REQ-001.4: Admin revokes Sam's invitation → the link stops working. (Verify: auto)
   - REQ-001.5: Admin invites `Sam@Acme.com` while `sam@acme.com` is a member → "Already a member". (Verify: auto)
   - REQ-001.6: Admin invites the email of deactivated member Jo → "This person is deactivated. Reactivate them instead.", no email. (Verify: auto)
+  - REQ-001.7: The email service is down when the admin invites `sam@acme.com` → "We couldn't send the email. Try again."; no invitation is listed. (Verify: auto)
 - **REQ-002** When a person who isn't signed in opens a valid invitation link, the system shall ask for their profile and a password (REQ-048), create them as a member, and sign them in. If a signed-in member opens an invitation link, the system shall ask them to sign out first. If the invitation expires or is revoked before the profile is submitted, no member is created.
   - REQ-002.1: Sam opens the link on day 3 and enters "Sam Lee", `sam` and a valid password → member created, signed in, lands on My issues. (Verify: auto)
   - REQ-002.2: Sam opens the link on day 8, or after already accepting it → "This invitation has expired. Ask an admin for a new one." (Verify: auto)
@@ -133,7 +136,7 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
   - REQ-048.2: `Sh0rt!pass` (10 characters) → field error "At least 12 characters". (Verify: auto)
   - REQ-048.3: A 129-character password → field error "Too long (max 128)". (Verify: auto)
   - REQ-048.4: A password chosen as ` secret phrase 1 ` (leading and trailing spaces) → only that exact text, spaces included, signs in. (Verify: auto)
-- **REQ-049** When a member changes their password from their profile, the system shall require their current password and a new one (REQ-048). A wrong current password gets the field error "Incorrect password" and nothing changes. On success, the member stays signed in on this browser and all their other sessions end.
+- **REQ-049** When a member changes their password from their profile, the system shall require their current password and a new one (REQ-048). A wrong current password gets the field error "Incorrect password" and nothing changes. On success, the member stays signed in on this browser and all their other sessions end, and the profile shows "Password changed. You've been signed out everywhere else."
   - REQ-049.1: Sam enters the right current password and a valid new one → saved; Sam stays signed in here and is signed out on their other computer. (Verify: auto)
   - REQ-049.2: Sam enters a wrong current password → field error "Incorrect password"; the old password still works. (Verify: auto)
 - **REQ-050** When someone clicks **Forgot password?** on the sign-in page and enters an email, the system shall email a single-use password reset link that expires after 30 minutes, only if the email belongs to an active member. The page shows "Check your email" either way, and requests are limited by SEC-001. Opening the link shows a form for a new password without using up the link. Submitting a valid new password (REQ-048) uses the link, sets the password, ends all of that member's sessions, signs them in on this browser and sends them to My issues. A successful reset also stops the member's other outstanding reset links from working. The link works in any browser.
@@ -148,7 +151,7 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
 - **REQ-006** A session shall last 30 days from the member's last activity. Signing out ends the session on that browser only.
   - REQ-006.1: Sam uses the app every day → stays signed in. (Verify: auto)
   - REQ-006.2: Sam returns after 31 days away → sign-in page (STD-1). (Verify: auto)
-- **REQ-007** When an admin deactivates a member, the system shall end all of that member's sessions immediately and block their sign-in. Their name stays on past work, marked "(deactivated)", and they can't be assigned or mentioned. The last admin can't be deactivated or lose the admin role.
+- **REQ-007** When an admin deactivates a member, the system shall ask "{Full name} will be signed out and can't sign in until reactivated." to confirm, then end all of that member's sessions immediately and block their sign-in. Their name stays on past work, marked "(deactivated)", and they can't be assigned or mentioned. The last admin can't be deactivated or lose the admin role.
   - REQ-007.1: Admin deactivates Sam → Sam's next page load goes to sign-in; signing in with Sam's correct password shows "Incorrect email or password.", and a password reset request sends nothing. (Verify: auto)
   - REQ-007.2: `WEB-42` was assigned to Sam → it still shows "Sam Lee (deactivated)", and Sam isn't in the assignee picker. (Verify: auto)
   - REQ-007.3: The only admin tries to deactivate themselves, or remove their own admin role → blocked with "There must be at least one admin." (Verify: auto)
@@ -190,7 +193,7 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
   - REQ-012.1: Member saves a description with a heading and a bullet list → shown formatted. (Verify: auto)
   - REQ-012.2: Description of 20,001 characters → field error "Too long (max 20,000)". (Verify: auto)
   - REQ-012.3: Description contains `<script>alert(1)</script>` → shown as text; nothing runs. (Verify: auto)
-- **REQ-013** When an admin archives a project, the system shall move it from the sidebar to an Archived list. It shall make its description, issues, comments and labels read-only, and hide its issues from My issues. An admin can unarchive it.
+- **REQ-013** When an admin archives a project, the system shall move it from the sidebar to an Archived list. It shall make its description, issues, comments and labels read-only, and hide its issues from My issues. An admin can unarchive it. With no archived projects, the Archived list shows "No archived projects." (STD-7)
   - REQ-013.1: Admin archives `WEB` → it disappears from the sidebar and appears under Archived; `WEB-42` opens read-only, with no edit or comment controls. (Verify: auto)
   - REQ-013.2: `WEB-42` is assigned to Sam → it no longer appears in Sam's My issues. (Verify: auto)
   - REQ-013.3: Admin unarchives `WEB` → it's back in the sidebar and fully editable, and `WEB-42` is back in Sam's My issues. (Verify: auto)
@@ -329,11 +332,12 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
 
 **Rules and examples**
 
-- **REQ-036** When a member opens the list view, the system shall show every issue in the project, including all Done and Canceled ones, newest-updated first. Rows load 100 at a time as the member scrolls. A title too long for one line is cut off with "…" and shown in full on hover. "Last updated" means the last change to any field or the description; comments don't count.
+- **REQ-036** When a member opens the list view, the system shall show every issue in the project, including all Done and Canceled ones, newest-updated first. Rows load 100 at a time as the member scrolls. A title too long for one line is cut off with "…" and shown in full on hover. "Last updated" means the last change to any field or the description; comments don't count, and neither does reordering a card within its column (a status change made by dragging does count).
   - REQ-036.1: `WEB` has 120 issues, 40 of them Done → the first 100 rows show, and the other 20 load on scrolling down. (Verify: auto)
   - REQ-036.2: `WEB-10` was Done 20 days ago → it's in the list (compare REQ-028). (Verify: auto)
   - REQ-036.3: `WEB` is archived → the list, filters, search and sort all work; rows open read-only (REQ-013). (Verify: auto)
   - REQ-036.4: A 200-character title → one line ending in "…"; hovering shows the full title. (Verify: manual)
+  - REQ-036.5: Sam drags `WEB-9` above `WEB-5` within In Progress → `WEB-9`'s last updated is unchanged; dragging it to In Review does change it. (Verify: auto)
 - **REQ-037** The system shall offer filters for status, assignee, priority and label. The assignee filter lists Unassigned, active members, and any deactivated member who still has issues in the project, marked "(deactivated)". Several values within one filter match any of them. Different filters must all match.
   - REQ-037.1: Status = In Progress and In Review, and Assignee = Sam → only Sam's issues that are in either status. (Verify: auto)
   - REQ-037.2: Assignee = Unassigned → only issues with no assignee. (Verify: auto)
@@ -373,7 +377,7 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
 **Rules and examples**
 
 - **REQ-031** When a member posts a comment on an issue or a project, the system shall save it as Markdown of 1 to 10,000 characters and show it formatted (DEC-001, SEC-002). It shows the author's name and initials and when it was posted: relative for the past 7 days ("5 min ago"), a date after that, and the exact date and time on hover. Content wider than the comment scrolls sideways inside it. @mentions follow DATA-001, and a double submit is handled by STD-5.
-  - REQ-031.1: Sam posts "Looks good. @alex can you review?" on `WEB-42` → shown with "Sam Lee · just now", and `@alex` is a link. (Verify: auto)
+  - REQ-031.1: Sam posts "Looks good. @alex can you review?" on `WEB-42` → shown with "Sam Lee · just now", and `@alex` is highlighted as a mention. (Verify: auto)
   - REQ-031.2: The comment box is empty or only spaces → the Post button is disabled. (Verify: auto)
   - REQ-031.3: A comment of 10,001 characters → field error "Too long (max 10,000)". (Verify: auto)
   - REQ-031.4: A comment posted 9 days ago → shows its date, such as "Sep 20". (Verify: auto)
@@ -452,7 +456,7 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
   - REQ-044.3: Alex edits a comment that already mentions `@sam` and adds `@jo` → only Jo is emailed. (Verify: auto)
   - REQ-044.4: One comment mentions `@sam` twice → Sam gets one email. (Verify: auto)
   - REQ-044.5: Alex mentions `@sam` in a comment on project `WEB` → the email links to the `WEB` project details page. (Verify: auto)
-- **REQ-045** The system shall wait 2 minutes before sending a notification. Notifications for the same member about the same issue or project within that time are combined into one email. A notification is dropped if, within that time, the assignment is undone, the mention is edited out, the comment holding it is deleted, or the recipient is deactivated. A failed send is retried as in STD-6. A bounce reported by the email service is logged and not retried; the action in the app is unaffected. Notifications for issues or projects deleted during the wait are still sent.
+- **REQ-045** The system shall send a notification 2 minutes after it's created. Further notifications for the same member about the same issue or project, created before that email goes out, join it in one email; they don't restart the wait. A notification is dropped if, within that time, the assignment is undone, the mention is edited out, the comment holding it is deleted, or the recipient is deactivated. A failed send is retried as in STD-6. A bounce reported by the email service is logged and not retried; the action in the app is unaffected. Notifications for issues or projects deleted during the wait are still sent.
   - REQ-045.1: Within 1 minute, Alex assigns `WEB-42` to Sam and mentions `@sam` in a comment on it → Sam gets one email covering both. (Verify: auto)
   - REQ-045.2: Alex assigns `WEB-42` to Sam, then reassigns it to Jo 30 seconds later → Sam gets nothing; Jo gets one email. (Verify: auto)
   - REQ-045.3: Alex mentions `@sam`, then edits the mention out within a minute → Sam gets nothing. (Verify: auto)
@@ -460,6 +464,7 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
   - REQ-045.5: Sam is deactivated during the wait → Sam's email isn't sent. (Verify: auto)
   - REQ-045.6: The email service reports that Sam's mailbox doesn't exist → the bounce is logged; nothing is resent. (Verify: auto)
   - REQ-045.7: Alex assigns `WEB-42` to Sam, and `WEB-42` is deleted a minute later → Sam still gets the email, and its link shows Not found (STD-4). (Verify: auto)
+  - REQ-045.8: Alex mentions `@sam` on `WEB-42` at 10:00 and again at 10:01:30, then at 10:02:30 → one email at about 10:02 covers the first two; the third goes in a new email at about 10:04:30. (Verify: auto)
 
 **Exceptions to standard behaviors:** None.
 **Uses:** Notification, Issue, Project, Comment, Member · DATA-001 (mentions) · STD-6 · REQ-007 · API-002, API-003
@@ -475,10 +480,10 @@ Tracklite is an issue tracker for my own small, invite-only team, which finds Li
 | STD-3 | Invalid input | The error shows next to the field, the form keeps everything typed, and nothing is saved. API: `422` with an error per field. |
 | STD-4 | Item not found | A "Not found" page with a link to My issues. This also covers a project key or issue ID that doesn't exist, such as `WEB-999`. API: `404`. |
 | STD-5 | Same action sent twice | The submit button is disabled while saving. Creating an issue or comment carries a request ID, so a retry or double-click never creates two. |
-| STD-6 | A service we depend on fails | The only outside service is email. If a password reset email fails, the member sees "We couldn't send the email. Try again." If a notification email fails, the app retries 3 times over about 15 minutes, then logs the failure; the action that caused it still succeeds. |
+| STD-6 | A service we depend on fails | The only outside service is email. If an invitation or password reset email fails, nothing is saved and the person sees "We couldn't send the email. Try again." If a notification email fails, the app retries 3 times over about 15 minutes, then logs the failure; the action that caused it still succeeds. |
 | STD-7 | Every screen | A loading indicator shows if loading takes more than 300 ms. Empty states name the next action ("No issues yet. Create one."). An error state shows "Couldn't load this." beside a Retry button (DEC-006). Speed targets are in section 11. |
 | STD-8 | Two members edit the same thing | Single fields such as status, assignee, priority and labels: the last save wins. Descriptions: if someone else saved since you opened the editor, nothing is saved. You see "This was changed by [name]. Copy your text and reload.", and your text stays in the editor. |
-| STD-9 | A form submission fails | A toast error appears, disappears after 5 seconds with no dismiss or pause control, and the form keeps everything typed (DEC-006). This covers failures not tied to one field, such as a network error, a server error, a `403` (STD-2) or a failed password reset email (STD-6). Validation errors stay next to their fields (STD-3), and the STD-8 conflict message stays in the editor. For a network error or a server error, the toast reads "Couldn't save. Try again." |
+| STD-9 | A form submission fails | A toast error appears, disappears after 5 seconds with no dismiss or pause control, and the form keeps everything typed (DEC-006). This covers failures not tied to one field, such as a network error, a server error, a `403` (STD-2) or a failed invitation or password reset email (STD-6). Validation errors stay next to their fields (STD-3), and the STD-8 conflict message stays in the editor. For a network error or a server error, the toast reads "Couldn't save. Try again." |
 
 ### 7. Roles and permissions
 
@@ -518,8 +523,8 @@ There are no private projects. Nobody, including admins, can see or set another 
 | Mention | The text it's in (an issue description or a comment), the member mentioned | Lets an edit email only new mentions (REQ-044). |
 | Notification | Recipient, kind (Assigned or Mentioned), issue or project, who caused it, send after, state (Pending, Sent, Dropped, Failed, Bounced) | "Send after" is 2 minutes after creation (REQ-045). |
 
-- **DATA-001** When a member types `@` in an issue description or a comment, the system shall suggest active members. A saved `@username` outside code that matches an active member becomes a mention, shown as a link to that member, and triggers F-008.
-  - DATA-001.1: Description contains `@sam` → shown as a link to Sam Lee; Sam is mentioned. (Verify: auto)
+- **DATA-001** When a member types `@` in an issue description or a comment, the system shall suggest active members. A saved `@username` outside code that matches an active member becomes a mention, shown highlighted (not a link, since there are no member pages) with the member's full name on hover, and triggers F-008.
+  - DATA-001.1: Description contains `@sam` → shown highlighted, with "Sam Lee" on hover; Sam is mentioned. (Verify: auto)
   - DATA-001.2: `@nobody` (no such member) → shown as plain text; no mention. (Verify: auto)
   - DATA-001.3: `@jo`, where Jo is deactivated → plain text; no mention (REQ-007). (Verify: auto)
   - DATA-001.4: `@sam` inside inline code or a code block → shown as code; no mention. (Verify: auto)
@@ -538,7 +543,49 @@ There are no private projects. Nobody, including admins, can see or set another 
 | API-001 | The app's own HTTP API, under `/api/…`, used only by its own web front end | Every feature. It isn't public or documented for outside use. Errors follow STD-1 to STD-4 (`401`, `403`, `422`, `404`). The exact list of endpoints is the agent's choice (DEC-002). |
 | API-002 | Outgoing email service (a transactional email provider, DEC-003) | Invitations (REQ-001), password reset links (REQ-050) and notifications (F-008). If it fails, see STD-6: a password reset request shows "We couldn't send the email", and notifications are retried 3 times. |
 | API-003 | `POST /webhooks/email` (bounce reports from the email service) | Marking notifications as Bounced (REQ-045.6). It accepts only requests signed by the email service; anything else gets `401`. |
-| API-004 | Page addresses: `/sign-in`, `/forgot-password`, `/reset-password?token=…`, `/my-issues`, `/project/{KEY}` (board), `/project/{KEY}/list`, `/project/{KEY}/detail`, `/project/{KEY}/labels`, `/issue/{ID}`, `/settings/members` | Links in emails and between members. Keys and IDs are matched ignoring capitals (REQ-016.5). The list view's filters go in the query string (REQ-040). |
+| API-004 | Page addresses: `/sign-in`, `/forgot-password`, `/reset-password?token=…`, `/invite?token=…`, `/my-issues`, `/project/{KEY}` (board), `/project/{KEY}/list`, `/project/{KEY}/detail`, `/project/{KEY}/labels`, `/project/{KEY}/settings`, `/projects/archived`, `/issue/{ID}`, `/settings/profile`, `/settings/members` | Links in emails and between members. Keys and IDs are matched ignoring capitals (REQ-016.5). The list view's filters go in the query string (REQ-040). |
+
+**Email content (API-002)**
+
+All emails are plain text. `{…}` are filled in when the email is sent, `{APP_URL}` is the app's address, links are full addresses, and every body ends with a blank line and `— Tracklite`.
+
+**Invitation** (REQ-001)
+- Subject: `{Inviter name} invited you to Tracklite`
+- Body:
+  ```
+  {Inviter name} invited you to join their team on Tracklite.
+
+  Accept the invitation: {APP_URL}/invite?token={token}
+
+  This link works once and expires in 7 days. If you weren't expecting this, you can ignore this email.
+  ```
+
+**Password reset** (REQ-050)
+- Subject: `Reset your Tracklite password`
+- Body:
+  ```
+  Someone asked to reset the password for {email} on Tracklite.
+
+  Choose a new password: {APP_URL}/reset-password?token={token}
+
+  This link works once and expires in 30 minutes. If you didn't ask for this, ignore this email; your password hasn't changed.
+  ```
+
+**Notification, one item** (REQ-043, REQ-044)
+
+| Kind | Subject | Body |
+|---|---|---|
+| Assigned | `[WEB-42] Fix login button: assigned to you by Alex Kim` | `Alex Kim assigned WEB-42 to you in Website.` + blank line + link to the issue |
+| Mentioned in a description | `[WEB-42] Fix login button: Alex Kim mentioned you` | `Alex Kim mentioned you in the description of WEB-42 (Website):` + blank line + excerpt + blank line + link to the issue |
+| Mentioned in an issue comment | same as above | `…in a comment on WEB-42 (Website):` + excerpt + link to `/issue/WEB-42#comment-{id}` |
+| Mentioned in a project comment | `[WEB] Website: Alex Kim mentioned you` | `…in a comment on project Website:` + excerpt + link to `/project/WEB/detail#comment-{id}` (REQ-044.5) |
+
+**Notification, combined** (REQ-045, several items in one email)
+- Subject: `[WEB-42] Fix login button: {n} updates for you`. Or `[WEB] Website: {n} updates for you` for a project.
+- Body: each item's body from the table above, oldest first, separated by a line holding `---`.
+- The subject uses the issue title and project name from the **newest** item, so a title renamed during the wait shows its latest version.
+
+**The excerpt** (REQ-044): the text with Markdown formatting stripped and whitespace collapsed, cut at 500 characters, with `…` added if it was cut. It's taken when the notification is created, so later edits don't change it.
 
 ### 10. Security and privacy
 
@@ -596,7 +643,7 @@ There's no uptime target: one server has no redundancy (section 3). Section 13 c
 
 ### 12. Stack and constraints
 
-- **Stack:** Next.js (TypeScript), PostgreSQL, postgres.js (tagged SQL), all on a single VPS. Email goes through a transactional email service (API-002). Automated tests are unit and component tests only, using Vitest with React Testing Library on jsdom, run through npm scripts; there are no browser end-to-end tests (DEC-005). Lint uses Biome. UI uses the Hairline Design System, styled with Tailwind CSS v4 and built on React Aria Components.
+- **Stack:** Next.js (TypeScript), PostgreSQL via Drizzle ORM (its query builder, with raw SQL only where the builder can't express a query), all on a single VPS. The front end is a single-page app: Next.js serves one HTML shell for every page address, and routing, page transitions and data fetching all happen in the browser, using React Router and Redux Toolkit (RTK Query for server data). Email goes through a transactional email service (API-002). Automated tests are unit and component tests only, using Vitest with React Testing Library on jsdom, run through npm scripts; there are no browser end-to-end tests (DEC-005). Lint uses Biome. UI uses the Hairline Design System, styled with Tailwind CSS v4 and built on React Aria Components.
 - **Commands:** build, test and lint commands live in the npm scripts in `package.json`. AGENTS.md tells agents to use them and doesn't copy them.
 - **Boundaries:**
   - This spec is the source of truth for product behavior.
@@ -641,6 +688,7 @@ There's no uptime target: one server has no redundancy (section 3). Section 13 c
 
 **Changelog**
 
+- **0.9 (2026-10-03):** Section 12 names Drizzle ORM instead of postgres.js, reversing the 0.7 change. Reordering a card within its column doesn't change "last updated" (REQ-036, new REQ-036.5). The notification wait is fixed from the first notification, not restarted by later ones (REQ-045, new REQ-045.8). A failed invitation email saves nothing and shows "We couldn't send the email. Try again." (REQ-001, new REQ-001.7, STD-6, STD-9). Mentions are shown highlighted with the full name on hover, not as links (DATA-001, DATA-001.1, REQ-031.1). The wording of every email is defined (section 9, Email content). API-004 lists the invitation, project settings, archived projects and profile pages. Copy added for a password change (REQ-049), the deactivate confirmation (REQ-007) and an empty Archived list (REQ-013). The front end is a single-page app with React Router and Redux Toolkit (section 12).
 - **0.8 (2026-10-03):** Sign-in moves from magic links to email and password. Members choose a password when accepting an invitation (REQ-002) and sign in with email and password (new REQ-047). Passwords are 12 to 128 characters with no character-type rules (new REQ-048), can be changed from the profile (new REQ-049, REQ-003.3), and are reset through an emailed link valid for 30 minutes (new REQ-050). REQ-004 and REQ-005 are superseded. SEC-001 limits failed sign-ins and reset requests; passwords are stored as Argon2id hashes and never logged (new SEC-008, SEC-007). The Magic link entity becomes Password reset link (section 8, DATA-004). Two-factor authentication, passkeys and outside identity providers are out of scope (section 3). The setup command asks for the first admin's password (OPS-001). Updated to match: glossary, REQ-007.1, REQ-008.1, STD-6, STD-9, section 7, API-002, API-004, NFR-008, DEC-002 and the accepted limitations.
 - **0.7 (2026-10-01):** Sign-in details settled while specifying magic-link sign-in. A signed-in member opening someone else's invitation or magic link is asked to sign out, with their full name shown (REQ-002.3, new REQ-005.5). Full names are trimmed, can't be blank and are refused with "Too long (max 60)" past 60 characters, and initials are defined (REQ-003, new REQ-003.4). The magic-link page address is listed (API-004). The SEC-001 limit message shows inline. The session cookie is sent on top-level link clicks from other sites but never on cross-site form posts or background requests, and its HTTPS-only rule applies outside local development (`NODE_ENV` other than `production`) (SEC-004). Section 12 names postgres.js instead of Drizzle ORM. Requesting a sign-in link may answer `429` and `503`, sign-out works with or without a session (DEC-002), and requesting a sign-in link is exempt from NFR-003's write limit. DATA-004 also deletes sign-in limit records and sign-in request records. Accepted limitations recorded in section 10.
 - **0.6 (2026-10-01):** UI stack named in section 12: Hairline Design System on Tailwind CSS v4 and React Aria Components.
