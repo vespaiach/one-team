@@ -1,11 +1,13 @@
+import { eq, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from "vitest";
 import { db } from "../../../../server/db.ts";
+import { members, sessions } from "../../../../server/schema.ts";
 import { validateSession } from "../../../../server/session.ts";
 import { hashToken, newToken } from "../../../../server/tokens.ts";
 import * as catchAll from "../../[[...path]]/route.ts";
 import * as route from "./route.ts";
 
-const sql = db();
+const database = db();
 
 let writeSpy: MockInstance<typeof process.stdout.write>;
 
@@ -18,35 +20,37 @@ function loggedLines(): Record<string, unknown>[] {
     .map((line) => JSON.parse(line) as Record<string, unknown>);
 }
 
-async function insertMember(): Promise<string> {
+async function insertMember(): Promise<number> {
   const suffix = crypto.randomUUID().slice(0, 8);
-  const [row] = await sql<{ id: string }[]>`
-    insert into members (email, full_name, username, role)
-    values (${`current-${suffix}@acme.com`}, ${`Current Member ${suffix}`}, ${`current-${suffix}`}, 'member')
-    returning id::text as id
-  `;
+  const [row] = await database
+    .insert(members)
+    .values({
+      email: `current-${suffix}@acme.com`,
+      fullName: `Current Member ${suffix}`,
+      username: `current-${suffix}`,
+      role: "member",
+    })
+    .returning({ id: members.id });
   return row.id;
 }
 
-async function insertSession(memberId: string, options: { ended?: boolean } = {}): Promise<string> {
+async function insertSession(memberId: number, options: { ended?: boolean } = {}): Promise<string> {
   const token = newToken();
-  await sql`
-    insert into sessions (member_id, token_hash, request_id, ended_at)
-    values (
-      ${memberId},
-      ${hashToken(token)},
-      ${crypto.randomUUID()},
-      case when ${options.ended === true} then now() - interval '1 day' end
-    )
-  `;
+  await database.insert(sessions).values({
+    memberId,
+    tokenHash: hashToken(token),
+    requestId: crypto.randomUUID(),
+    endedAt: options.ended === true ? sql`now() - interval '1 day'` : null,
+  });
   return token;
 }
 
 async function endedAt(token: string): Promise<Date | null> {
-  const [row] = await sql<{ ended_at: Date | null }[]>`
-    select ended_at from sessions where token_hash = ${hashToken(token)}
-  `;
-  return row.ended_at;
+  const [row] = await database
+    .select({ endedAt: sessions.endedAt })
+    .from(sessions)
+    .where(eq(sessions.tokenHash, hashToken(token)));
+  return row.endedAt;
 }
 
 const context = { params: Promise.resolve({}) };
@@ -75,7 +79,7 @@ function expectClearingCookie(response: Response): void {
 }
 
 afterAll(async () => {
-  await sql.end();
+  await database.$client.end();
 });
 
 describe("DELETE /api/sessions/current", () => {
@@ -138,8 +142,8 @@ describe("DELETE /api/sessions/current", () => {
     expect(response.status).toBe(204);
     expect(await endedAt(laptop)).toBeInstanceOf(Date);
     expect(await endedAt(desktop)).toBeNull();
-    expect(await validateSession(sql, laptop)).toBeNull();
-    expect(await validateSession(sql, desktop)).toMatchObject({ id: memberId });
+    expect(await validateSession(database, laptop)).toBeNull();
+    expect(await validateSession(database, desktop)).toMatchObject({ id: memberId });
   });
 
   it("answers 403 to a cross-site request and leaves the session live", async () => {
@@ -158,7 +162,7 @@ describe("DELETE /api/sessions/current", () => {
     expect(await response.json()).toEqual({ error: { message: "You don't have permission to do that." } });
     expect(response.headers.getSetCookie().filter((value) => value.startsWith("session="))).toEqual([]);
     expect(await endedAt(token)).toBeNull();
-    expect(await validateSession(sql, token)).toMatchObject({ id: memberId });
+    expect(await validateSession(database, token)).toMatchObject({ id: memberId });
   });
 
   it("makes the signed-out cookie value answer 401 when it is sent again", async () => {

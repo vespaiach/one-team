@@ -4,7 +4,7 @@ import NotFound from "./not-found.tsx";
 
 vi.mock("../server/session.ts", () => ({
   requireCurrentMember: vi.fn(async () => ({
-    id: "1",
+    id: 1,
     fullName: "Owner Name",
     username: "owner",
     role: "admin",

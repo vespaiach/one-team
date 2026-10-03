@@ -1,9 +1,10 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import type { Sql, TransactionSql } from "postgres";
+import { and, eq, gt, isNull, sql } from "drizzle-orm";
 import { cache } from "react";
-import { db } from "./db.ts";
-import type { Member } from "./members.ts";
+import { type Database, db, type Executor } from "./db.ts";
+import { type Member, memberColumns } from "./members.ts";
+import { members, sessions } from "./schema.ts";
 import { hashToken, newToken } from "./tokens.ts";
 
 const cookieName = "session";
@@ -35,37 +36,38 @@ export function readSessionToken(request: Request): string | null {
   return null;
 }
 
-export async function validateSession(sql: Sql, token: string): Promise<Member | null> {
-  const [member] = await sql<Member[]>`
-    update sessions set last_active_at = now()
-    from members
-    where sessions.member_id = members.id
-      and sessions.token_hash = ${hashToken(token)}
-      and sessions.ended_at is null
-      and sessions.last_active_at > now() - interval '30 days'
-      and members.active
-    returning members.id::text as id, members.full_name as "fullName", members.username, members.role
-  `;
+export async function validateSession(database: Database, token: string): Promise<Member | null> {
+  const [member] = await database
+    .update(sessions)
+    .set({ lastActiveAt: sql`now()` })
+    .from(members)
+    .where(
+      and(
+        eq(sessions.memberId, members.id),
+        eq(sessions.tokenHash, hashToken(token)),
+        isNull(sessions.endedAt),
+        gt(sessions.lastActiveAt, sql`now() - interval '30 days'`),
+        eq(members.active, true),
+      ),
+    )
+    .returning(memberColumns);
   return member ?? null;
 }
 
 export async function startSession(
-  sql: Sql | TransactionSql,
-  { memberId, magicLinkId, requestId }: { memberId: string; magicLinkId: string; requestId: string },
+  database: Executor,
+  { memberId, magicLinkId, requestId }: { memberId: number; magicLinkId: number; requestId: string },
 ): Promise<string> {
   const token = newToken();
-  await sql`
-    insert into sessions (member_id, token_hash, magic_link_id, request_id)
-    values (${memberId}, ${hashToken(token)}, ${magicLinkId}, ${requestId})
-  `;
+  await database.insert(sessions).values({ memberId, tokenHash: hashToken(token), magicLinkId, requestId });
   return token;
 }
 
-export async function endSession(sql: Sql | TransactionSql, token: string): Promise<void> {
-  await sql`
-    update sessions set ended_at = now()
-    where token_hash = ${hashToken(token)} and ended_at is null
-  `;
+export async function endSession(database: Executor, token: string): Promise<void> {
+  await database
+    .update(sessions)
+    .set({ endedAt: sql`now()` })
+    .where(and(eq(sessions.tokenHash, hashToken(token)), isNull(sessions.endedAt)));
 }
 
 export const currentMember = cache(async (): Promise<Member | null> => {

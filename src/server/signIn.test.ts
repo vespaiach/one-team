@@ -1,7 +1,10 @@
 import { randomUUID } from "node:crypto";
-import postgres from "postgres";
+import { and, eq, sql } from "drizzle-orm";
+import type { PgUpdateSetSource } from "drizzle-orm/pg-core";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import { ApiError } from "./api.ts";
+import { connect } from "./db.ts";
+import { magicLinks, members, sessions, signInAttempts, signInRequests } from "./schema.ts";
 import { endSession, validateSession } from "./session.ts";
 import { landingState, redeemSignInLink, requestSignInLink } from "./signIn.ts";
 import { hashToken, newToken } from "./tokens.ts";
@@ -14,12 +17,12 @@ function testDatabaseUrl(): string {
   return url;
 }
 
-const sql = postgres(testDatabaseUrl(), { onnotice: () => {} });
+const database = connect(testDatabaseUrl());
 
 type SentEmail = { to: string; subject: string; text: string };
 
 type LinkRow = {
-  id: string;
+  id: number;
   token_hash: string;
   destination: string | null;
   expiry_seconds: number;
@@ -37,27 +40,36 @@ function uniqueKey(): string {
   return randomUUID().slice(0, 8);
 }
 
-async function insertMember(values: { email: string; active?: boolean; fullName?: string }): Promise<string> {
+async function insertMember(values: { email: string; active?: boolean; fullName?: string }): Promise<number> {
   const key = uniqueKey();
-  const [row] = await sql<{ id: string }[]>`
-    insert into members (email, full_name, username, role, active)
-    values (${values.email}, ${values.fullName ?? `Member ${key}`}, ${`m-${key}`}, 'member', ${values.active ?? true})
-    returning id::text as id
-  `;
+  const [row] = await database
+    .insert(members)
+    .values({
+      email: values.email,
+      fullName: values.fullName ?? `Member ${key}`,
+      username: `m-${key}`,
+      role: "member",
+      active: values.active ?? true,
+    })
+    .returning({ id: members.id });
   return row.id;
 }
 
-async function linkRows(memberId: string): Promise<LinkRow[]> {
-  return sql<LinkRow[]>`
-    select id::text as id, token_hash, destination,
-      extract(epoch from expires_at - created_at)::float8 as expiry_seconds
-    from magic_links where member_id = ${memberId} order by id
-  `;
+async function linkRows(memberId: number): Promise<LinkRow[]> {
+  return database
+    .select({
+      id: magicLinks.id,
+      token_hash: magicLinks.tokenHash,
+      destination: magicLinks.destination,
+      expiry_seconds: sql<number>`extract(epoch from ${magicLinks.expiresAt} - ${magicLinks.createdAt})::float8`,
+    })
+    .from(magicLinks)
+    .where(eq(magicLinks.memberId, memberId))
+    .orderBy(magicLinks.id);
 }
 
 async function linkCount(): Promise<number> {
-  const [row] = await sql<{ count: number }[]>`select count(*)::int as count from magic_links`;
-  return row.count;
+  return database.$count(magicLinks);
 }
 
 function sentEmails(): SentEmail[] {
@@ -102,7 +114,7 @@ afterEach(() => {
 });
 
 afterAll(async () => {
-  await sql.end();
+  await database.$client.end();
 });
 
 describe("requestSignInLink", () => {
@@ -110,7 +122,7 @@ describe("requestSignInLink", () => {
     const email = `Sam.${uniqueKey()}@Acme.com`;
     const memberId = await insertMember({ email });
 
-    const result = await requestSignInLink(sql, {
+    const result = await requestSignInLink(database, {
       email: email.toLowerCase(),
       requestId: randomUUID(),
       next: undefined,
@@ -137,7 +149,7 @@ describe("requestSignInLink", () => {
   it("REQ-004.2 non-member gets the same answer and no email is sent", async () => {
     const before = await linkCount();
 
-    const result = await requestSignInLink(sql, {
+    const result = await requestSignInLink(database, {
       email: `stranger.${uniqueKey()}@x.com`,
       requestId: randomUUID(),
       next: undefined,
@@ -153,7 +165,7 @@ describe("requestSignInLink", () => {
     const key = uniqueKey();
     const memberId = await insertMember({ email: `sam-${key}@acme.com` });
 
-    const result = await requestSignInLink(sql, {
+    const result = await requestSignInLink(database, {
       email: `Sam-${key}@Acme.com`,
       requestId: randomUUID(),
       next: undefined,
@@ -170,23 +182,20 @@ describe("requestSignInLink", () => {
     const memberId = await insertMember({ email });
     const ip = uniqueIp();
 
-    await requestSignInLink(sql, { email, requestId: randomUUID(), next: undefined, ip });
-    await requestSignInLink(sql, { email, requestId: randomUUID(), next: undefined, ip });
+    await requestSignInLink(database, { email, requestId: randomUUID(), next: undefined, ip });
+    await requestSignInLink(database, { email, requestId: randomUUID(), next: undefined, ip });
 
     const tokens = sentEmails().map((sent) => tokenOf(linkIn(sent.text)));
     expect(tokens).toHaveLength(2);
     expect(tokens[0]).not.toBe(tokens[1]);
     for (const token of tokens) {
-      const answer = await redeemSignInLink(sql, { token, requestId: randomUUID(), sessionToken: null });
+      const answer = await redeemSignInLink(database, { token, requestId: randomUUID(), sessionToken: null });
       expect(answer).toMatchObject({ outcome: "signedIn" });
     }
     const links = await linkRows(memberId);
     expect(links).toHaveLength(2);
     for (const link of links) {
-      const [row] = await sql<{ count: number }[]>`
-        select count(*)::int as count from sessions where magic_link_id = ${link.id}
-      `;
-      expect(row.count).toBe(1);
+      expect(await database.$count(sessions, eq(sessions.magicLinkId, link.id))).toBe(1);
     }
   });
 
@@ -194,7 +203,7 @@ describe("requestSignInLink", () => {
     const email = `gone.${uniqueKey()}@acme.com`;
     const memberId = await insertMember({ email, active: false });
 
-    const result = await requestSignInLink(sql, {
+    const result = await requestSignInLink(database, {
       email,
       requestId: randomUUID(),
       next: undefined,
@@ -230,7 +239,12 @@ describe("requestSignInLink", () => {
     const email = `next.${uniqueKey()}@acme.com`;
     const memberId = await insertMember({ email });
 
-    const result = await requestSignInLink(sql, { email, requestId: randomUUID(), next, ip: uniqueIp() });
+    const result = await requestSignInLink(database, {
+      email,
+      requestId: randomUUID(),
+      next,
+      ip: uniqueIp(),
+    });
 
     expect(result).toEqual({ outcome: "checkEmail" });
     const links = await linkRows(memberId);
@@ -245,11 +259,21 @@ describe("requestSignInLink", () => {
     const requestId = randomUUID();
     const ip = uniqueIp();
 
-    await requestSignInLink(sql, { email, requestId, next: "/first", ip });
+    await requestSignInLink(database, { email, requestId, next: "/first", ip });
     fetchMock.mockClear();
 
-    const invalidRepeat = await requestSignInLink(sql, { email: "nope", requestId, next: "/second", ip });
-    const otherRepeat = await requestSignInLink(sql, { email: otherEmail, requestId, next: "/third", ip });
+    const invalidRepeat = await requestSignInLink(database, {
+      email: "nope",
+      requestId,
+      next: "/second",
+      ip,
+    });
+    const otherRepeat = await requestSignInLink(database, {
+      email: otherEmail,
+      requestId,
+      next: "/third",
+      ip,
+    });
 
     expect(invalidRepeat).toEqual({ outcome: "checkEmail" });
     expect(otherRepeat).toEqual({ outcome: "checkEmail" });
@@ -259,7 +283,7 @@ describe("requestSignInLink", () => {
   });
 
   it("refuses an invalid email with the field error", async () => {
-    const attempt = requestSignInLink(sql, {
+    const attempt = requestSignInLink(database, {
       email: "nope",
       requestId: randomUUID(),
       next: undefined,
@@ -283,7 +307,7 @@ describe("requestSignInLink", () => {
     const email = `rid.${uniqueKey()}@acme.com`;
     const memberId = await insertMember({ email });
 
-    const attempt = requestSignInLink(sql, { email, requestId, next: undefined, ip: uniqueIp() });
+    const attempt = requestSignInLink(database, { email, requestId, next: undefined, ip: uniqueIp() });
 
     await expect(attempt).rejects.toBeInstanceOf(ApiError);
     await expect(attempt).rejects.toMatchObject({ status: 422, message: "Invalid input", fields: undefined });
@@ -293,59 +317,79 @@ describe("requestSignInLink", () => {
 });
 
 type SessionRow = {
-  id: string;
-  member_id: string;
-  magic_link_id: string | null;
+  id: number;
+  member_id: number;
+  magic_link_id: number | null;
   token_hash: string;
   ended_at: Date | null;
 };
 
 type RedeemAnswer = Awaited<ReturnType<typeof redeemSignInLink>>;
 
-async function newMember(fullName?: string): Promise<{ id: string; fullName: string; username: string }> {
+async function newMember(fullName?: string): Promise<{ id: number; fullName: string; username: string }> {
   const id = await insertMember({ email: `use.${uniqueKey()}@acme.com`, fullName });
-  const [row] = await sql<{ fullName: string; username: string }[]>`
-    select full_name as "fullName", username from members where id = ${id}
-  `;
+  const [row] = await database
+    .select({ fullName: members.fullName, username: members.username })
+    .from(members)
+    .where(eq(members.id, id));
   return { id, ...row };
 }
 
-async function insertLink(memberId: string, destination: string | null = null): Promise<string> {
+async function insertLink(memberId: number, destination: string | null = null): Promise<string> {
   const token = newToken();
-  await sql`
-    insert into magic_links (member_id, token_hash, destination, expires_at)
-    values (${memberId}, ${hashToken(token)}, ${destination}, now() + interval '15 minutes')
-  `;
+  await database.insert(magicLinks).values({
+    memberId,
+    tokenHash: hashToken(token),
+    destination,
+    expiresAt: sql`now() + interval '15 minutes'`,
+  });
   return token;
 }
 
-async function linkState(token: string): Promise<Record<string, unknown>> {
-  const [row] = await sql<Record<string, unknown>[]>`
-    select * from magic_links where token_hash = ${hashToken(token)}
-  `;
+async function setLink(token: string, values: PgUpdateSetSource<typeof magicLinks>): Promise<void> {
+  await database
+    .update(magicLinks)
+    .set(values)
+    .where(eq(magicLinks.tokenHash, hashToken(token)));
+}
+
+async function linkState(token: string): Promise<typeof magicLinks.$inferSelect> {
+  const [row] = await database
+    .select()
+    .from(magicLinks)
+    .where(eq(magicLinks.tokenHash, hashToken(token)));
   return row;
 }
 
+const sessionRowColumns = {
+  id: sessions.id,
+  member_id: sessions.memberId,
+  magic_link_id: sessions.magicLinkId,
+  token_hash: sessions.tokenHash,
+  ended_at: sessions.endedAt,
+};
+
 async function sessionFor(requestId: string): Promise<SessionRow | undefined> {
-  const [row] = await sql<SessionRow[]>`
-    select id::text as id, member_id::text as member_id, magic_link_id::text as magic_link_id, token_hash, ended_at
-    from sessions where request_id = ${requestId}
-  `;
+  const [row] = await database
+    .select(sessionRowColumns)
+    .from(sessions)
+    .where(eq(sessions.requestId, requestId));
   return row;
 }
 
 async function sessionByToken(token: string): Promise<SessionRow> {
-  const [row] = await sql<SessionRow[]>`
-    select id::text as id, member_id::text as member_id, magic_link_id::text as magic_link_id, token_hash, ended_at
-    from sessions where token_hash = ${hashToken(token)}
-  `;
+  const [row] = await database
+    .select(sessionRowColumns)
+    .from(sessions)
+    .where(eq(sessions.tokenHash, hashToken(token)));
   return row;
 }
 
-async function allSessionHashes(): Promise<{ id: string; token_hash: string }[]> {
-  return sql<
-    { id: string; token_hash: string }[]
-  >`select id::text as id, token_hash from sessions order by id`;
+async function allSessionHashes(): Promise<{ id: number; token_hash: string }[]> {
+  return database
+    .select({ id: sessions.id, token_hash: sessions.tokenHash })
+    .from(sessions)
+    .orderBy(sessions.id);
 }
 
 function sessionTokenOf(answer: RedeemAnswer): string {
@@ -355,23 +399,24 @@ function sessionTokenOf(answer: RedeemAnswer): string {
   return answer.sessionToken;
 }
 
-async function signIn(memberId: string): Promise<string> {
+async function signIn(memberId: number): Promise<string> {
   const token = await insertLink(memberId);
-  return sessionTokenOf(await redeemSignInLink(sql, { token, requestId: randomUUID(), sessionToken: null }));
+  return sessionTokenOf(
+    await redeemSignInLink(database, { token, requestId: randomUUID(), sessionToken: null }),
+  );
 }
 
 describe("redeemSignInLink", () => {
   it("REQ-005.1 a link sent 10 minutes ago signs in", async () => {
     const sam = await newMember();
     const token = await insertLink(sam.id, "/project/WEB");
-    await sql`
-      update magic_links
-      set created_at = created_at - interval '10 minutes', expires_at = expires_at - interval '10 minutes'
-      where token_hash = ${hashToken(token)}
-    `;
+    await setLink(token, {
+      createdAt: sql`${magicLinks.createdAt} - interval '10 minutes'`,
+      expiresAt: sql`${magicLinks.expiresAt} - interval '10 minutes'`,
+    });
     const requestId = randomUUID();
 
-    const answer = await redeemSignInLink(sql, { token, requestId, sessionToken: null });
+    const answer = await redeemSignInLink(database, { token, requestId, sessionToken: null });
 
     expect(answer).toEqual({
       outcome: "signedIn",
@@ -379,22 +424,22 @@ describe("redeemSignInLink", () => {
       sessionToken: expect.any(String),
     });
     const link = await linkState(token);
-    expect(link.used_at).not.toBeNull();
+    expect(link.usedAt).not.toBeNull();
     const session = await sessionFor(requestId);
     expect(session).toMatchObject({
       member_id: sam.id,
-      magic_link_id: String(link.id),
+      magic_link_id: link.id,
       token_hash: hashToken(sessionTokenOf(answer)),
       ended_at: null,
     });
-    expect(await validateSession(sql, sessionTokenOf(answer))).toMatchObject({ id: sam.id });
+    expect(await validateSession(database, sessionTokenOf(answer))).toMatchObject({ id: sam.id });
   });
 
   it("sends a link without a stored destination to /my-issues", async () => {
     const sam = await newMember();
     const token = await insertLink(sam.id);
 
-    const answer = await redeemSignInLink(sql, { token, requestId: randomUUID(), sessionToken: null });
+    const answer = await redeemSignInLink(database, { token, requestId: randomUUID(), sessionToken: null });
 
     expect(answer).toMatchObject({ outcome: "signedIn", destination: "/my-issues" });
   });
@@ -402,17 +447,17 @@ describe("redeemSignInLink", () => {
   it("REQ-005.2 an expired or used link shows expired", async () => {
     const sam = await newMember();
     const expired = await insertLink(sam.id);
-    await sql`update magic_links set expires_at = now() - interval '1 second' where token_hash = ${hashToken(expired)}`;
+    await setLink(expired, { expiresAt: sql`now() - interval '1 second'` });
     const used = await insertLink(sam.id);
-    await sql`update magic_links set used_at = now() where token_hash = ${hashToken(used)}`;
+    await setLink(used, { usedAt: sql`now()` });
 
     for (const token of [expired, used]) {
       const requestId = randomUUID();
-      const answer = await redeemSignInLink(sql, { token, requestId, sessionToken: null });
+      const answer = await redeemSignInLink(database, { token, requestId, sessionToken: null });
       expect(answer).toEqual({ outcome: "expired" });
       expect(await sessionFor(requestId)).toBeUndefined();
     }
-    expect((await linkState(expired)).used_at).toBeNull();
+    expect((await linkState(expired)).usedAt).toBeNull();
   });
 
   it.each<[string, unknown]>([
@@ -424,7 +469,7 @@ describe("redeemSignInLink", () => {
   ])("answers expired for %s", async (_name, token) => {
     const requestId = randomUUID();
 
-    const answer = await redeemSignInLink(sql, { token, requestId, sessionToken: null });
+    const answer = await redeemSignInLink(database, { token, requestId, sessionToken: null });
 
     expect(answer).toEqual({ outcome: "expired" });
     expect(await sessionFor(requestId)).toBeUndefined();
@@ -435,10 +480,10 @@ describe("redeemSignInLink", () => {
     const token = await insertLink(id);
     const requestId = randomUUID();
 
-    const answer = await redeemSignInLink(sql, { token, requestId, sessionToken: null });
+    const answer = await redeemSignInLink(database, { token, requestId, sessionToken: null });
 
     expect(answer).toEqual({ outcome: "expired" });
-    expect((await linkState(token)).used_at).toBeNull();
+    expect((await linkState(token)).usedAt).toBeNull();
     expect(await sessionFor(requestId)).toBeUndefined();
   });
 
@@ -450,11 +495,11 @@ describe("redeemSignInLink", () => {
     const sam = await newMember();
     const token = await insertLink(sam.id);
 
-    const attempt = redeemSignInLink(sql, { token, requestId, sessionToken: null });
+    const attempt = redeemSignInLink(database, { token, requestId, sessionToken: null });
 
     await expect(attempt).rejects.toBeInstanceOf(ApiError);
     await expect(attempt).rejects.toMatchObject({ status: 422, message: "Invalid input" });
-    expect((await linkState(token)).used_at).toBeNull();
+    expect((await linkState(token)).usedAt).toBeNull();
   });
 
   it("REQ-005.3 opening the landing page does not use the link", async () => {
@@ -462,32 +507,37 @@ describe("redeemSignInLink", () => {
     const token = await insertLink(sam.id);
     const before = await linkState(token);
 
-    expect(await landingState(sql, { token, member: null })).toEqual({ state: "signIn" });
+    expect(await landingState(database, { token, member: null })).toEqual({ state: "signIn" });
 
     expect(await linkState(token)).toEqual(before);
-    const answer = await redeemSignInLink(sql, { token, requestId: randomUUID(), sessionToken: null });
+    const answer = await redeemSignInLink(database, { token, requestId: randomUUID(), sessionToken: null });
     expect(answer).toMatchObject({ outcome: "signedIn" });
   });
 
   it("gives a signed-out visitor the Sign in button for an unknown and for an expired token", async () => {
     const sam = await newMember();
     const expired = await insertLink(sam.id);
-    await sql`update magic_links set expires_at = now() - interval '1 second' where token_hash = ${hashToken(expired)}`;
+    await setLink(expired, { expiresAt: sql`now() - interval '1 second'` });
 
-    expect(await landingState(sql, { token: newToken(), member: null })).toEqual({ state: "signIn" });
-    expect(await landingState(sql, { token: expired, member: null })).toEqual({ state: "signIn" });
+    expect(await landingState(database, { token: newToken(), member: null })).toEqual({ state: "signIn" });
+    expect(await landingState(database, { token: expired, member: null })).toEqual({ state: "signIn" });
   });
 
   it("REQ-005.4 the link works in any browser", async () => {
     const email = `any.${uniqueKey()}@acme.com`;
     const memberId = await insertMember({ email });
-    await requestSignInLink(sql, { email, requestId: randomUUID(), next: "/project/WEB", ip: uniqueIp() });
+    await requestSignInLink(database, {
+      email,
+      requestId: randomUUID(),
+      next: "/project/WEB",
+      ip: uniqueIp(),
+    });
     const token = tokenOf(linkIn(sentEmails()[0].text));
 
-    const answer = await redeemSignInLink(sql, { token, requestId: randomUUID(), sessionToken: null });
+    const answer = await redeemSignInLink(database, { token, requestId: randomUUID(), sessionToken: null });
 
     expect(answer).toMatchObject({ outcome: "signedIn", destination: "/project/WEB" });
-    expect(await validateSession(sql, sessionTokenOf(answer))).toMatchObject({ id: memberId });
+    expect(await validateSession(database, sessionTokenOf(answer))).toMatchObject({ id: memberId });
   });
 
   it("REQ-005.5 another signed-in member is asked to sign out", async () => {
@@ -496,40 +546,44 @@ describe("redeemSignInLink", () => {
     const alexLink = await insertLink(alex.id);
     const alexRequestId = randomUUID();
     const alexToken = sessionTokenOf(
-      await redeemSignInLink(sql, { token: alexLink, requestId: alexRequestId, sessionToken: null }),
+      await redeemSignInLink(database, { token: alexLink, requestId: alexRequestId, sessionToken: null }),
     );
     const alexSession = await sessionByToken(alexToken);
     const alexExpired = await insertLink(alex.id);
-    await sql`update magic_links set expires_at = now() - interval '1 second' where token_hash = ${hashToken(alexExpired)}`;
+    await setLink(alexExpired, { expiresAt: sql`now() - interval '1 second'` });
     const samLink = await insertLink(sam.id);
-    const alexMember = await validateSession(sql, alexToken);
+    const alexMember = await validateSession(database, alexToken);
     if (alexMember === null) {
       throw new Error("Alex is not signed in");
     }
 
     for (const token of [samLink, newToken(), "not a token"]) {
       const requestId = randomUUID();
-      const answer = await redeemSignInLink(sql, { token, requestId, sessionToken: alexToken });
+      const answer = await redeemSignInLink(database, { token, requestId, sessionToken: alexToken });
       expect(answer).toEqual({ outcome: "signedInAsOther", fullName: "Alex Doe" });
       expect(await sessionFor(requestId)).toBeUndefined();
-      expect(await landingState(sql, { token, member: alexMember })).toEqual({
+      expect(await landingState(database, { token, member: alexMember })).toEqual({
         state: "signedInAsOther",
         fullName: "Alex Doe",
       });
     }
-    expect((await linkState(samLink)).used_at).toBeNull();
+    expect((await linkState(samLink)).usedAt).toBeNull();
     expect(await sessionByToken(alexToken)).toEqual(alexSession);
-    expect(await landingState(sql, { token: alexLink, member: alexMember })).toEqual({ state: "signIn" });
-    expect(await landingState(sql, { token: alexExpired, member: alexMember })).toEqual({ state: "signIn" });
+    expect(await landingState(database, { token: alexLink, member: alexMember })).toEqual({
+      state: "signIn",
+    });
+    expect(await landingState(database, { token: alexExpired, member: alexMember })).toEqual({
+      state: "signIn",
+    });
 
-    await endSession(sql, alexToken);
-    const answer = await redeemSignInLink(sql, {
+    await endSession(database, alexToken);
+    const answer = await redeemSignInLink(database, {
       token: samLink,
       requestId: randomUUID(),
       sessionToken: null,
     });
     expect(answer).toMatchObject({ outcome: "signedIn" });
-    expect(await validateSession(sql, sessionTokenOf(answer))).toMatchObject({ id: sam.id });
+    expect(await validateSession(database, sessionTokenOf(answer))).toMatchObject({ id: sam.id });
   });
 
   it("signs in with a new link of the signed-in member and ends the previous session", async () => {
@@ -537,12 +591,16 @@ describe("redeemSignInLink", () => {
     const previous = await signIn(sam.id);
     const token = await insertLink(sam.id);
 
-    const answer = await redeemSignInLink(sql, { token, requestId: randomUUID(), sessionToken: previous });
+    const answer = await redeemSignInLink(database, {
+      token,
+      requestId: randomUUID(),
+      sessionToken: previous,
+    });
 
     expect(answer).toMatchObject({ outcome: "signedIn" });
     expect((await sessionByToken(previous)).ended_at).not.toBeNull();
-    expect(await validateSession(sql, previous)).toBeNull();
-    expect(await validateSession(sql, sessionTokenOf(answer))).toMatchObject({ id: sam.id });
+    expect(await validateSession(database, previous)).toBeNull();
+    expect(await validateSession(database, sessionTokenOf(answer))).toMatchObject({ id: sam.id });
   });
 
   it("gives one of two concurrent uses of one link signedIn and the other expired", async () => {
@@ -550,25 +608,22 @@ describe("redeemSignInLink", () => {
     const token = await insertLink(sam.id);
 
     const answers = await Promise.all([
-      redeemSignInLink(sql, { token, requestId: randomUUID(), sessionToken: null }),
-      redeemSignInLink(sql, { token, requestId: randomUUID(), sessionToken: null }),
+      redeemSignInLink(database, { token, requestId: randomUUID(), sessionToken: null }),
+      redeemSignInLink(database, { token, requestId: randomUUID(), sessionToken: null }),
     ]);
 
     expect(answers.map((answer) => answer.outcome).sort()).toEqual(["expired", "signedIn"]);
-    const [row] = await sql<{ count: number }[]>`
-      select count(*)::int as count from sessions where member_id = ${sam.id}
-    `;
-    expect(row.count).toBe(1);
+    expect(await database.$count(sessions, eq(sessions.memberId, sam.id))).toBe(1);
   });
 
   it("answers a replay of the same requestId and token with the first answer and a fresh session token", async () => {
     const sam = await newMember();
     const token = await insertLink(sam.id, "/project/WEB");
     const requestId = randomUUID();
-    const first = sessionTokenOf(await redeemSignInLink(sql, { token, requestId, sessionToken: null }));
+    const first = sessionTokenOf(await redeemSignInLink(database, { token, requestId, sessionToken: null }));
     const session = await sessionFor(requestId);
 
-    const replay = await redeemSignInLink(sql, { token, requestId, sessionToken: null });
+    const replay = await redeemSignInLink(database, { token, requestId, sessionToken: null });
 
     expect(replay).toEqual({
       outcome: "signedIn",
@@ -577,8 +632,8 @@ describe("redeemSignInLink", () => {
     });
     const second = sessionTokenOf(replay);
     expect(second).not.toBe(first);
-    expect(await validateSession(sql, first)).toBeNull();
-    expect(await validateSession(sql, second)).toMatchObject({ id: sam.id });
+    expect(await validateSession(database, first)).toBeNull();
+    expect(await validateSession(database, second)).toMatchObject({ id: sam.id });
     expect(await sessionFor(requestId)).toEqual({ ...session, token_hash: hashToken(second) });
   });
 
@@ -586,16 +641,16 @@ describe("redeemSignInLink", () => {
     const sam = await newMember();
     const token = await insertLink(sam.id);
     const requestId = randomUUID();
-    const lost = sessionTokenOf(await redeemSignInLink(sql, { token, requestId, sessionToken: null }));
+    const lost = sessionTokenOf(await redeemSignInLink(database, { token, requestId, sessionToken: null }));
     const other = await signIn(sam.id);
 
-    const replay = await redeemSignInLink(sql, { token, requestId, sessionToken: other });
+    const replay = await redeemSignInLink(database, { token, requestId, sessionToken: other });
 
     expect(replay).toMatchObject({ outcome: "signedIn" });
     expect((await sessionByToken(other)).ended_at).not.toBeNull();
-    expect(await validateSession(sql, other)).toBeNull();
-    expect(await validateSession(sql, lost)).toBeNull();
-    expect(await validateSession(sql, sessionTokenOf(replay))).toMatchObject({ id: sam.id });
+    expect(await validateSession(database, other)).toBeNull();
+    expect(await validateSession(database, lost)).toBeNull();
+    expect(await validateSession(database, sessionTokenOf(replay))).toMatchObject({ id: sam.id });
     expect((await sessionFor(requestId))?.token_hash).toBe(hashToken(sessionTokenOf(replay)));
   });
 
@@ -603,11 +658,11 @@ describe("redeemSignInLink", () => {
     const sam = await newMember();
     const token = await insertLink(sam.id);
     const requestId = randomUUID();
-    await redeemSignInLink(sql, { token, requestId, sessionToken: null });
+    await redeemSignInLink(database, { token, requestId, sessionToken: null });
     const session = await sessionFor(requestId);
-    await sql`update members set active = false where id = ${sam.id}`;
+    await database.update(members).set({ active: false }).where(eq(members.id, sam.id));
 
-    const replay = await redeemSignInLink(sql, { token, requestId, sessionToken: null });
+    const replay = await redeemSignInLink(database, { token, requestId, sessionToken: null });
 
     expect(replay).toEqual({ outcome: "expired" });
     expect((await sessionFor(requestId))?.token_hash).toBe(session?.token_hash);
@@ -618,28 +673,28 @@ describe("redeemSignInLink", () => {
     const sam = await newMember();
     const token = await insertLink(sam.id);
     const requestId = randomUUID();
-    await redeemSignInLink(sql, { token, requestId, sessionToken: null });
+    await redeemSignInLink(database, { token, requestId, sessionToken: null });
     const samSession = await sessionFor(requestId);
     const alexToken = await signIn(alex.id);
 
-    const retry = await redeemSignInLink(sql, { token, requestId, sessionToken: alexToken });
+    const retry = await redeemSignInLink(database, { token, requestId, sessionToken: alexToken });
 
     expect(retry).toEqual({ outcome: "signedInAsOther", fullName: "Alex Doe" });
     expect(await sessionFor(requestId)).toEqual(samSession);
-    expect(await validateSession(sql, alexToken)).toMatchObject({ id: alex.id });
+    expect(await validateSession(database, alexToken)).toMatchObject({ id: alex.id });
   });
 
   it("answers expired to a stored requestId with an unknown or another used link's token", async () => {
     const sam = await newMember();
     const token = await insertLink(sam.id);
     const requestId = randomUUID();
-    await redeemSignInLink(sql, { token, requestId, sessionToken: null });
+    await redeemSignInLink(database, { token, requestId, sessionToken: null });
     const usedElsewhere = await insertLink(sam.id);
-    await redeemSignInLink(sql, { token: usedElsewhere, requestId: randomUUID(), sessionToken: null });
+    await redeemSignInLink(database, { token: usedElsewhere, requestId: randomUUID(), sessionToken: null });
     const before = await allSessionHashes();
 
     for (const wrong of [newToken(), usedElsewhere]) {
-      expect(await redeemSignInLink(sql, { token: wrong, requestId, sessionToken: null })).toEqual({
+      expect(await redeemSignInLink(database, { token: wrong, requestId, sessionToken: null })).toEqual({
         outcome: "expired",
       });
     }
@@ -651,18 +706,18 @@ describe("redeemSignInLink", () => {
     const sam = await newMember();
     const token = await insertLink(sam.id);
     const requestId = randomUUID();
-    await redeemSignInLink(sql, { token, requestId, sessionToken: null });
+    await redeemSignInLink(database, { token, requestId, sessionToken: null });
     const fresh = await insertLink(sam.id);
     const before = await allSessionHashes();
     const writeSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 
-    const attempt = redeemSignInLink(sql, { token: fresh, requestId, sessionToken: null });
+    const attempt = redeemSignInLink(database, { token: fresh, requestId, sessionToken: null });
 
     await expect(attempt).rejects.toBeInstanceOf(ApiError);
     await expect(attempt).rejects.toMatchObject({ status: 422, message: "Invalid input" });
     expect(writeSpy.mock.calls.map((call) => String(call[0])).join("")).not.toContain('"level":"error"');
     expect(await allSessionHashes()).toEqual(before);
-    expect((await linkState(fresh)).used_at).toBeNull();
+    expect((await linkState(fresh)).usedAt).toBeNull();
   });
 
   it("keeps a session whose link was deleted valid but never replays it", async () => {
@@ -670,13 +725,13 @@ describe("redeemSignInLink", () => {
     const token = await insertLink(sam.id);
     const requestId = randomUUID();
     const sessionToken = sessionTokenOf(
-      await redeemSignInLink(sql, { token, requestId, sessionToken: null }),
+      await redeemSignInLink(database, { token, requestId, sessionToken: null }),
     );
-    await sql`delete from magic_links where token_hash = ${hashToken(token)}`;
+    await database.delete(magicLinks).where(eq(magicLinks.tokenHash, hashToken(token)));
 
     expect((await sessionFor(requestId))?.magic_link_id).toBeNull();
-    expect(await validateSession(sql, sessionToken)).toMatchObject({ id: sam.id });
-    expect(await redeemSignInLink(sql, { token, requestId, sessionToken: null })).toEqual({
+    expect(await validateSession(database, sessionToken)).toMatchObject({ id: sam.id });
+    expect(await redeemSignInLink(database, { token, requestId, sessionToken: null })).toEqual({
       outcome: "expired",
     });
     expect((await sessionFor(requestId))?.token_hash).toBe(hashToken(sessionToken));
@@ -685,14 +740,15 @@ describe("redeemSignInLink", () => {
   it("SEC-007.1 the sign-in log names the member and never the token", async () => {
     const email = `log.${uniqueKey()}@acme.com`;
     const memberId = await insertMember({ email });
-    const [{ username }] = await sql<
-      { username: string }[]
-    >`select username from members where id = ${memberId}`;
+    const [{ username }] = await database
+      .select({ username: members.username })
+      .from(members)
+      .where(eq(members.id, memberId));
     const writeSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 
-    await requestSignInLink(sql, { email, requestId: randomUUID(), next: undefined, ip: uniqueIp() });
+    await requestSignInLink(database, { email, requestId: randomUUID(), next: undefined, ip: uniqueIp() });
     const link = linkIn(sentEmails()[0].text);
-    const answer = await redeemSignInLink(sql, {
+    const answer = await redeemSignInLink(database, {
       token: tokenOf(link),
       requestId: randomUUID(),
       sessionToken: null,
@@ -711,19 +767,17 @@ describe("redeemSignInLink", () => {
   });
 });
 async function attemptCount(where: { email?: string; ip?: string }): Promise<number> {
-  const [row] = await sql<{ count: number }[]>`
-    select count(*)::int as count from sign_in_attempts
-    where ${where.email === undefined ? sql`true` : sql`email_key = ${where.email.trim().toLowerCase()}`}
-      and ${where.ip === undefined ? sql`true` : sql`ip = ${where.ip}`}
-  `;
-  return row.count;
+  return database.$count(
+    signInAttempts,
+    and(
+      where.email === undefined ? undefined : eq(signInAttempts.emailKey, where.email.trim().toLowerCase()),
+      where.ip === undefined ? undefined : eq(signInAttempts.ip, where.ip),
+    ),
+  );
 }
 
 async function requestCount(requestId: string): Promise<number> {
-  const [row] = await sql<{ count: number }[]>`
-    select count(*)::int as count from sign_in_requests where request_id = ${requestId}
-  `;
-  return row.count;
+  return database.$count(signInRequests, eq(signInRequests.requestId, requestId));
 }
 
 function errorLines(output: string): Record<string, unknown>[] {
@@ -742,11 +796,16 @@ describe("sign-in limits and failed sends", () => {
     const email = `limit.${uniqueKey()}@acme.com`;
     const memberId = await insertMember({ email });
     for (let attempt = 0; attempt < 5; attempt += 1) {
-      await requestSignInLink(sql, { email, requestId: randomUUID(), next: undefined, ip: uniqueIp() });
+      await requestSignInLink(database, { email, requestId: randomUUID(), next: undefined, ip: uniqueIp() });
     }
     fetchMock.mockClear();
 
-    const sixth = requestSignInLink(sql, { email, requestId: randomUUID(), next: undefined, ip: uniqueIp() });
+    const sixth = requestSignInLink(database, {
+      email,
+      requestId: randomUUID(),
+      next: undefined,
+      ip: uniqueIp(),
+    });
 
     await expect(sixth).rejects.toBeInstanceOf(ApiError);
     await expect(sixth).rejects.toMatchObject(limitError);
@@ -757,10 +816,15 @@ describe("sign-in limits and failed sends", () => {
   it("SEC-001.2 a non-member email gets the same limit answer", async () => {
     const email = `stranger.${uniqueKey()}@x.com`;
     for (let attempt = 0; attempt < 5; attempt += 1) {
-      await requestSignInLink(sql, { email, requestId: randomUUID(), next: undefined, ip: uniqueIp() });
+      await requestSignInLink(database, { email, requestId: randomUUID(), next: undefined, ip: uniqueIp() });
     }
 
-    const sixth = requestSignInLink(sql, { email, requestId: randomUUID(), next: undefined, ip: uniqueIp() });
+    const sixth = requestSignInLink(database, {
+      email,
+      requestId: randomUUID(),
+      next: undefined,
+      ip: uniqueIp(),
+    });
 
     await expect(sixth).rejects.toBeInstanceOf(ApiError);
     await expect(sixth).rejects.toMatchObject(limitError);
@@ -769,7 +833,7 @@ describe("sign-in limits and failed sends", () => {
   it("refuses a 21st request from one IP address for 21 different emails", async () => {
     const ip = uniqueIp();
     for (let attempt = 0; attempt < 20; attempt += 1) {
-      await requestSignInLink(sql, {
+      await requestSignInLink(database, {
         email: `ip.${uniqueKey()}@x.com`,
         requestId: randomUUID(),
         next: undefined,
@@ -777,7 +841,7 @@ describe("sign-in limits and failed sends", () => {
       });
     }
 
-    const twentyFirst = requestSignInLink(sql, {
+    const twentyFirst = requestSignInLink(database, {
       email: `ip.${uniqueKey()}@x.com`,
       requestId: randomUUID(),
       next: undefined,
@@ -791,28 +855,28 @@ describe("sign-in limits and failed sends", () => {
   it("does not count refused requests, so they don't extend the block", async () => {
     const email = `block.${uniqueKey()}@x.com`;
     for (let attempt = 0; attempt < 5; attempt += 1) {
-      await requestSignInLink(sql, { email, requestId: randomUUID(), next: undefined, ip: uniqueIp() });
+      await requestSignInLink(database, { email, requestId: randomUUID(), next: undefined, ip: uniqueIp() });
     }
     for (let attempt = 0; attempt < 2; attempt += 1) {
       await expect(
-        requestSignInLink(sql, { email, requestId: randomUUID(), next: undefined, ip: uniqueIp() }),
+        requestSignInLink(database, { email, requestId: randomUUID(), next: undefined, ip: uniqueIp() }),
       ).rejects.toMatchObject(limitError);
     }
     expect(await attemptCount({ email })).toBe(5);
 
-    await sql`
-      update sign_in_attempts set created_at = created_at - interval '59 minutes'
-      where email_key = ${email}
-    `;
+    await database
+      .update(signInAttempts)
+      .set({ createdAt: sql`${signInAttempts.createdAt} - interval '59 minutes'` })
+      .where(eq(signInAttempts.emailKey, email));
     await expect(
-      requestSignInLink(sql, { email, requestId: randomUUID(), next: undefined, ip: uniqueIp() }),
+      requestSignInLink(database, { email, requestId: randomUUID(), next: undefined, ip: uniqueIp() }),
     ).rejects.toMatchObject(limitError);
 
-    await sql`
-      update sign_in_attempts set created_at = created_at - interval '2 minutes'
-      where email_key = ${email}
-    `;
-    const allowed = await requestSignInLink(sql, {
+    await database
+      .update(signInAttempts)
+      .set({ createdAt: sql`${signInAttempts.createdAt} - interval '2 minutes'` })
+      .where(eq(signInAttempts.emailKey, email));
+    const allowed = await requestSignInLink(database, {
       email,
       requestId: randomUUID(),
       next: undefined,
@@ -826,16 +890,21 @@ describe("sign-in limits and failed sends", () => {
     const email = `replay.${uniqueKey()}@acme.com`;
     await insertMember({ email });
     const first = randomUUID();
-    await requestSignInLink(sql, { email, requestId: first, next: undefined, ip: uniqueIp() });
+    await requestSignInLink(database, { email, requestId: first, next: undefined, ip: uniqueIp() });
     for (let attempt = 0; attempt < 4; attempt += 1) {
-      await requestSignInLink(sql, { email, requestId: randomUUID(), next: undefined, ip: uniqueIp() });
+      await requestSignInLink(database, { email, requestId: randomUUID(), next: undefined, ip: uniqueIp() });
     }
     await expect(
-      requestSignInLink(sql, { email, requestId: randomUUID(), next: undefined, ip: uniqueIp() }),
+      requestSignInLink(database, { email, requestId: randomUUID(), next: undefined, ip: uniqueIp() }),
     ).rejects.toMatchObject(limitError);
     fetchMock.mockClear();
 
-    const replay = await requestSignInLink(sql, { email, requestId: first, next: undefined, ip: uniqueIp() });
+    const replay = await requestSignInLink(database, {
+      email,
+      requestId: first,
+      next: undefined,
+      ip: uniqueIp(),
+    });
 
     expect(replay).toEqual({ outcome: "checkEmail" });
     expect(fetchMock).not.toHaveBeenCalled();
@@ -846,10 +915,15 @@ describe("sign-in limits and failed sends", () => {
     const ip = uniqueIp();
 
     await expect(
-      requestSignInLink(sql, { email: "nope", requestId: randomUUID(), next: undefined, ip }),
+      requestSignInLink(database, { email: "nope", requestId: randomUUID(), next: undefined, ip }),
     ).rejects.toMatchObject({ status: 422 });
     await expect(
-      requestSignInLink(sql, { email: `ok.${uniqueKey()}@x.com`, requestId: "nope", next: undefined, ip }),
+      requestSignInLink(database, {
+        email: `ok.${uniqueKey()}@x.com`,
+        requestId: "nope",
+        next: undefined,
+        ip,
+      }),
     ).rejects.toMatchObject({ status: 422 });
 
     expect(await attemptCount({ ip })).toBe(0);
@@ -871,7 +945,7 @@ describe("sign-in limits and failed sends", () => {
     fetchMock.mockImplementationOnce(failure);
     const writeSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 
-    const attempt = requestSignInLink(sql, { email, requestId, next: undefined, ip: uniqueIp() });
+    const attempt = requestSignInLink(database, { email, requestId, next: undefined, ip: uniqueIp() });
 
     await expect(attempt).rejects.toBeInstanceOf(ApiError);
     await expect(attempt).rejects.toMatchObject(sendError);
@@ -889,7 +963,7 @@ describe("sign-in limits and failed sends", () => {
     }
 
     fetchMock.mockClear();
-    const repeat = await requestSignInLink(sql, { email, requestId, next: undefined, ip: uniqueIp() });
+    const repeat = await requestSignInLink(database, { email, requestId, next: undefined, ip: uniqueIp() });
 
     expect(repeat).toEqual({ outcome: "checkEmail" });
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -900,7 +974,7 @@ describe("sign-in limits and failed sends", () => {
   it("gives a non-member email Check your email while sending fails", async () => {
     fetchMock.mockRejectedValue(new TypeError("fetch failed"));
 
-    const result = await requestSignInLink(sql, {
+    const result = await requestSignInLink(database, {
       email: `stranger.${uniqueKey()}@x.com`,
       requestId: randomUUID(),
       next: undefined,
@@ -916,22 +990,22 @@ describe("stored token hashes", () => {
   it("SEC-003.1 stored hashes don't work as a link or a session", async () => {
     const email = `hash.${uniqueKey()}@acme.com`;
     await insertMember({ email });
-    await requestSignInLink(sql, { email, requestId: randomUUID(), next: undefined, ip: uniqueIp() });
-    await requestSignInLink(sql, { email, requestId: randomUUID(), next: undefined, ip: uniqueIp() });
+    await requestSignInLink(database, { email, requestId: randomUUID(), next: undefined, ip: uniqueIp() });
+    await requestSignInLink(database, { email, requestId: randomUUID(), next: undefined, ip: uniqueIp() });
     const token = tokenOf(linkIn(sentEmails()[0].text));
-    await redeemSignInLink(sql, { token, requestId: randomUUID(), sessionToken: null });
-    const linkHashes = await sql<{ token_hash: string }[]>`select token_hash from magic_links`;
-    const sessionHashes = await sql<{ token_hash: string }[]>`select token_hash from sessions`;
+    await redeemSignInLink(database, { token, requestId: randomUUID(), sessionToken: null });
+    const linkHashes = await database.select({ token_hash: magicLinks.tokenHash }).from(magicLinks);
+    const sessionHashes = await database.select({ token_hash: sessions.tokenHash }).from(sessions);
     expect(linkHashes.length).toBeGreaterThan(0);
     expect(sessionHashes.length).toBeGreaterThan(0);
 
     for (const { token_hash } of linkHashes) {
       expect(
-        await redeemSignInLink(sql, { token: token_hash, requestId: randomUUID(), sessionToken: null }),
+        await redeemSignInLink(database, { token: token_hash, requestId: randomUUID(), sessionToken: null }),
       ).toEqual({ outcome: "expired" });
     }
     for (const { token_hash } of sessionHashes) {
-      expect(await validateSession(sql, token_hash)).toBeNull();
+      expect(await validateSession(database, token_hash)).toBeNull();
     }
   });
 });

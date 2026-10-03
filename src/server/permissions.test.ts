@@ -1,15 +1,17 @@
 import { randomUUID } from "node:crypto";
+import { eq, sql } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
 import { ApiError } from "./api.ts";
 import { db } from "./db.ts";
 import { requireAdmin, requireMember } from "./permissions.ts";
+import { magicLinks, members, sessions } from "./schema.ts";
 import { endSession, startSession } from "./session.ts";
 import { hashToken, newToken } from "./tokens.ts";
 
-const sql = db();
+const database = db();
 
 type TestMember = {
-  id: string;
+  id: number;
   fullName: string;
   username: string;
   role: "admin" | "member";
@@ -17,28 +19,36 @@ type TestMember = {
 
 async function insertMember(role: "admin" | "member" = "member"): Promise<TestMember> {
   const suffix = randomUUID().slice(0, 8);
-  const [row] = await sql<{ id: string }[]>`
-    insert into members (email, full_name, username, role)
-    values (${`permissions-${suffix}@acme.com`}, ${`Permissions Member ${suffix}`}, ${`permissions-${suffix}`}, ${role})
-    returning id::text as id
-  `;
+  const [row] = await database
+    .insert(members)
+    .values({
+      email: `permissions-${suffix}@acme.com`,
+      fullName: `Permissions Member ${suffix}`,
+      username: `permissions-${suffix}`,
+      role,
+    })
+    .returning({ id: members.id });
   return { id: row.id, fullName: `Permissions Member ${suffix}`, username: `permissions-${suffix}`, role };
 }
 
 async function startTestSession(member: TestMember): Promise<string> {
-  const [link] = await sql<{ id: string }[]>`
-    insert into magic_links (member_id, token_hash, expires_at)
-    values (${member.id}, ${hashToken(newToken())}, now() + interval '15 minutes')
-    returning id::text as id
-  `;
-  return startSession(sql, { memberId: member.id, magicLinkId: link.id, requestId: randomUUID() });
+  const [link] = await database
+    .insert(magicLinks)
+    .values({
+      memberId: member.id,
+      tokenHash: hashToken(newToken()),
+      expiresAt: sql`now() + interval '15 minutes'`,
+    })
+    .returning({ id: magicLinks.id });
+  return startSession(database, { memberId: member.id, magicLinkId: link.id, requestId: randomUUID() });
 }
 
 async function lastActiveAt(token: string): Promise<Date> {
-  const [row] = await sql<{ last_active_at: Date }[]>`
-    select last_active_at from sessions where token_hash = ${hashToken(token)}
-  `;
-  return row.last_active_at;
+  const [row] = await database
+    .select({ lastActiveAt: sessions.lastActiveAt })
+    .from(sessions)
+    .where(eq(sessions.tokenHash, hashToken(token)));
+  return row.lastActiveAt;
 }
 
 function apiRequest(token: string | null): Request {
@@ -66,7 +76,7 @@ async function adminCheck(request: Request): Promise<unknown> {
 }
 
 afterAll(async () => {
-  await sql.end();
+  await database.$client.end();
 });
 
 describe("requireMember", () => {
@@ -81,7 +91,7 @@ describe("requireMember", () => {
   it("throws 401 Not signed in for an ended session", async () => {
     const member = await insertMember();
     const token = await startTestSession(member);
-    await endSession(sql, token);
+    await endSession(database, token);
 
     await expectNotSignedIn(apiRequest(token));
   });
@@ -89,9 +99,10 @@ describe("requireMember", () => {
   it("throws 401 Not signed in for a session last active more than 30 days ago", async () => {
     const member = await insertMember();
     const token = await startTestSession(member);
-    await sql`
-      update sessions set last_active_at = now() - interval '30 days 1 minute' where token_hash = ${hashToken(token)}
-    `;
+    await database
+      .update(sessions)
+      .set({ lastActiveAt: sql`now() - interval '30 days 1 minute'` })
+      .where(eq(sessions.tokenHash, hashToken(token)));
 
     await expectNotSignedIn(apiRequest(token));
   });
@@ -99,9 +110,10 @@ describe("requireMember", () => {
   it("returns the member for a live session and moves last_active_at forward", async () => {
     const member = await insertMember("admin");
     const token = await startTestSession(member);
-    await sql`
-      update sessions set last_active_at = now() - interval '1 day' where token_hash = ${hashToken(token)}
-    `;
+    await database
+      .update(sessions)
+      .set({ lastActiveAt: sql`now() - interval '1 day'` })
+      .where(eq(sessions.tokenHash, hashToken(token)));
     const before = await lastActiveAt(token);
 
     expect(await requireMember(apiRequest(token))).toEqual(member);

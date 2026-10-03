@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
-import postgres from "postgres";
 import { readSettings } from "../src/server/config.ts";
+import { connect } from "../src/server/db.ts";
+import { members as membersTable } from "../src/server/schema.ts";
 
 type SeedMember = {
   email: string;
@@ -46,21 +47,20 @@ if (existsSync(".env.local")) {
 }
 
 try {
-  const sql = postgres(readSettings().databaseUrl, { onnotice: () => {} });
+  const db = connect(readSettings().databaseUrl);
   try {
     let added = 0;
     for (const member of members) {
-      const rows = await sql`
-        insert into members (email, full_name, username, role, active)
-        values (${member.email}, ${member.fullName}, ${member.username}, ${member.role}, ${member.active})
-        on conflict do nothing
-        returning id
-      `;
+      const rows = await db
+        .insert(membersTable)
+        .values(member)
+        .onConflictDoNothing()
+        .returning({ id: membersTable.id });
       added += rows.length;
     }
     process.stdout.write(`Added ${added} members\n`);
   } finally {
-    await sql.end();
+    await db.$client.end();
   }
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);

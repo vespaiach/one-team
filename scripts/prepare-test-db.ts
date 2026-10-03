@@ -1,7 +1,8 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
-import postgres from "postgres";
-import { applyMigrations } from "../src/server/migrations.ts";
+import { sql } from "drizzle-orm";
+import { migrate } from "drizzle-orm/postgres-js/migrator";
+import { connect } from "../src/server/db.ts";
 
 const localHosts = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
 
@@ -26,12 +27,13 @@ export default async function prepareTestDatabase(): Promise<void> {
   if (databaseUrl && databaseIdentity(databaseUrl) === databaseIdentity(testDatabaseUrl)) {
     throw new Error("TEST_DATABASE_URL must name a different database from DATABASE_URL");
   }
-  const sql = postgres(testDatabaseUrl);
+  const db = connect(testDatabaseUrl);
   try {
-    await sql`drop schema if exists public cascade`;
-    await sql`create schema public`;
-    await applyMigrations(sql, path.resolve("migrations"));
+    await db.execute(sql`drop schema if exists drizzle cascade`);
+    await db.execute(sql`drop schema if exists public cascade`);
+    await db.execute(sql`create schema public`);
+    await migrate(db, { migrationsFolder: path.resolve("migrations") });
   } finally {
-    await sql.end();
+    await db.$client.end();
   }
 }

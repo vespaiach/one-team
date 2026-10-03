@@ -21,7 +21,7 @@ type SearchParams = Record<string, string | string[] | undefined>;
 type Member = Awaited<ReturnType<typeof currentMember>>;
 
 const sql = { name: "test sql" } as unknown as ReturnType<typeof db>;
-const alex = { id: "1", fullName: "Alex Doe", username: "alex", role: "member" } as NonNullable<Member>;
+const alex = { id: 1, fullName: "Alex Doe", username: "alex", role: "member" } as NonNullable<Member>;
 const signInForm = vi.mocked(SignInForm);
 const landing = vi.mocked(MagicLinkLanding);
 

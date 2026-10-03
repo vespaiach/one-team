@@ -1,37 +1,51 @@
+import { eq, sql } from "drizzle-orm";
+import type { PgUpdateSetSource } from "drizzle-orm/pg-core";
 import { unstable_doesMiddlewareMatch } from "next/experimental/testing/server";
 import { NextRequest } from "next/server";
 import { afterAll, describe, expect, it } from "vitest";
 import { config, proxy } from "./proxy.ts";
 import { db } from "./server/db.ts";
+import { members, sessions } from "./server/schema.ts";
 import { hashToken, newToken } from "./server/tokens.ts";
 
-const sql = db();
+const database = db();
 const origin = "http://localhost:3000";
 
 afterAll(async () => {
-  await sql.end();
+  await database.$client.end();
 });
 
 async function insertSession(): Promise<string> {
   const suffix = crypto.randomUUID().slice(0, 8);
-  const [row] = await sql<{ id: string }[]>`
-    insert into members (email, full_name, username, role)
-    values (${`proxy-${suffix}@acme.com`}, ${`Proxy Member ${suffix}`}, ${`proxy-${suffix}`}, 'member')
-    returning id::text as id
-  `;
+  const [row] = await database
+    .insert(members)
+    .values({
+      email: `proxy-${suffix}@acme.com`,
+      fullName: `Proxy Member ${suffix}`,
+      username: `proxy-${suffix}`,
+      role: "member",
+    })
+    .returning({ id: members.id });
   const token = newToken();
-  await sql`
-    insert into sessions (member_id, token_hash, request_id)
-    values (${row.id}, ${hashToken(token)}, ${crypto.randomUUID()})
-  `;
+  await database
+    .insert(sessions)
+    .values({ memberId: row.id, tokenHash: hashToken(token), requestId: crypto.randomUUID() });
   return token;
 }
 
 async function lastActiveAt(token: string): Promise<Date> {
-  const [row] = await sql<{ last_active_at: Date }[]>`
-    select last_active_at from sessions where token_hash = ${hashToken(token)}
-  `;
-  return row.last_active_at;
+  const [row] = await database
+    .select({ lastActiveAt: sessions.lastActiveAt })
+    .from(sessions)
+    .where(eq(sessions.tokenHash, hashToken(token)));
+  return row.lastActiveAt;
+}
+
+async function setSession(token: string, values: PgUpdateSetSource<typeof sessions>): Promise<void> {
+  await database
+    .update(sessions)
+    .set(values)
+    .where(eq(sessions.tokenHash, hashToken(token)));
 }
 
 function request(path: string, token: string | null = null): NextRequest {
@@ -73,9 +87,7 @@ async function signedOut(path: string, token: string | null = null): Promise<Res
 
 async function signedIn(path: string): Promise<Response> {
   const token = await insertSession();
-  await sql`
-    update sessions set last_active_at = now() - interval '1 day' where token_hash = ${hashToken(token)}
-  `;
+  await setSession(token, { lastActiveAt: sql`now() - interval '1 day'` });
   const before = await lastActiveAt(token);
 
   const response = await proxy(request(path, token));
@@ -141,7 +153,7 @@ describe("proxy, signed out", () => {
 
   it("clears the cookie of an ended session on the redirect", async () => {
     const token = await insertSession();
-    await sql`update sessions set ended_at = now() where token_hash = ${hashToken(token)}`;
+    await setSession(token, { endedAt: sql`now()` });
 
     const response = await signedOut("/project/WEB", token);
 
@@ -151,9 +163,7 @@ describe("proxy, signed out", () => {
 
   it("REQ-006.2 a lapsed session returns to the requested page", async () => {
     const token = await insertSession();
-    await sql`
-      update sessions set last_active_at = now() - interval '31 days' where token_hash = ${hashToken(token)}
-    `;
+    await setSession(token, { lastActiveAt: sql`now() - interval '31 days'` });
 
     const response = await signedOut("/project/WEB?x=1", token);
 

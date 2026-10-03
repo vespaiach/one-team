@@ -1,25 +1,20 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
-import postgres from "postgres";
+import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { readSettings } from "../src/server/config.ts";
-import { applyMigrations } from "../src/server/migrations.ts";
+import { connect } from "../src/server/db.ts";
 
 if (existsSync(".env.local")) {
   process.loadEnvFile(".env.local");
 }
 
 try {
-  const sql = postgres(readSettings().databaseUrl, { onnotice: () => {} });
+  const db = connect(readSettings().databaseUrl);
   try {
-    const applied = await applyMigrations(sql, path.resolve("migrations"));
-    if (applied.length === 0) {
-      process.stdout.write("Nothing pending\n");
-    }
-    for (const name of applied) {
-      process.stdout.write(`Applied ${name}\n`);
-    }
+    await migrate(db, { migrationsFolder: path.resolve("migrations") });
+    process.stdout.write("Migrations applied\n");
   } finally {
-    await sql.end();
+    await db.$client.end();
   }
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);

@@ -1,8 +1,11 @@
+import { sql } from "drizzle-orm";
 import { db } from "./db.ts";
 
 const limitMs = 800;
 
-export async function checkHealth(query: () => Promise<unknown> = () => db()`select 1`): Promise<Response> {
+export async function checkHealth(
+  query: () => Promise<unknown> = () => db().execute(sql`select 1`),
+): Promise<Response> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_, reject) => {
     timer = setTimeout(() => reject(new Error("timeout")), limitMs);

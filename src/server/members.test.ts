@@ -1,6 +1,7 @@
-import postgres from "postgres";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { connect } from "./db.ts";
 import { createFirstAdmin, findActiveMemberByEmail } from "./members.ts";
+import { magicLinks, members, sessions, signInAttempts, signInRequests } from "./schema.ts";
 
 function testDatabaseUrl(): string {
   const url = process.env.TEST_DATABASE_URL;
@@ -10,10 +11,10 @@ function testDatabaseUrl(): string {
   return url;
 }
 
-const sql = postgres(testDatabaseUrl(), { onnotice: () => {} });
+const sql = connect(testDatabaseUrl());
 
 type MemberRow = {
-  id: string;
+  id: number;
   email: string;
   full_name: string;
   username: string;
@@ -28,17 +29,25 @@ const validInput = {
 };
 
 async function emptyMembers(): Promise<void> {
-  await sql`delete from sessions`;
-  await sql`delete from magic_links`;
-  await sql`delete from sign_in_requests`;
-  await sql`delete from sign_in_attempts`;
-  await sql`delete from members`;
+  await sql.delete(sessions);
+  await sql.delete(magicLinks);
+  await sql.delete(signInRequests);
+  await sql.delete(signInAttempts);
+  await sql.delete(members);
 }
 
 async function memberRows(): Promise<MemberRow[]> {
-  return sql<MemberRow[]>`
-    select id::text as id, email, full_name, username, role, active from members order by id
-  `;
+  return sql
+    .select({
+      id: members.id,
+      email: members.email,
+      full_name: members.fullName,
+      username: members.username,
+      role: members.role,
+      active: members.active,
+    })
+    .from(members)
+    .orderBy(members.id);
 }
 
 async function insertMember(values: {
@@ -47,12 +56,11 @@ async function insertMember(values: {
   username: string;
   role?: "admin" | "member";
   active?: boolean;
-}): Promise<string> {
-  const [row] = await sql<{ id: string }[]>`
-    insert into members (email, full_name, username, role, active)
-    values (${values.email}, ${values.fullName}, ${values.username}, ${values.role ?? "member"}, ${values.active ?? true})
-    returning id::text as id
-  `;
+}): Promise<number> {
+  const [row] = await sql
+    .insert(members)
+    .values({ role: "member", ...values })
+    .returning({ id: members.id });
   return row.id;
 }
 
@@ -61,7 +69,7 @@ beforeEach(async () => {
 });
 
 afterAll(async () => {
-  await sql.end();
+  await sql.$client.end();
 });
 
 describe("createFirstAdmin", () => {
@@ -75,7 +83,7 @@ describe("createFirstAdmin", () => {
     const rows = await memberRows();
     expect(rows).toEqual([
       {
-        id: expect.any(String),
+        id: expect.any(Number),
         email: "owner@acme.com",
         full_name: "Owner Name",
         username: "owner",
@@ -88,7 +96,7 @@ describe("createFirstAdmin", () => {
       member: { id: expect.anything(), fullName: "Owner Name", username: "owner", role: "admin" },
     });
     if (result.ok) {
-      expect(String(result.member.id)).toBe(rows[0].id);
+      expect(result.member.id).toBe(rows[0].id);
     }
   });
 
@@ -213,8 +221,8 @@ describe("createFirstAdmin", () => {
   });
 
   it("creates exactly one admin when two runs start at the same time", async () => {
-    const first = postgres(testDatabaseUrl(), { max: 1, onnotice: () => {} });
-    const second = postgres(testDatabaseUrl(), { max: 1, onnotice: () => {} });
+    const first = connect(testDatabaseUrl());
+    const second = connect(testDatabaseUrl());
     try {
       const results = await Promise.all([
         createFirstAdmin(first, { email: "first@acme.com", fullName: "First Owner", username: "first" }),
@@ -227,8 +235,8 @@ describe("createFirstAdmin", () => {
       expect(rows).toHaveLength(1);
       expect(rows[0].role).toBe("admin");
     } finally {
-      await first.end();
-      await second.end();
+      await first.$client.end();
+      await second.$client.end();
     }
   });
 });
@@ -245,7 +253,7 @@ describe("findActiveMemberByEmail", () => {
       username: "sam-find",
       role: "member",
     });
-    expect(String(member?.id)).toBe(id);
+    expect(member?.id).toBe(id);
   });
 
   it("matches a stored email that has capitals", async () => {
