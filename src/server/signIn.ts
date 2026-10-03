@@ -1,3 +1,4 @@
+import "server-only";
 import { and, eq, gt, isNull, ne, type SQL, sql } from "drizzle-orm";
 import postgres from "postgres";
 import { ApiError } from "./api.ts";

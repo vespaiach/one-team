@@ -1,3 +1,4 @@
+import "server-only";
 import { isValidEmail } from "./emailAddress.ts";
 
 type Settings = {
